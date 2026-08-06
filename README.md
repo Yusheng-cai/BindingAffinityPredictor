@@ -35,8 +35,10 @@ External model repositories and installed programs are not vendored here. Their 
 
 The repository scaffold and the protocol for `exp001_boltz2_4gih_smoke` are in
 place. The local, dependency-free tests validate the frozen one-complex manifest
-and the affinity-unit conversions. No model, environment, checkpoint, MSA, or
-coordinate file has been downloaded yet.
+and the affinity-unit conversions. The pinned Boltz source, isolated Python
+environment, chemical-component data, and both Boltz-2 checkpoints are installed
+and verified. No MSA, experimental coordinate file, or prediction has been
+generated yet.
 
 The first model run is intentionally one TYK2 complex and one seed. It is a
 pipeline and interpretation smoke test, not an affinity benchmark. If that run

@@ -1,6 +1,6 @@
 id: exp001_boltz2_4gih_smoke
 title: Boltz-2 TYK2 ligand-46 one-complex smoke test
-status: protocol_frozen_local_checks_passed_model_not_installed
+status: protocol_frozen_environment_ready_not_run
 question: Can the pinned Boltz-2 setup complete a sequence-and-SMILES cofolding and affinity run with auditable outputs on local hardware?
 hypothesis: The run will complete on the local RTX 3080 and produce parseable structure, confidence, continuous-affinity, and binder-probability outputs.
 
@@ -13,7 +13,7 @@ primary_run:
   seed: 42
   samples: 1
   external_msa_server_requires_approval: true
-  checkpoint_download_requires_approval: true
+  checkpoint_download_approved_and_completed_on: 2026-08-06
   reference_structure_available_during_inference: false
 
 outputs:

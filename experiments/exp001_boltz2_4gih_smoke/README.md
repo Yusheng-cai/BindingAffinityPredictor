@@ -2,8 +2,9 @@
 
 ## Status
 
-**Protocol frozen; local manifest/unit/input checks pass. Model not installed
-and no external coordinate, MSA, or checkpoint file downloaded.**
+**Protocol frozen; local checks pass; the model environment and checksummed
+checkpoints are ready. No MSA, experimental coordinate, or prediction has been
+generated.**
 
 ## Scientific question
 
@@ -40,8 +41,8 @@ not remove possible training-data familiarity.
 ## Staged procedure
 
 1. Validate the frozen manifest and logarithmic unit conversions locally.
-2. After approval, install the pinned Boltz source outside this repository and
-   resolve/checksum the automatically selected model checkpoints.
+2. Install the pinned Boltz source outside this repository and resolve/checksum
+   the automatically selected model checkpoints. **Completed 2026-08-06.**
 3. After separate approval for external sequence submission, generate the MSA
    with the configured ColabFold server. Cache its exact response and checksum.
 4. Run seed 42 with the exact settings in `configs/models/boltz2.yaml`.
@@ -52,6 +53,11 @@ not remove possible training-data familiarity.
 
 No stage silently falls back to single-sequence mode; the official documentation
 warns that it reduces accuracy.
+
+The environment uses PyTorch CUDA 12.1 and the documented `--no_kernels`
+fallback. This disables optional cuEquivariance acceleration kernels, not GPU
+inference itself. The host's AmberTools `PYTHONPATH` must be unset for every
+Boltz command; the exact invocation is recorded in the environment notes.
 
 ## Readouts
 
