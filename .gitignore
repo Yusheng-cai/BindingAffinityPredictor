@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local environments and secrets
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Model weights, caches, and MSAs
+/checkpoints/
+/models/
+/cache/
+/.cache/
+*.ckpt
+*.safetensors
+*.pt
+*.pth
+*.a3m
+
+# Downloaded and generated datasets
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Raw run artifacts
+runs/*
+!runs/README.md
+
+# Notebook execution state
+.ipynb_checkpoints/
+
+# Build and packaging artifacts
+build/
+dist/
+*.egg-info/

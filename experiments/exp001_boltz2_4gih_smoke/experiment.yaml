@@ -1,0 +1,48 @@
+id: exp001_boltz2_4gih_smoke
+title: Boltz-2 TYK2 ligand-46 one-complex smoke test
+status: protocol_frozen_local_checks_passed_model_not_installed
+question: Can the pinned Boltz-2 setup complete a sequence-and-SMILES cofolding and affinity run with auditable outputs on local hardware?
+hypothesis: The run will complete on the local RTX 3080 and produce parseable structure, confidence, continuous-affinity, and binder-probability outputs.
+
+manifest: data/manifests/exp001_tyk2_4gih.json
+model_config: configs/models/boltz2.yaml
+benchmark_config: configs/benchmarks/tyk2_4gih_single_complex.yaml
+model_input: experiments/exp001_boltz2_4gih_smoke/inputs/4gih_0x5.yaml
+
+primary_run:
+  seed: 42
+  samples: 1
+  external_msa_server_requires_approval: true
+  checkpoint_download_requires_approval: true
+  reference_structure_available_during_inference: false
+
+outputs:
+  - native_raw_output
+  - predicted_complex_mmcif
+  - confidence_json
+  - affinity_json
+  - resolved_run_provenance
+  - runtime_and_peak_gpu_memory
+
+metrics:
+  engineering:
+    - process_exit_status
+    - required_output_parseability
+    - finite_native_scores
+  structure:
+    - protein_ca_rmsd_angstrom
+    - symmetry_corrected_ligand_heavy_atom_rmsd_angstrom
+    - ligand_contact_recovery
+    - posebusters_checks
+  affinity:
+    - native_affinity_pred_value_descriptive_only
+    - native_affinity_probability_binary_descriptive_only
+
+forbidden_claims:
+  - affinity_accuracy
+  - affinity_ranking
+  - calibration
+  - selectivity
+  - generalization
+
+stopping_rule: Stop after the first complete seed-42 run and its validation; require review before adding seeds or ligands.

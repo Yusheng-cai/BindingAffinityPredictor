@@ -1,0 +1,40 @@
+id: tyk2_4gih_single_complex
+status: smoke_test_only
+manifest: data/manifests/exp001_tyk2_4gih.json
+
+purpose:
+  - validate_end_to_end_structure_and_affinity_output_generation
+  - check_pose_recovery_against_a_withheld_holo_structure
+  - verify_score_units_direction_and_provenance_capture
+
+reference_structure:
+  pdb_id: 4GIH
+  ligand_ccd: 0X5
+  experimental_method: X-ray diffraction
+  resolution_angstrom: 2.00
+  role: scoring_only
+  forbidden_as_input:
+    - template
+    - pocket_constraint
+    - contact_constraint
+    - starting_coordinates
+
+measurement_policy:
+  accepted_types:
+    - ki
+  canonical_unit: uM
+  preserve_qualifier: true
+  compare_to_boltz_continuous_head: descriptive_only
+  reason: A single Ki is not statistically sufficient, and Boltz reports an approximate mixed-assay IC50-scale prediction.
+
+structure_metrics:
+  - protein_ca_rmsd_over_common_resolved_residues_after_optimal_superposition
+  - symmetry_corrected_ligand_heavy_atom_rmsd_after_protein_pocket_alignment
+  - ligand_contact_recovery
+  - posebusters_physical_validity_checks
+
+interpretation:
+  conventional_pose_recovery_threshold_angstrom: 2.0
+  threshold_role: descriptive_heuristic_not_model_validation
+  statistical_affinity_metrics: forbidden_for_n_equals_1
+  generalization_claims: forbidden

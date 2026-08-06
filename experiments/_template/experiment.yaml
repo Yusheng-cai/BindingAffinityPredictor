@@ -1,0 +1,16 @@
+id: replace-me
+title: Replace with experiment title
+status: draft
+question: Replace with one precise question
+hypothesis: Replace with a preregistered expectation
+manifest: null
+models: []
+benchmarks: []
+seeds:
+  - 42
+outputs:
+  - native_raw_output
+metrics: []
+controls: []
+notes: null
+

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "manifest_id": "exp001_tyk2_4gih",
+  "created_on": "2026-08-06",
+  "purpose": "One-complex Boltz-2 pipeline and interpretation smoke test",
+  "source_dataset": {
+    "name": "OpenFF Protein-Ligand Benchmark",
+    "source_url": "https://github.com/openforcefield/protein-ligand-benchmark",
+    "source_revision": "fd88824f9114244f95a14b485e6d6c96c1de716d",
+    "license": "CC-BY-4.0",
+    "target_record": "data/tyk2/00_data/target.yml",
+    "ligand_record": "data/tyk2/00_data/ligands.yml"
+  },
+  "samples": [
+    {
+      "sample_id": "tyk2_4gih_0x5_ejm46",
+      "target_id": "tyk2_jh1_4gih_construct",
+      "ligand_id": "lig_ejm_46",
+      "assay_id": "liang_2013_ejmc_table4_entry46",
+      "protein": {
+        "name": "Human TYK2 JH1 kinase-domain crystallographic construct",
+        "organism": "Homo sapiens",
+        "sequence": "MGSPASDPTVFHKRYLKKIRDLGEGHFGKVSLYCYDPTNDGTGEMVAVKALKADAGPQHRSGWKQEIDILRTLYHEHIIKYKGCCEDAGAASLQLVMEYVPLGSLRDYLPRHSIGLAQLLLFAQQICEGMAYLHAQHYIHRNLAARNVLLDNDRLVKIGDFGLAKAVPEGHEYYRVREDGDSPVFWYAPECLKEYKFYYASDVWSFGVTLYELLTHCDSSQSPPTKFLELIGIAQGQMTVLRLTELLERGERLPRPDKCPAEVYHLMKNCWETEASFRPTFENLIPILKTVHEKYRHHHHHH",
+        "sequence_length": 302,
+        "sequence_source": "https://www.rcsb.org/fasta/entry/4GIH/display",
+        "construct_notes": "Exact deposited entity sequence, including N-terminal construct residues and a C-terminal hexahistidine tag; RCSB marks the entity as containing mutations. Structural scoring must use only residues present in the experimental coordinates."
+      },
+      "ligand": {
+        "name": "TYK2 inhibitor 46",
+        "ccd_id": "0X5",
+        "input_smiles": "Clc1cccc(Cl)c1C(=O)Nc2ccnc(NC(=O)C3CC3)c2",
+        "source_explicit_h_smiles": "[H]c1c(c(c(c(c1[H])Cl)C(=O)N([H])c2c(c(nc(c2[H])N([H])C(=O)C3(C(C3([H])[H])([H])[H])[H])[H])[H])Cl)[H]",
+        "inchi_key": "IAFNAEGXTKTGHN-UHFFFAOYSA-N",
+        "formal_charge": 0,
+        "stereochemistry": "achiral",
+        "representation_notes": "Neutral achiral representation matching RCSB CCD 0X5 and the OpenFF benchmark record. Protonation and tautomer sensitivity are not explored in exp001."
+      },
+      "measurement": {
+        "type": "ki",
+        "value": 0.0048,
+        "error": 0.0014,
+        "unit": "uM",
+        "qualifier": "=",
+        "log10_value_uM": -2.318758762624413,
+        "pX_M": 8.318758762624412,
+        "source_doi": "10.1016/j.ejmech.2013.03.070",
+        "source_location": "Table 4, entry 46",
+        "interpretation_note": "Ki is retained as Ki. It must not be silently relabeled IC50 or Kd."
+      },
+      "structure_reference": {
+        "pdb_id": "4GIH",
+        "ligand_ccd_id": "0X5",
+        "method": "X-ray diffraction",
+        "resolution_angstrom": 2.0,
+        "rcsb_url": "https://www.rcsb.org/structure/4GIH",
+        "pdb_doi": "10.2210/pdb4GIH/pdb",
+        "use_as_model_input": false,
+        "use_for_scoring_after_prediction": true
+      },
+      "split": "smoke_test",
+      "included": true,
+      "limitations": [
+        "The 2013 structure may be represented directly or indirectly in model training data.",
+        "One complex cannot estimate correlation, ranking, calibration, or generalization.",
+        "The experimental endpoint is Ki whereas the Boltz continuous head is documented on an approximate log10(IC50/uM) scale.",
+        "The exact crystallographic construct contains noncanonical terminal construct residues and mutations."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+id: boltz2_2_2_1
+status: proposed_not_installed
+observed_on: 2026-08-06
+
+implementation:
+  source_url: https://github.com/jwohlwend/boltz
+  source_revision: b1ebfc46ecf57f5414e0d1a6f9027bbb122c53bc
+  package_version: 2.2.1
+  intended_clone_path: /home/yusheng/source/boltz
+  intended_environment_path: /home/yusheng/programs/boltz-2.2.1
+
+checkpoint:
+  resolution: upstream_default_boltz2
+  identifier: null
+  sha256: null
+  verification_gate: Record the resolved checkpoint path, source URL, and checksum before interpreting a run.
+
+input:
+  format: boltz_yaml_v1
+  protein: exact_construct_sequence
+  ligand: smiles
+  msa:
+    mode: colabfold_server
+    server_url: https://api.colabfold.com
+    approval_required_before_use: true
+  templates: none
+  constraints: none
+
+inference:
+  accelerator: gpu
+  devices: 1
+  recycling_steps: 3
+  sampling_steps: 200
+  diffusion_samples: 1
+  max_parallel_samples: 1
+  step_scale: 1.5
+  output_format: mmcif
+  use_potentials: false
+  sampling_steps_affinity: 200
+  diffusion_samples_affinity: 5
+  affinity_mw_correction: false
+  seed: 42
+
+native_outputs:
+  continuous_affinity:
+    field: affinity_pred_value
+    approximate_scale: log10(IC50 / micromolar)
+    direction: lower_is_stronger
+  binder_classification:
+    field: affinity_probability_binary
+    scale: probability
+    direction: higher_is_more_binder_like
+  structure_confidence:
+    fields:
+      - confidence_score
+      - ptm
+      - iptm
+      - ligand_iptm
+      - complex_plddt
+      - complex_iplddt
+      - complex_pde
+
+verification_notes:
+  - Settings above are explicitly frozen even when they match upstream defaults.
+  - The official CLI at the pinned revision supports --seed, although the option was absent from the rendered prediction-options table observed on 2026-08-06.
+  - The available RTX 3080 has 10 GiB VRAM; feasibility for this exact input is not yet verified.
+  - Do not change use_potentials or affinity_mw_correction after seeing results; create a new protocol variant instead.
