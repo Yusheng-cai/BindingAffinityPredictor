@@ -39,65 +39,24 @@ Boltz-2, Nesso-1, FlashBind, and an FEP+ four-kinase reproduction}
 
 \section*{Executive summary}
 
-This week, I focused on four questions:
-\begin{enumerate}
-  \item What does Boltz-2 do?
-  \item How does Nesso-1 change that workflow, and what does it improve or
-  sacrifice?
-  \item Where does FlashBind's dock-and-score workflow fit relative to these
-  two models?
-  \item Can I reproduce the reported public affinity benchmark using the
-  authors' released checkpoints?
-\end{enumerate}
+This report compares three released protein--ligand affinity workflows.
+Boltz-2 cofolds an atom-resolved complex and predicts affinity; Nesso-1
+predicts affinity without coordinate diffusion or an MSA; and FlashBind scores
+a FABind+-docked ligand in a three-dimensional receptor
+\citep{passaro2025boltz2,shenoy2026nesso1,jiang2026flashbind}.
 
-In brief, Boltz-2 jointly predicts an atom-resolved protein--ligand complex
-and learned affinity outputs from protein sequence, ligand chemistry (SMILES), and
-usually an MSA.
-
-Nesso-1 removes the costly atom-coordinate diffusion stage
-and the MSA requirement. It instead predicts affinity from jointly processed
-protein--ligand features and a predicted pocket. This makes Nesso much
-more practical for screening, at the cost of not producing the detailed
-heavy-atom pose supplied by Boltz-2.
-
-FlashBind makes a third architectural choice. Rather than jointly generating
-an atom-resolved complex with an expensive diffusion decoder, it first obtains
-a three-dimensional receptor, uses FABind+ to predict a pocket and dock the
-ligand, and then scores the resulting local protein--ligand geometry with an
-E(3)-equivariant graph neural network. It is therefore best understood as a
-two-stage \emph{dock then score} system for virtual screening. The receptor
-can be experimental or predicted, but three-dimensional receptor coordinates
-are required internally \citep{jiang2026flashbind}.
-
-For the empirical test, I reconstructed the public 87-compound,
-four-kinase benchmark and ran the released models on every compound. This is
-the \emph{affinity-ranking} evaluation: it compares predicted affinity scores
-with experimental potency labels and does not evaluate coordinates.
-Nesso-1 achieved a compound-count-weighted mean within-target Pearson
-correlation of \textbf{$r=0.807$} (compound-bootstrap 95\% interval
-$0.731$--$0.873$), essentially reproducing the preprint value of $0.80$
-\citep{shenoy2026nesso1}. Boltz-2, using the MSA-1024 protocol described
-below, achieved \textbf{$r=0.627$} (interval
-$0.484$--$0.744$), close to its paper reference of $0.66$
-\citep{passaro2025boltz2}. FlashBind's two-checkpoint value ensemble achieved
-\textbf{$r=0.533$} (interval $0.382$--$0.669$), reproducing its paper value of
-$0.53$ \citep{jiang2026flashbind}. I obtained 87/87 affinity outputs from all
-three models.
-
-Separately, I performed a \emph{structure-recovery} evaluation against 16 exact
-experimental protein--ligand cocrystals. Boltz-2 had median global protein
-C$\alpha$, locally fitted pocket C$\alpha$, and pocket-aligned ligand RMSDs of
-\textbf{1.231}, \textbf{0.400}, and \textbf{0.898~\AA}, respectively. The
-released FlashBind/FABind+ poses had a median ligand RMSD of
-\textbf{0.634~\AA}; its receptor RMSDs describe the supplied experimental
-receptor rather than a FlashBind protein prediction.
+I ran all three models on the public 87-compound, four-kinase benchmark and
+compared predicted scores with experimental potency within each target. The
+weighted Pearson correlations below closely reproduce the paper values. I
+also evaluated Boltz-2 and the released FABind+ poses against 16 cocrystals;
+those structure-recovery results are reported separately from affinity ranking.
 
 \begin{center}
 \setlength{\fboxsep}{9pt}
 \fcolorbox{accent}{highlightbg}{%
 \parbox{0.91\textwidth}{
 \centering
-\textbf{\color{accent}\large Headline affinity result: complete 87-compound benchmark}\\[0.55em]
+\textbf{\color{accent}\large Headline affinity result}\\[0.55em]
 \begin{tabular}{@{}lccc@{}}
 \toprule
  & \textbf{Weighted Pearson $r$} & \textbf{95\% interval} & \textbf{Paper reference} \\
