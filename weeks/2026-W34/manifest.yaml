@@ -21,7 +21,7 @@ overleaf:
   source_of_truth: overleaf
   local_clone: /home/yusheng/source/binding-affinity-overleaf-w34
   pushed: true
-  remote_commit: 4645e248945fe3e20ccc71a4b17b787aefa4296d
+  remote_commit: 8c145c7958de3515df5310fcfa3a16415a80d2ad
 
 experiments:
   - experiments/exp007_fepplus4_boltz2_nesso1/experiment.yaml
@@ -131,7 +131,7 @@ pdf:
   path: weeks/2026-W34/report/report.pdf
   pages: 11
   latex_engine: pdflatex
-  sha256: 80cdc1c2f94366c79b8d319488ba119d9ceb01f7b7713132131b7bba549974a5
+  sha256: b6ecf9abc5f79c5b4e4ac4984482ed54f479f950e22f37a2cca7a71ad929140f
 
 technical_pdf:
   path: weeks/2026-W34/technical-report/report.pdf

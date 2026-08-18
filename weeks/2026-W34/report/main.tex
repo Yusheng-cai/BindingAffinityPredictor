@@ -49,8 +49,7 @@ PDB protein structure
 I ran all three models on the public 87-compound, four-kinase benchmark and
 compared predicted scores with experimental potency within each kinase. The
 weighted Pearson correlations below closely reproduce the paper values. I
-also evaluated Boltz-2 and the released FABind+ poses against 16 cocrystals;
-those structure-recovery results are reported separately from affinity ranking.
+also evaluated the predicted protein-ligand structure from Boltz-2 and the released FABind+ against the 16 experimentally available bound structures.
 
 \begin{center}
 \setlength{\fboxsep}{9pt}
@@ -85,10 +84,6 @@ Ligand heavy atoms after pocket fit & \textbf{0.898} & \textbf{0.634} \\
 \end{center}
 
 \section{Benchmark}
-I used the older OpenFF Git commit \texttt{da7c337} because it contains the
-full 87-example benchmark used in both model papers: $16+16+21+34=87$ neutral
-protein--ligand examples \citep{hahn2022bindingbenchmarks}.
-
 Each target defines one separate medicinal-chemistry series: the protein is
 held fixed while
 the ligand is changed. The four targets are cyclin-dependent kinase 2 (CDK2),
@@ -143,16 +138,24 @@ p38 use IC50 labels; TYK2 uses Ki labels.
 
 \subsection{Boltz-2: cofold and score}
 
-At the highest level, Boltz-2 is a biomolecular cofolding model with an
-additional affinity-prediction pathway. An example input can contain protein
-sequence(s), ligand chemistry, an MSA, and optional templates or constraints.
-Its structure trunk integrates these inputs, and a stochastic diffusion
-decoder generates three-dimensional coordinates for the modeled heavy atoms.
-The released system returns sampled complex structures and confidence
-quantities; for protein--ligand inputs it can also return a binder probability
-and continuous affinity estimates \citep{passaro2025boltz2}. These learned
-affinity outputs are assay-calibrated model scores. They are not direct
-alchemical calculations of an equilibrium $\Delta G_\mathrm{bind}$.
+Boltz-2 performs two related tasks: it predicts how biomolecules fit together
+in three dimensions, and it estimates binding affinity. For a protein--ligand
+calculation, we provide the protein sequence, the ligand chemistry, and an MSA.
+The MSA is a collection of related protein sequences that gives the model
+information about evolutionary variation in the protein.
+
+Boltz-2 considers the protein and ligand together. It begins with a noisy
+arrangement of their atoms and repeatedly adjusts the coordinates until it
+produces a plausible three-dimensional protein--ligand complex. This is the
+diffusion part of the model. Because this procedure involves random sampling,
+the model can generate more than one candidate structure.
+
+The public Boltz-2 software returns the predicted atomic coordinates and
+scores describing its confidence in the structure. For a protein--ligand
+pair, it also reports a probability that the ligand binds and a continuous
+affinity score that can be used to rank compounds \citep{passaro2025boltz2}.
+These affinity outputs are learned from experimental assay data. They are not
+direct alchemical calculations of an equilibrium $\Delta G_\mathrm{bind}$.
 
 \subsection{Nesso-1: predict affinity without coordinate diffusion}
 
