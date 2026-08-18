@@ -1,4 +1,4 @@
-# Week 2026-W34: three affinity models on FEP+4
+# Week of August 17, 2026: three affinity models on FEP+4
 
 This week asks three practical questions:
 
