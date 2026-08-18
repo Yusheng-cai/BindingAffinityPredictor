@@ -1,9 +1,9 @@
 week: 2026-W34
 date_range: 2026-08-17_to_2026-08-23
 title: Boltz-2, Nesso-1, FlashBind, and an FEP+ four-kinase reproduction
-status: complete_github_published_overleaf_pending
+status: complete_github_and_overleaf_synced
 
-project_git_revision: 122da1b0c3d87fb616aa1f56a4f19ae588c4ae71
+project_git_revision: ed2f407198e462764bfbeb3bfe4374c57930c8e0
 working_tree_dirty_at_build: true
 
 github:
@@ -20,9 +20,8 @@ overleaf:
   branch: main
   source_of_truth: overleaf
   local_clone: /home/yusheng/source/binding-affinity-overleaf-w34
-  pushed: false
-  remote_commit: 404e6c6f5e546e682825e12e157000ca5d47b62c
-  local_change: replace_paired_pose_scatter_with_RMSD_bars_and_add_Pearson_bars
+  pushed: true
+  remote_commit: 0ab6c229cbd25c5c9d0ba59d7f9bbcb1c7f11f61
 
 experiments:
   - experiments/exp007_fepplus4_boltz2_nesso1/experiment.yaml
@@ -127,9 +126,9 @@ compact_results:
 
 pdf:
   path: weeks/2026-W34/report/report.pdf
-  pages: 13
+  pages: 12
   latex_engine: pdflatex
-  sha256: ec460d3c74cbf2671aa2911154e1192074d2572860ae73f79c136151a54d120e
+  sha256: d14914cca5798e517c9ec3b2dd585d652f3e030c8fa8a454389e748cee0d2317
 
 citations:
   - jiang2026flashbind

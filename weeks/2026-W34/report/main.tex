@@ -107,17 +107,7 @@ subsample; the FlashBind result uses released FABind+ poses.
 }}
 \end{center}
 
-\section{How I framed the questions and benchmark}
-
-I began by asking what information each model consumes, what it predicts, and
-why the Nesso architecture changes the computational cost. I then tried to
-recover the
-reported relationship between model scores and experimental ligand potencies
-within each protein target. In this report, ``reproduce the benchmark'' means
-that I recreated the public inputs, ran the released inference code, retained
-the native outputs, and applied a predeclared metric policy. I did not train
-either model on the benchmark.
-
+\section{Benchmark}
 I used the older OpenFF Git commit \texttt{da7c337} because it contains the
 full 87-example benchmark used in both model papers: $16+16+21+34=87$ neutral
 protein--ligand examples \citep{hahn2022bindingbenchmarks}.
@@ -187,21 +177,21 @@ The columns have the following precise meanings:
   fixed protein coordinates, but not the crystallographic ligand pose.
 \end{description}
 
-Thus, for the CDK2 row, the calculation asks a concrete ranking question:
-given the same CDK2--cyclin A2 protein construct and 16 different ligands, does
-the ordering of Nesso's 16 predicted affinity scores agree with the ordering
-of the 16 experimental IC50 measurements? Pearson, Spearman, and Kendall
-statistics answer that question for CDK2. The procedure is repeated separately
-for TYK2, JNK1, and p38 before the four target-level results are aggregated.
+%Thus, for the CDK2 row, the calculation asks a concrete ranking question:
+%given the same CDK2--cyclin A2 protein construct and 16 different ligands, does
+%the ordering of Nesso's 16 predicted affinity scores agree with the ordering
+%of the 16 experimental IC50 measurements? Pearson, Spearman, and Kendall
+%statistics answer that question for CDK2. The procedure is repeated separately
+%for TYK2, JNK1, and p38 before the four target-level results are aggregated.
 
-I took the protein sequences from the deposited RCSB entities. I retained
-cyclin A2 for CDK2 and the JIP1 peptide for JNK1 because those partners are present in
-the curated benchmark complexes. Ligands were represented by canonical,
-stereochemically explicit SMILES; all have formal charge zero. Nesso and Boltz
-received no crystallographic pose, template, pocket annotation, hotspot, or
-experimental label. FlashBind received the authors' fixed protein structures
-and FABind+-predicted ligand poses; its label file was not used during
-inference.
+%I took the protein sequences from the deposited RCSB entities. I retained
+%cyclin A2 for CDK2 and the JIP1 peptide for JNK1 because those partners are present in
+%the curated benchmark complexes. Ligands were represented by canonical,
+%stereochemically explicit SMILES; all have %formal charge zero. Nesso and Boltz
+%received no crystallographic pose, template, pocket annotation, hotspot, or
+%experimental label. FlashBind received the authors' fixed protein structures
+%and FABind+-predicted ligand poses; its label file was not used during
+%inference.
 
 \section{Model description: Boltz-2, Nesso-1, and FlashBind}
 
@@ -741,7 +731,7 @@ poses, but it does not contain the original docking commands, seeds, or
 per-pose logs. Thus I have evaluated the supplied poses, not independently
 reproduced their generation.
 
-\section{Interpretation and next decision}
+\section{Interpretation and next-week plan}
 
 Using independently reconstructed inputs, I reproduced the Nesso-1 and Boltz-2
 paper headlines to within 0.007 and 0.033 Pearson units, respectively. Using
@@ -763,12 +753,29 @@ the receptor--ligand complex. I therefore interpret the pose result as a
 successful archive and metric validation, not a fair end-to-end ranking of
 the two architectures.
 
-For FlashBind, the clean next escalation is an end-to-end test: rerun FABind+
-from the same four receptor structures and 87 ligand SMILES, then compare both
-the new poses and their affinity scores with this released-pose baseline. That
-would separate scorer reproducibility from docking reproducibility. For Nesso
-and Boltz, additional seeds and targeted investigation of p38 remain useful
-before attributing target-level differences to architecture.
+Next week, I will move from benchmark reproduction to a source-code-level
+examination of how Boltz-2, Nesso-1, and FlashBind represent protein--ligand
+interactions. I will use the TYK2--4GIH complex as a common worked example and
+trace one forward pass through each released model, recording the residue,
+atom, and pair representations that connect the inputs to the affinity
+output.
+
+I will then perform one small probe matched to each architecture:
+\begin{itemize}
+  \item for Boltz-2, compare fixed-seed predictions as MSA information is
+  removed or subsampled;
+  \item for Nesso-1, compare the response to sequence changes near its
+  predicted pocket with changes far from that pocket; and
+  \item for FlashBind, compare experimental, released FABind+, displaced, and
+  clashing ligand poses while also checking whole-complex rigid-body
+  invariance.
+\end{itemize}
+The purpose is not to establish another performance ranking. It is to
+determine what information each affinity head actually receives and whether
+its behavior is consistent with the invariances, locality, and geometric
+sensitivity expected for protein--ligand binding. End-to-end FABind+ docking,
+additional stochastic replicates, and the p38 target-level discrepancy remain
+useful later experiments once this architecture audit is in place.
 
 \section*{Reproducibility record}
 
