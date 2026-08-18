@@ -20,6 +20,28 @@ MSA. FlashBind had the lower RMSD on 9 pairs and Boltz-2 on 7; the difference
 is driven partly by the two Boltz-2 poses above 2 Angstrom rather than a
 uniform pairwise advantage.
 
+## Protein and ligand decomposition
+
+The ligand RMSD is only one component of the Boltz-2 cofolding result. Across
+the 16 pairs, Boltz-2 had a median fitted global protein C-alpha RMSD of
+**1.231 Angstrom**, a median locally fitted pocket C-alpha RMSD of **0.400
+Angstrom**, and a median pocket-aligned ligand heavy-atom RMSD of **0.898
+Angstrom**. The corresponding FlashBind receptor values were 0.272, 0.208,
+and 0.634 Angstrom, respectively.
+
+Those protein numbers have different meanings for the two workflows. Boltz-2
+generated its receptor, so its protein RMSDs are prediction errors. FlashBind
+was supplied a fixed experimental receptor; its protein RMSDs only measure the
+difference between that supplied receptor and each ligand-specific cocrystal.
+No joint protein--ligand fit was performed, because the much larger protein
+atom set would dominate such a number and ligand coordinates would then help
+define the transformation used to evaluate the ligand.
+
+Boltz-2's locally fitted pocket C-alpha median was target-dependent: 0.348
+Angstrom for CDK2, 0.243 for TYK2, 0.460 for JNK1, and **2.305 for p38**. The
+p38 ligand result therefore coincides with a substantial predicted-pocket
+error and should not be interpreted as ligand placement alone.
+
 ## What was calculated
 
 For each prediction--crystal pair, I:

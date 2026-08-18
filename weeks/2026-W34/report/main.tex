@@ -385,10 +385,8 @@ target and recomputed the compound-weighted statistic.
 
 \subsection{Experimental pose-recovery metric}
 
-An experimental structure does not come with an ``experimental RMSD.'' The
-experimental ligand coordinates are the reference, and I calculate RMSD
-between each predicted pose and that reference. I identified 16 exact
-FEP+4 ligand--target identities with deposited cocrystal structures and used
+I identified 16 exact
+FEP+4 ligand--target identities with deposited crystal structures and used
 the same reference and metric for FlashBind/FABind+ and Boltz-2.
 
 For each pair, I matched the kinase chains by sequence and defined the
@@ -660,25 +658,37 @@ FlashBind shows a different pattern: p38 is its strongest target
 released docked poses, that TYK2 result cannot be diagnosed as a fresh docking
 failure without separately examining the archived poses.
 
-\subsection{Experimental pose recovery on the 16 structure-matched pairs}
+\subsection{Protein and ligand RMSD on the 16 structure-matched pairs}
 
 \begin{table}[H]
 \centering
 \footnotesize
-\begin{tabular}{lcrrr}
+\begin{tabular}{lrrrr}
 \toprule
-Pose source & Receptor input & Median RMSD (\AA) & Mean RMSD (\AA) & $<2$~\AA \\
+RMSD component (\AA) & \multicolumn{2}{c}{Boltz-2} & \multicolumn{2}{c}{FlashBind/FABind+} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+& Median & Mean & Median & Mean \\
 \midrule
-\rowcolor{highlightbg}
-FlashBind/FABind+, released poses & Fixed experimental 3D & \textbf{0.634} & 0.651 & \textbf{16/16} \\
 \rowcolor{boltzbg}
-Boltz-2 MSA-1024, seed 42 & Sequence + MSA & \textbf{0.898} & 0.977 & \textbf{14/16} \\
+Global protein C$\alpha$, fitted & 1.231 & 1.282 & 0.272 & 0.279 \\
+Pocket protein C$\alpha$, fitted & 0.400 & 0.998 & 0.208 & 0.220 \\
+\rowcolor{highlightbg}
+Ligand heavy atoms after pocket fit & 0.898 & 0.977 & 0.634 & 0.651 \\
 \bottomrule
 \end{tabular}
-\caption{Symmetry-corrected ligand heavy-atom RMSD after aligning only
-protein pocket C$\alpha$ atoms. Both rows use the same 16 exact cocrystal
-references and scoring code, but the receptor inputs are materially different.}
+\caption{Separate protein and ligand errors across the same 16 cocrystal
+references. No joint protein--ligand RMSD is used. The global and pocket
+protein rows are residual C$\alpha$ RMSDs after fitting the indicated protein
+atoms. The ligand row is symmetry-corrected heavy-atom RMSD after applying the
+fixed pocket-protein transform; the ligand is not independently fitted.}
 \end{table}
+
+For Boltz-2, the protein rows evaluate a generated receptor structure. For
+FlashBind, they instead measure the difference between the supplied fixed
+experimental receptor and each ligand-specific cocrystal receptor; they are
+therefore not a prediction-accuracy result for FlashBind. The separate rows
+avoid allowing the much larger protein atom set to dominate a combined RMSD
+and avoid using the experimental ligand coordinates to improve the fit.
 
 \begin{figure}[H]
 \centering
@@ -720,6 +730,16 @@ RMSD on 9 pairs and Boltz-2 on 7. The median paired FlashBind-minus-Boltz
 difference was $-0.109$~\AA; its mean was $-0.326$~\AA, influenced by the two
 Boltz poses above 2~\AA. This pattern does not support a claim of uniform
 FlashBind superiority.
+
+The protein decomposition changes the interpretation. Boltz-2's median global
+protein C$\alpha$ RMSD was 1.231~\AA, while its median locally fitted pocket
+C$\alpha$ RMSD was 0.400~\AA. The pocket result was strongly target-dependent:
+the Boltz medians were 0.348~\AA{} for CDK2, 0.243~\AA{} for TYK2,
+0.460~\AA{} for JNK1, and 2.305~\AA{} for p38. Thus the p38 ligand-pose result
+coincides with a substantial local pocket-structure error and should not be
+interpreted as ligand placement alone. In contrast, the FlashBind receptor
+pocket median was 0.208~\AA{} overall because its starting receptors were
+experimental structures.
 
 I also audited the coordinate identities before scoring. Every released SDF
 matched its reference ligand in heavy-atom count and admitted a complete

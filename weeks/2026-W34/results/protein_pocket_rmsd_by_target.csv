@@ -1,0 +1,6 @@
+target,n_pairs,boltz2_median_pocket_ca_rmsd_A,flashbind_fixed_receptor_median_pocket_ca_rmsd_A
+CDK2,6,0.348,0.192
+TYK2,2,0.243,0.217
+JNK1,1,0.460,0.092
+p38,7,2.305,0.241
+Overall,16,0.400,0.208

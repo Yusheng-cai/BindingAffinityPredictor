@@ -30,7 +30,7 @@
     },
     {
       "path": "reports/exp010_flashbind_crystal_pose/paired_pose_rmsd.csv",
-      "sha256": "d3c5e3358e2a90ebd7d7029f660ea1daecedb7458c1aac83076d9b2fee72ca7e"
+      "sha256": "4026e6b97be23dcf9e5dad85ff25fae8bb44cbf70946a3ddde2694b181858215"
     },
     {
       "path": "literature/references.bib",
@@ -100,19 +100,19 @@
     },
     {
       "path": "weeks/2026-W34/report/figures/pose_rmsd_cdk2.csv",
-      "sha256": "5fe9f7e6b92bee3ba92364ac014119d060dcbca48a5deed6792bd31edd70a843"
+      "sha256": "6720a847ab77ddb7f884283322d8ef4a71e1378fef2890e8d8b730b219ae6d18"
     },
     {
       "path": "weeks/2026-W34/report/figures/pose_rmsd_tyk2.csv",
-      "sha256": "e0bf8e80f7d08c68a9425037b80feb59cc6fc33389aea0eb6428ba7d4c1e81d7"
+      "sha256": "0865084c42cd72f3fb2b269b722671a65d6009e120e696841a1597d661b06eea"
     },
     {
       "path": "weeks/2026-W34/report/figures/pose_rmsd_jnk1.csv",
-      "sha256": "881a6f89e091fce5ab2f2dc106e9db983c1c40929d678cb6ed8d97e0b8ff108b"
+      "sha256": "1e77b49336eae1311f7f90ab15dd948270eb0cdc88fca29fe0f8faea2eac4ab9"
     },
     {
       "path": "weeks/2026-W34/report/figures/pose_rmsd_p38.csv",
-      "sha256": "57afb3eb6bd42f889efd2a1b843c48fb8273f7639eb3d01c69b690cea9ef068f"
+      "sha256": "a67a2b3e7fe1b1db16bbef6602b21d6d7779d79ff5f479c7810fdd409585abc3"
     },
     {
       "path": "weeks/2026-W34/report/figures/nesso1_runtime.csv",

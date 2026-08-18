@@ -9,39 +9,137 @@
     "below_2A": 16
   },
   "boltz2_msa1024_seed42": {
-    "mean": 0.976818211875,
-    "median": 0.897572755,
+    "mean": 0.9768182120036957,
+    "median": 0.8975727563378975,
     "below_2A": 14
   },
   "paired_difference_flashbind_minus_boltz2_angstrom": {
-    "mean": -0.32610435345940125,
-    "median": -0.10871754028604019
+    "mean": -0.32610435358809675,
+    "median": -0.10871754088896979
   },
   "lower_rmsd_counts": {
     "flashbind": 9,
     "boltz2": 7,
     "ties": 0
   },
+  "rmsd_components": {
+    "protein_global_ca": {
+      "definition": "fitted RMSD over all sequence-mapped protein C-alpha atoms",
+      "unit": "angstrom",
+      "flashbind_released_FABind_plus": {
+        "mean": 0.27882015716861863,
+        "median": 0.2718103446231402,
+        "minimum": 0.1049946983530997,
+        "maximum": 0.5300418009004386
+      },
+      "boltz2_msa1024_seed42": {
+        "mean": 1.282218550025437,
+        "median": 1.2311266595258958,
+        "minimum": 0.3169049065012435,
+        "maximum": 2.2852551004846484
+      }
+    },
+    "protein_pocket_ca": {
+      "definition": "fitted RMSD over sequence-mapped pocket C-alpha atoms; the pocket is defined from reference protein residues within 5 A of the ligand",
+      "unit": "angstrom",
+      "flashbind_released_FABind_plus": {
+        "mean": 0.22018643672901722,
+        "median": 0.20770435552190586,
+        "minimum": 0.09209919529200632,
+        "maximum": 0.43545222950018797
+      },
+      "boltz2_msa1024_seed42": {
+        "mean": 0.9981919469515352,
+        "median": 0.39971030977909683,
+        "minimum": 0.19850732654984074,
+        "maximum": 2.754481793125403
+      }
+    },
+    "ligand_after_pocket_alignment": {
+      "definition": "symmetry-corrected ligand heavy-atom RMSD after applying the fixed protein-pocket C-alpha transform",
+      "unit": "angstrom",
+      "flashbind_released_FABind_plus": {
+        "mean": 0.6507138584155987,
+        "median": 0.634337861775331,
+        "minimum": 0.0767020734268141,
+        "maximum": 1.5948248257361157
+      },
+      "boltz2_msa1024_seed42": {
+        "mean": 0.9768182120036957,
+        "median": 0.8975727563378975,
+        "minimum": 0.18051735563276472,
+        "maximum": 2.790291324702183
+      }
+    }
+  },
   "by_target": {
     "cdk2": {
       "n": 6,
       "flashbind_median_rmsd_A": 0.4416483912433901,
-      "boltz2_median_rmsd_A": 0.7876638650000001
+      "boltz2_median_rmsd_A": 0.7876638643850304,
+      "component_medians_A": {
+        "flashbind_released_FABind_plus": {
+          "protein_global_ca": 0.2825010887281182,
+          "protein_pocket_ca": 0.19229039976817813,
+          "ligand_after_pocket_alignment": 0.4416483912433901
+        },
+        "boltz2_msa1024_seed42": {
+          "protein_global_ca": 1.21590508545367,
+          "protein_pocket_ca": 0.3482169288110182,
+          "ligand_after_pocket_alignment": 0.7876638643850304
+        }
+      }
     },
     "jnk1": {
       "n": 1,
       "flashbind_median_rmsd_A": 0.608858596306388,
-      "boltz2_median_rmsd_A": 0.50185189
+      "boltz2_median_rmsd_A": 0.501851894760814,
+      "component_medians_A": {
+        "flashbind_released_FABind_plus": {
+          "protein_global_ca": 0.1049946983530997,
+          "protein_pocket_ca": 0.09209919529200632,
+          "ligand_after_pocket_alignment": 0.608858596306388
+        },
+        "boltz2_msa1024_seed42": {
+          "protein_global_ca": 1.0252877972235124,
+          "protein_pocket_ca": 0.46002542923542666,
+          "ligand_after_pocket_alignment": 0.501851894760814
+        }
+      }
     },
     "p38": {
       "n": 7,
       "flashbind_median_rmsd_A": 0.7683550256432835,
-      "boltz2_median_rmsd_A": 1.11113024
+      "boltz2_median_rmsd_A": 1.1111302363451572,
+      "component_medians_A": {
+        "flashbind_released_FABind_plus": {
+          "protein_global_ca": 0.2811888907223086,
+          "protein_pocket_ca": 0.24116293011127604,
+          "ligand_after_pocket_alignment": 0.7683550256432835
+        },
+        "boltz2_msa1024_seed42": {
+          "protein_global_ca": 1.6653447439025417,
+          "protein_pocket_ca": 2.3052583763596624,
+          "ligand_after_pocket_alignment": 1.1111302363451572
+        }
+      }
     },
     "tyk2": {
       "n": 2,
       "flashbind_median_rmsd_A": 0.14992040781128113,
-      "boltz2_median_rmsd_A": 0.23811343000000001
+      "boltz2_median_rmsd_A": 0.2381134268509662,
+      "component_medians_A": {
+        "flashbind_released_FABind_plus": {
+          "protein_global_ca": 0.1974736615499095,
+          "protein_pocket_ca": 0.21696841209972348,
+          "ligand_after_pocket_alignment": 0.14992040781128113
+        },
+        "boltz2_msa1024_seed42": {
+          "protein_global_ca": 0.32980487311250856,
+          "protein_pocket_ca": 0.2431589443707023,
+          "ligand_after_pocket_alignment": 0.2381134268509662
+        }
+      }
     }
   },
   "interpretation": "Descriptive retrospective paired comparison; the two pose sources use different receptor inputs and neither is a prospective time split."

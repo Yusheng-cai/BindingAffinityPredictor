@@ -8,8 +8,9 @@ usage() {
 Usage: 07_analyze_poses.sh [--check|--execute] [--allow-rcsb-download]
 
 Download the 16 frozen crystal references when explicitly permitted, align
-predicted and experimental protein pockets, calculate symmetry-corrected ligand
-heavy-atom RMSD, and build the paired Boltz-2/FlashBind table.
+predicted and experimental proteins, calculate global protein C-alpha, local
+pocket C-alpha, and symmetry-corrected ligand heavy-atom RMSDs, and build the
+paired Boltz-2/FlashBind component comparison.
 EOF
 }
 

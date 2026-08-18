@@ -1,0 +1,3 @@
+pose_source,receptor_interpretation,matched_pairs,median_global_protein_ca_rmsd_A,mean_global_protein_ca_rmsd_A,median_pocket_protein_ca_rmsd_A,mean_pocket_protein_ca_rmsd_A,median_pocket_aligned_ligand_rmsd_A,mean_pocket_aligned_ligand_rmsd_A
+Boltz-2 MSA-1024 seed 42,predicted receptor,16,1.231,1.282,0.400,0.998,0.898,0.977
+FlashBind released FABind+ poses,fixed experimental receptor,16,0.272,0.279,0.208,0.220,0.634,0.651

@@ -14,6 +14,15 @@ stopping_rule: Analyze all 16 declared pairs and report every mapping or parsing
 observed_status_2026_08_17:
   complete_pairs: 16
   failed_pairs: 0
+  median_global_protein_ca_rmsd_angstrom: 1.2311266595258958
+  mean_global_protein_ca_rmsd_angstrom: 1.282218550025437
+  median_pocket_protein_ca_rmsd_angstrom: 0.39971030977909683
+  mean_pocket_protein_ca_rmsd_angstrom: 0.9981919469515352
+  pocket_protein_ca_median_by_target_angstrom:
+    cdk2: 0.3482169288110182
+    tyk2: 0.2431589443707023
+    jnk1: 0.46002542923542666
+    p38: 2.3052583763596624
   median_pocket_aligned_ligand_rmsd_angstrom: 0.8975727563378975
   mean_pocket_aligned_ligand_rmsd_angstrom: 0.9768182120036957
   pose_success_below_2_angstrom: 14
