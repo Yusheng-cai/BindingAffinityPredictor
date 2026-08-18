@@ -65,7 +65,9 @@ can be experimental or predicted, but three-dimensional receptor coordinates
 are required internally \citep{jiang2026flashbind}.
 
 For the empirical test, I reconstructed the public 87-compound,
-four-kinase benchmark and ran the released models on every compound.
+four-kinase benchmark and ran the released models on every compound. This is
+the \emph{affinity-ranking} evaluation: it compares predicted affinity scores
+with experimental potency labels and does not evaluate coordinates.
 Nesso-1 achieved a compound-count-weighted mean within-target Pearson
 correlation of \textbf{$r=0.807$} (compound-bootstrap 95\% interval
 $0.731$--$0.873$), essentially reproducing the preprint value of $0.80$
@@ -77,19 +79,20 @@ $0.484$--$0.744$), close to its paper reference of $0.66$
 $0.53$ \citep{jiang2026flashbind}. I obtained 87/87 affinity outputs from all
 three models.
 
-Separately, I compared the available predicted structures with 16 exact
-experimental protein--ligand cocrystals. Using the same protein-only alignment
-and symmetry-corrected ligand RMSD definition for both methods, the released
-FlashBind/FABind+ poses had a median RMSD of \textbf{0.634~\AA} and 16/16 were
-below 2~\AA. The Boltz-2 MSA-1024 poses had a median of
-\textbf{0.898~\AA} and 14/16 were below 2~\AA.
+Separately, I performed a \emph{structure-recovery} evaluation against 16 exact
+experimental protein--ligand cocrystals. Boltz-2 had median global protein
+C$\alpha$, locally fitted pocket C$\alpha$, and pocket-aligned ligand RMSDs of
+\textbf{1.231}, \textbf{0.400}, and \textbf{0.898~\AA}, respectively. The
+released FlashBind/FABind+ poses had a median ligand RMSD of
+\textbf{0.634~\AA}; its receptor RMSDs describe the supplied experimental
+receptor rather than a FlashBind protein prediction.
 
 \begin{center}
 \setlength{\fboxsep}{9pt}
 \fcolorbox{accent}{highlightbg}{%
 \parbox{0.91\textwidth}{
 \centering
-\textbf{\color{accent}\large Headline result: complete 87-compound benchmark}\\[0.55em]
+\textbf{\color{accent}\large Headline affinity result: complete 87-compound benchmark}\\[0.55em]
 \begin{tabular}{@{}lccc@{}}
 \toprule
  & \textbf{Weighted Pearson $r$} & \textbf{95\% interval} & \textbf{Paper reference} \\
@@ -353,7 +356,18 @@ uses released FABind+ poses rather than rerunning FABind+; it therefore tests
 the released scorer and supplied preprocessing, not independent end-to-end
 docking reproducibility.
 
-\section{Metric policy}
+\section{Metric policy: affinity and structure}
+
+I use two distinct metric families that answer different questions. The
+\textbf{affinity metrics} use all 87 compounds and test agreement between model
+scores and experimental potency labels. The \textbf{structure metrics} use
+only the 16 pairs with exact deposited crystal structures and test geometric
+recovery of the protein and ligand coordinates. Pearson, Spearman, Kendall,
+and centered MAE do not measure structural accuracy; RMSD does not measure
+affinity accuracy. I therefore report the two evaluations separately and do
+not combine them into one performance score.
+
+\subsection{Affinity-ranking metrics on 87 compounds}
 
 I kept the labels hidden during model execution and joined them only after all
 native outputs were locked by immutable sample ID. I calculated the primary
@@ -383,7 +397,7 @@ I estimated uncertainty with 2,000 bootstrap replicates (seed 20260817). In
 each replicate, I resampled compounds with replacement separately inside each
 target and recomputed the compound-weighted statistic.
 
-\subsection{Experimental pose-recovery metric}
+\subsection{Structure-recovery metrics on 16 complexes}
 
 I identified 16 exact
 FEP+4 ligand--target identities with deposited crystal structures and used
