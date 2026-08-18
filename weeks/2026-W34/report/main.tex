@@ -361,37 +361,21 @@ docking reproducibility.
 I use two distinct metric families that answer different questions. The
 \textbf{affinity metrics} use all 87 compounds and test agreement between model
 scores and experimental potency labels. The \textbf{structure metrics} use
-only the 16 pairs with exact deposited crystal structures and test geometric
-recovery of the protein and ligand coordinates. Pearson, Spearman, Kendall,
-and centered MAE do not measure structural accuracy; RMSD does not measure
-affinity accuracy. I therefore report the two evaluations separately and do
-not combine them into one performance score.
+only the 16 pairs with deposited crystal structures and compare Boltz-2 with
+the released FlashBind/FABind+ poses.
 
 \subsection{Affinity-ranking metrics on 87 compounds}
 
-I kept the labels hidden during model execution and joined them only after all
-native outputs were locked by immutable sample ID. I calculated the primary
-statistic in two stages:
+I calculated the primary statistic in two stages:
 \[
  r_t = \operatorname{Pearson}\!\left(y_{t,i},\hat y_{t,i}\right),
  \qquad
  \bar r = \frac{\sum_t n_t r_t}{\sum_t n_t}.
 \]
 Thus, the comparison asks whether each model ranks compounds correctly
-\emph{within} each kinase series; it does not correlate unrelated assays
-across targets. Spearman $\rho$ and Kendall $\tau$ were secondary ranking
-metrics.
-
-For error metrics only, I mapped both experimental and predicted
-log$_{10}$ micromolar values to an energy-like scale at 298.15 K,
-\[
- G_{\mathrm{eff}}=RT\ln\!\left(10^{-6}\,10^{\log_{10}(C/\mu\mathrm{M})}\right).
-\]
-This is a unit transformation of potency. It must not be interpreted as a
-thermodynamic standard binding free energy because IC50 depends on assay
-conditions and Ki is not generally interchangeable with IC50. I report both
-ordinary MAE and target-centered MAE; centering removes one constant offset
-per target and better isolates relative ranking/calibration within a series.
+\emph{within} each kinase series and then averages the target-level statistics
+using the compound counts. Spearman $\rho$ and Kendall $\tau$ provide
+complementary rank-based comparisons.
 
 I estimated uncertainty with 2,000 bootstrap replicates (seed 20260817). In
 each replicate, I resampled compounds with replacement separately inside each
@@ -426,18 +410,17 @@ threshold, not as a hypothesis-test boundary.
 \begin{table}[H]
 \centering
 \small
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrr}
 \toprule
-Target & Pearson $r$ & Spearman $\rho$ & Kendall $\tau$ & Centered MAE \\
-&&&& (kcal/mol) \\
+Target & Pearson $r$ & Spearman $\rho$ & Kendall $\tau$ \\
 \midrule
-CDK2 & 0.748 & 0.759 & 0.550 & 0.723 \\
-TYK2 & 0.917 & 0.921 & 0.767 & 0.749 \\
-JNK1 & 0.666 & 0.667 & 0.482 & 0.450 \\
-p38  & 0.869 & 0.894 & 0.723 & 0.425 \\
+CDK2 & 0.748 & 0.759 & 0.550 \\
+TYK2 & 0.917 & 0.921 & 0.767 \\
+JNK1 & 0.666 & 0.667 & 0.482 \\
+p38  & 0.869 & 0.894 & 0.723 \\
 \midrule
 \rowcolor{nessobg}
-Compound-weighted & \textbf{0.807} & \textbf{0.819} & \textbf{0.641} & \textbf{0.545} \\
+Compound-weighted & \textbf{0.807} & \textbf{0.819} & \textbf{0.641} \\
 \bottomrule
 \end{tabular}
 \caption{Nesso-1 released-checkpoint reproduction. The paper reports a
@@ -447,18 +430,17 @@ compound-weighted Pearson correlation of 0.80 on this benchmark.}
 \begin{table}[H]
 \centering
 \small
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrr}
 \toprule
-Target & Pearson $r$ & Spearman $\rho$ & Kendall $\tau$ & Centered MAE \\
-&&&& (kcal/mol) \\
+Target & Pearson $r$ & Spearman $\rho$ & Kendall $\tau$ \\
 \midrule
-CDK2 & 0.831 & 0.865 & 0.667 & 0.540 \\
-TYK2 & 0.807 & 0.779 & 0.617 & 0.663 \\
-JNK1 & 0.758 & 0.805 & 0.616 & 0.442 \\
-p38  & 0.364 & 0.433 & 0.287 & 0.781 \\
+CDK2 & 0.831 & 0.865 & 0.667 \\
+TYK2 & 0.807 & 0.779 & 0.617 \\
+JNK1 & 0.758 & 0.805 & 0.616 \\
+p38  & 0.364 & 0.433 & 0.287 \\
 \midrule
 \rowcolor{boltzbg}
-Compound-weighted & \textbf{0.627} & \textbf{0.666} & \textbf{0.497} & \textbf{0.633} \\
+Compound-weighted & \textbf{0.627} & \textbf{0.666} & \textbf{0.497} \\
 \bottomrule
 \end{tabular}
 \caption{Boltz-2 MSA-1024 released-checkpoint reproduction. The paper
@@ -469,18 +451,17 @@ values are 0.627 and 0.497.}
 \begin{table}[H]
 \centering
 \small
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrr}
 \toprule
-Target & Pearson $r$ & Spearman $\rho$ & Kendall $\tau$ & Centered MAE \\
-&&&& (kcal/mol) \\
+Target & Pearson $r$ & Spearman $\rho$ & Kendall $\tau$ \\
 \midrule
-CDK2 & 0.612 & 0.641 & 0.433 & 0.754 \\
-TYK2 & 0.134 & 0.147 & 0.083 & 1.021 \\
-JNK1 & 0.546 & 0.578 & 0.425 & 0.509 \\
-p38  & 0.677 & 0.591 & 0.413 & 0.611 \\
+CDK2 & 0.612 & 0.641 & 0.433 \\
+TYK2 & 0.134 & 0.147 & 0.083 \\
+JNK1 & 0.546 & 0.578 & 0.425 \\
+p38  & 0.677 & 0.591 & 0.413 \\
 \midrule
 \rowcolor{highlightbg}
-Compound-weighted & \textbf{0.533} & \textbf{0.515} & \textbf{0.359} & \textbf{0.688} \\
+Compound-weighted & \textbf{0.533} & \textbf{0.515} & \textbf{0.359} \\
 \bottomrule
 \end{tabular}
 \caption{FlashBind two-checkpoint ensemble using the authors' released
@@ -616,7 +597,6 @@ Statistic & Nesso-1 & \shortstack{Boltz-2\\MSA-1024} & FlashBind \\
 Pearson $r$ & \textbf{0.807} & \textbf{0.627} & \textbf{0.533} \\
 Spearman $\rho$ & 0.819 & 0.666 & 0.515 \\
 Kendall $\tau$ & 0.641 & 0.497 & 0.359 \\
-Centered MAE (kcal/mol) & 0.545 & 0.633 & 0.688 \\
 \bottomrule
 \end{tabular}
 \caption{Full matched comparison across the 87-compound benchmark. Each entry
@@ -659,10 +639,9 @@ are reported in the text and executive-summary table.}
 \end{figure}
 
 I found that the paired interval excludes zero for all three correlation
-statistics. It barely includes zero for centered MAE, so the evidence is
-stronger for a ranking difference than for an offset-corrected error
-difference. Target-level
-heterogeneity is scientifically important: Boltz is better on CDK2 and JNK1,
+statistics, supporting a difference in within-target ranking performance.
+Target-level heterogeneity is scientifically important: Boltz is better on
+CDK2 and JNK1,
 Nesso is better on TYK2, and p38 supplies the largest Nesso advantage
 ($r=0.869$ versus $0.364$). My experiment does not determine whether
 that p38 difference arises from model architecture, MSA subsampling,
