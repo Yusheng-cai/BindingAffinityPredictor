@@ -1,10 +1,17 @@
 week: 2026-W34
 date_range: 2026-08-17_to_2026-08-23
 title: Boltz-2, Nesso-1, FlashBind, and an FEP+ four-kinase reproduction
-status: complete_github_ready_overleaf_pending
+status: complete_github_published_overleaf_pending
 
 project_git_revision: 122da1b0c3d87fb616aa1f56a4f19ae588c4ae71
 working_tree_dirty_at_build: true
+
+github:
+  repository: https://github.com/Yusheng-cai/BindingAffinityPredictor
+  branch: main
+  visibility: public
+  published: true
+  publication_commit: 14b811a9005f285dff044e8c84c8c769d74bd875
 
 overleaf:
   configured: true
