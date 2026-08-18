@@ -56,7 +56,8 @@ those structure-recovery results are reported separately from affinity ranking.
 \fcolorbox{accent}{highlightbg}{%
 \parbox{0.91\textwidth}{
 \centering
-\textbf{\color{accent}\large Headline affinity result}\\[0.55em]
+\textbf{\color{accent}\large Headline results}\\[0.45em]
+\textbf{Affinity ranking: 87 compounds}\\[0.25em]
 \begin{tabular}{@{}lccc@{}}
 \toprule
  & \textbf{Weighted Pearson $r$} & \textbf{95\% interval} & \textbf{Paper reference} \\
@@ -65,7 +66,18 @@ Nesso-1 & \textbf{0.807} & 0.731--0.873 & 0.80 \\
 Boltz-2 MSA-1024 & \textbf{0.627} & 0.484--0.744 & 0.66 \\
 FlashBind, released poses & \textbf{0.533} & 0.382--0.669 & 0.53 \\
 \bottomrule
-\end{tabular}
+\end{tabular}\\[0.65em]
+\textbf{Structure recovery: median RMSD over 16 cocrystals (\AA)}\\[0.25em]
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & \textbf{Boltz-2} & \textbf{FlashBind/FABind+} \\
+\midrule
+Global protein C$\alpha$, fitted & 1.231 & 0.272$^{*}$ \\
+Pocket protein C$\alpha$, fitted & 0.400 & 0.208$^{*}$ \\
+Ligand heavy atoms after pocket fit & \textbf{0.898} & \textbf{0.634} \\
+\bottomrule
+\end{tabular}\\[0.3em]
+\footnotesize $^{*}$Supplied receptor coordinates, not a FlashBind protein prediction.
 }}
 \end{center}
 
