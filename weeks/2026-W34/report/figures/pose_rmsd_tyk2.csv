@@ -1,0 +1,3 @@
+sample_id,target_id,pdb_id,boltz2_rmsd_A,flashbind_rmsd_A
+tyk2_ejm_46,tyk2,4GIH,0.18051736,0.22313874219574817
+tyk2_jmc_23,tyk2,4GJ2,0.2957095,0.0767020734268141

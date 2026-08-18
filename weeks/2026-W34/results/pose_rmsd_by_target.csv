@@ -1,0 +1,6 @@
+target,n_pairs,boltz2_median_rmsd_A,flashbind_median_rmsd_A
+CDK2,6,0.788,0.442
+TYK2,2,0.238,0.150
+JNK1,1,0.502,0.609
+p38,7,1.111,0.768
+Overall,16,0.898,0.634

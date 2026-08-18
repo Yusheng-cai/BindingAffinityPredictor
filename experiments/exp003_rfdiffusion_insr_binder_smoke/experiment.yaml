@@ -1,0 +1,99 @@
+id: exp003_rfdiffusion_insr_binder_smoke
+title: RFdiffusion insulin-receptor one-backbone smoke test
+status: completed_engineering_smoke_test
+question: Can the pinned local RFdiffusion and ProteinMPNN setup generate one auditable insulin-receptor-directed binder backbone, preserve its denoising trajectory, and assign reproducible candidate sequences?
+hypothesis: The run will complete on the local RTX 3080 and produce a parseable final complex, both native trajectory types, run metadata, and four ProteinMPNN sequences for the generated chain.
+
+models:
+  - configs/models/rfdiffusion.yaml
+  - configs/models/proteinmpnn.yaml
+
+target:
+  source_path: external/src/RFdiffusion/examples/input_pdbs/insulin_target.pdb
+  sha256: b5ab52ee165f33b3d467407ecc3607cb5b70fb6c2972cf2d6ed7ff3294153480
+  retained_residues: A1-150
+  reference_available_during_generation: true
+
+rfdiffusion:
+  contig: "[A1-150/0 70-100]"
+  hotspots: [A59, A83, A91]
+  checkpoint: Complex_base_ckpt.pt
+  deterministic: true
+  design_startnum_and_seed: 42
+  num_designs: 1
+  diffusion_steps: 50
+  final_step: 1
+  noise_scale_ca: 0
+  noise_scale_frame: 0
+  write_trajectory: true
+
+proteinmpnn:
+  target_chain_fixed: true
+  generated_binder_chain_designed: true
+  model_name: v_48_020
+  seed: 42
+  num_sequences: 4
+  sampling_temperature: 0.1
+  backbone_noise_angstrom: 0.0
+  save_probabilities: true
+  animation_sequence_rule: lowest_designed_chain_mean_negative_log_probability
+
+outputs:
+  - final_poly_glycine_complex_pdb
+  - reverse_state_Xt_minus_1_trajectory_pdb
+  - per_step_clean_prediction_pX0_trajectory_pdb
+  - rfdiffusion_trb_metadata
+  - proteinmpnn_fasta
+  - proteinmpnn_probabilities
+  - resolved_run_provenance
+
+success_criteria:
+  - process_exit_status_zero
+  - gpu_used
+  - final_complex_parseable
+  - target_chain_has_150_residues
+  - generated_chain_length_between_70_and_100
+  - both_trajectories_have_50_models
+  - proteinmpnn_returns_four_sequences_for_binder_chain_only
+
+forbidden_claims:
+  - experimental_binding
+  - binding_affinity
+  - specificity
+  - functional_activity
+  - benchmark_accuracy
+
+stopping_rule: Stop after one RFdiffusion backbone and four ProteinMPNN sequences are generated and audited; require review before additional backbones or experimental interpretation.
+
+observed_results:
+  completed_at: 2026-08-11
+  gpu: NVIDIA GeForce RTX 3080
+  rfdiffusion_exit_status: 0
+  rfdiffusion_wall_seconds_including_startup: 79.32
+  rfdiffusion_model_reported_seconds: 66.0077
+  rfdiffusion_maximum_resident_kib: 5463856
+  target_chain: A
+  target_residues: 150
+  generated_chain: B
+  generated_residues: 90
+  xt_minus_1_models: 50
+  px0_models: 50
+  binder_mean_model_confidence_t50: 0.0936
+  binder_mean_model_confidence_t1: 0.9919
+  proteinmpnn_exit_status: 0
+  proteinmpnn_wall_seconds: 4.46
+  proteinmpnn_sequences: 4
+  selected_sample_by_frozen_rule: 1
+  selected_designed_chain_score: 0.7786
+  selected_global_score: 1.2917
+  independent_structure_prediction_completed: false
+  experimental_validation_completed: false
+
+artifact_sha256:
+  final_pdb: 2e68ae2e859b660ea2cf158be121dad6622e34ae87991eed3b286cd64b567b44
+  metadata_trb: 08d25994d2662dc62851dc8f7260f8930824fb0467a9cad03a311e37d9f337f7
+  xt_minus_1_trajectory: cd730a17535a223c1b0d25574f0c94399d1464376b6530e52c76263ad2819f0e
+  px0_trajectory: dd2121a4e4ea8d3c952947b68a3bbbe67ad8d0f406a903c0d734fe3a4aecbc4c
+  proteinmpnn_fasta: 8f910236cf03f202218f86864ede0b1e1a3afa0b4243eff38758a5f0a87c862e
+  proteinmpnn_probabilities: 9a82e9c94876d9d3e29454272879a9012d6b15b4e4527a6f04b9546dfedfe716
+  proteinmpnn_scores: c5705742d414bd587b00819b0668f67c0489565507ec639f4fbd73ca4cf3473d

@@ -1,0 +1,94 @@
+\section{Nesso-1 architecture: a high-level view}
+
+Nesso-1 asks whether binding affinity can be estimated from an approximate map
+of the protein--ligand interface without first generating every atomic
+coordinate. It is therefore best understood as a \emph{coarse-grained
+cofolding affinity model}, rather than as a full-atom structure predictor
+\citep{shenoy2026nesso1}.
+
+\begin{center}
+\fbox{\parbox{0.92\textwidth}{\centering
+Protein sequence + ligand SMILES
+$\longrightarrow$ protein and ligand embeddings
+$\longrightarrow$ pairwise distance representation
+$\longrightarrow$ likely binding-region crop
+$\longrightarrow$ binder probability + continuous affinity score}}
+\end{center}
+
+\subsection{Inputs and molecular tokens}
+
+The inputs are a protein amino-acid sequence and a ligand SMILES string. No
+experimental complex, user-specified pocket, or multiple-sequence alignment is
+required. The protein receives contextual embeddings from the pretrained
+ESM-2 protein language model. Each protein residue is represented
+geometrically by one center, its C$\beta$ atom (C$\alpha$ for glycine), while
+each ligand heavy atom remains an individual token. Thus, the protein is
+strongly coarse-grained but the ligand retains its heavy-atom graph.
+
+\subsection{A learned map of pairwise geometry}
+
+The central object is a pair representation $z$. For every pair of tokens,
+$z_{ij}$ stores a learned description of their relationship. Protein--ligand
+entries answer questions such as ``is residue 42 likely to be close to ligand
+atom 5?'' A streamlined PairFormer updates this matrix using triangle
+attention and triangle multiplication, operations that allow relationships
+among three tokens to constrain one another.
+
+The trunk predicts a categorical distance distribution,
+\[
+  P(d_{ij}\in\text{distance bin }k),
+\]
+rather than one exact coordinate set. From this distribution, Nesso-1 obtains
+an expected distance and an entropy that measures uncertainty in the predicted
+protein--ligand geometry.
+
+\subsection{Finding the relevant protein region}
+
+The first trunk pass considers the full protein. Subsequent recycling steps
+retain protein tokens predicted to lie within approximately 22~\AA{} of the
+ligand. The affinity module uses a tighter crop: residues predicted to lie
+within approximately 15~\AA{} of any ligand heavy atom. In this sense, Nesso-1
+infers a likely interaction region internally rather than requiring the user to
+provide a pocket.
+
+\subsection{Affinity outputs}
+
+A second, smaller PairFormer---the affinity module---combines the protein
+language-model embeddings, ligand features, pair representation $z$, and its
+predicted distance information. It produces two distinct outputs:
+
+\begin{enumerate}
+  \item a binder likelihood for hit-identification classification; and
+  \item a continuous affinity or potency score for compound ranking.
+\end{enumerate}
+
+The continuous output is not a calculated $\Delta G_{\mathrm{bind}}$. During
+training, $K_i$, $K_d$, IC$_{50}$, and EC$_{50}$ labels are treated
+interchangeably to accommodate incomplete and heterogeneous public assay
+metadata. It should therefore be interpreted as an assay-trained
+affinity-like score, with particular value for ranking compounds measured in
+comparable settings.
+
+\subsection{The essential contrast with Boltz-2}
+
+\begin{center}
+\begin{tabular}{p{0.21\textwidth}p{0.34\textwidth}p{0.34\textwidth}}
+\toprule
+ & \textbf{Boltz-2} & \textbf{Nesso-1} \\
+\midrule
+Structural decoder & Full-atom diffusion producing explicit coordinates & No
+heavy-atom diffusion; predicts coarse pair distances \\
+Protein context & MSA can be used & ESM-2 embeddings; no MSA \\
+Primary structural output & Full biomolecular complex & Coarse interface
+representation; approximate poses can be reconstructed \\
+Design priority & Detailed structure plus affinity & Rapid affinity screening \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Removing full-atom diffusion is the main source of Nesso-1's speed. The cost is
+that it cannot resolve side-chain conformations, hydrogen-bond geometry,
+steric clashes, or water-mediated interactions with atomistic precision. Its
+architectural hypothesis is that coarse interface geometry may be sufficient
+for rapid affinity ranking, even though full physical detail remains important
+for mechanistic interpretation and late-stage optimization.

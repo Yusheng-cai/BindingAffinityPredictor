@@ -1,0 +1,119 @@
+\section{Boltz-2 architecture: a high-level view}
+
+Boltz-2 combines two related tasks: it first predicts a full-atom
+biomolecular complex and then uses the predicted interface to estimate whether
+the ligand binds and how strong that binding may be \citep{passaro2025boltz2}.
+The model is easiest to understand as four connected components: a trunk, a
+diffusion decoder, a confidence module, and an affinity module.
+
+\begin{center}
+\fbox{\parbox{0.92\textwidth}{\centering
+Molecular inputs
+$\longrightarrow$ representation trunk
+$\longrightarrow$ full-atom diffusion
+$\longrightarrow$ candidate 3D complexes
+$\longrightarrow$ confidence ranking
+$\longrightarrow$ binder probability + continuous affinity score}}
+\end{center}
+
+\subsection{Inputs and molecular representation}
+
+For a protein--ligand example, the basic inputs are the protein sequence and a
+ligand description such as SMILES. The model can also use a protein
+multiple-sequence alignment, structural templates, experimental-method labels,
+and user-provided contact or pocket constraints. An atom-attention encoder
+combines detailed atomic features into token representations. Protein residues
+are represented as residue-level tokens, whereas ligand heavy atoms are
+represented individually.
+
+The trunk maintains two complementary learned objects:
+
+\begin{itemize}
+  \item a \emph{single representation} $s_i$ describing each token; and
+  \item a \emph{pair representation} $z_{ij}$ describing the relationship
+        between every pair of tokens.
+\end{itemize}
+
+Template and MSA information are incorporated before a 64-layer PairFormer
+updates these representations. Recycling sends the updated representations
+through the trunk repeatedly so that sequence, molecular identity, and
+putative geometry can be refined together.
+
+\subsection{Full-atom diffusion decoder}
+
+The trunk does not itself provide the final coordinates. Boltz-2 begins the
+structure-generation stage with noisy, effectively random atomic coordinates
+and applies a learned denoising module repeatedly. At a schematic level,
+\[
+  \mathbf{x}_{t}
+  \longrightarrow
+  \mathbf{x}_{t-1}
+  \longrightarrow \cdots \longrightarrow
+  \mathbf{x}_{0},
+\]
+where the trunk representations condition every denoising step. The final
+$\mathbf{x}_0$ contains explicit coordinates for the modeled atoms in the
+protein--ligand complex. Because the initial coordinates and sampling process
+are stochastic, several candidate complexes can be generated from the same
+input.
+
+Optional steering potentials can bias this reverse-diffusion process toward
+user constraints or improved physical plausibility. These potentials guide
+sampling; they do not turn the neural decoder into a molecular-dynamics or
+free-energy calculation.
+
+\subsection{Confidence module}
+
+A separate, smaller PairFormer examines the final trunk representation and a
+predicted coordinate set. It estimates confidence quantities such as local and
+pairwise errors and interface confidence. These values help rank alternative
+structure samples. Confidence answers ``how trustworthy is this predicted
+geometry?''; it is not itself a measurement of binding strength.
+
+\subsection{Affinity module}
+
+The affinity calculation uses both the learned trunk representation and the
+predicted structure. In the reported inference protocol, five structures are
+generated and the candidate with the highest protein--ligand interface
+confidence is selected. A specialized PairFormer then focuses on
+protein--ligand and intra-ligand pairs, combines $z_{ij}$ with a distogram
+derived from the selected coordinates, and pools the interface into one global
+representation.
+
+Two multilayer-perceptron heads produce distinct outputs:
+
+\begin{enumerate}
+  \item a binding-likelihood probability intended for binder/non-binder
+        classification; and
+  \item a continuous, logarithmic affinity value intended mainly for ranking
+        related ligands against the same target.
+\end{enumerate}
+
+The continuous head is trained on a mixture of $K_i$, $K_d$, and IC$_{50}$
+measurements standardized to micromolar units. It should be interpreted as an
+IC$_{50}$-like measure of binding strength, not as an equilibrium constant from
+one uniform assay and not as a calculated $\Delta G_{\mathrm{bind}}$.
+
+\subsection{What Boltz-2 gives us---and what it does not}
+
+Boltz-2 therefore provides two kinds of predictions that must remain separate:
+
+\begin{center}
+\begin{tabular}{p{0.27\textwidth}p{0.61\textwidth}}
+\toprule
+\textbf{Output family} & \textbf{Scientific interpretation} \\
+\midrule
+Structure and confidence & A sampled full-atom complex and the model's
+estimated uncertainty in that geometry \\
+Binder likelihood & A learned classification probability for interaction \\
+Continuous affinity & A heterogeneous-assay, IC$_{50}$-like ranking score \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The affinity estimate can fail when the model selects the wrong pocket,
+misplaces the ligand or protein conformation, or omits important context. The
+released affinity module does not explicitly model contributions from water,
+ions, essential cofactors, or all binding partners. Full-atom coordinates make
+mechanistic inspection possible, but they do not guarantee physical validity
+or thermodynamic accuracy.

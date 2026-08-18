@@ -1,0 +1,2 @@
+sample_id,target_id,pdb_id,boltz2_rmsd_A,flashbind_rmsd_A
+jnk1_17124-1,jnk1,2GMX,0.50185189,0.608858596306388

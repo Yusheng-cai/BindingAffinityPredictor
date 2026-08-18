@@ -1,0 +1,75 @@
+\documentclass[11pt]{article}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[numbers]{natbib}
+\usepackage{microtype}
+
+\definecolor{accent}{HTML}{2F6F7E}
+\hypersetup{colorlinks=true,linkcolor=accent,citecolor=accent,urlcolor=accent}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+
+\title{\textbf{8\_16\_2026\_Update}\\
+Binding Affinity Predictor}
+\author{yqc5415}
+\date{August 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Executive summary}
+
+The long-term objective is a controlled comparison of Boltz-2, Nesso-1, and
+FlashBind: what each model receives, what quantity it predicts, and how its
+claims survive a common benchmark. Boltz-2 motivates particular care because
+cofolded structure confidence and its affinity-related outputs are distinct
+objects \citep{passaro2025boltz2}.
+
+This update first develops a high-level picture of Boltz-2 and then uses it to
+explain Nesso-1. Boltz-2 combines a learned representation trunk, full-atom
+diffusion, confidence estimation, and affinity prediction. Nesso-1 retains a
+coarse representation of protein--ligand geometry while removing the expensive
+full-atom decoder, making it primarily a rapid affinity-screening model
+\citep{shenoy2026nesso1}.
+
+\section{Scientific questions}
+
+\begin{enumerate}
+  \item What molecular information do Boltz-2 and Nesso-1 receive?
+  \item How does each model represent the protein, ligand, and their possible
+        geometry?
+  \item Why does Boltz-2 generate full-atom coordinates while Nesso-1 does not?
+  \item What do their binder and continuous-affinity outputs mean?
+  \item What physical detail does Nesso-1 sacrifice to obtain speed?
+\end{enumerate}
+
+\input{sections/boltz2_architecture}
+
+\input{sections/nesso_architecture}
+
+\section{Next steps}
+
+\begin{enumerate}
+  \item Develop an equally clear architecture summary for FlashBind.
+  \item Define a common native-output schema without silently equating binder
+        probability, heterogeneous potency labels, and binding free energy.
+  \item Choose a small benchmark with exact protein constructs, ligand
+        stereochemistry, assay identity, qualifiers, and experimental units.
+\end{enumerate}
+
+\section*{Reproducibility}
+
+The architecture descriptions are grounded in the downloaded version-1
+technical reports for Boltz-2 and Nesso-1. The accompanying manifest records
+the project Git revision, Overleaf revision, citation keys, and compiled PDF
+checksum.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

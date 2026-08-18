@@ -1,0 +1,43 @@
+id: exp010_flashbind_crystal_pose
+title: FlashBind released FABind+ pose recovery on 16 exact FEP+4 cocrystal pairs
+status: complete
+question: How accurately do the authors' released FABind+ poses used by FlashBind reproduce experimentally deposited ligand poses, under the same pose metric used for Boltz-2?
+
+manifest: data/manifests/fepplus4_crystal16.json
+benchmark_config: configs/benchmarks/fepplus4_crystal16_pose.yaml
+model_config: configs/models/flashbind.yaml
+parent_affinity_experiment: exp009_flashbind_fepplus4_released_poses
+
+prediction_source:
+  source: authors_released_fep4_archive
+  protein_structure: one_fixed_receptor_PDB_per_target
+  ligand_pose: one_released_FABind_plus_SDF_pose_per_pair
+  FABind_plus_rerun: false
+  released_pose_generation_seed: unknown_not_provided
+  reference_coordinates_used_during_prediction: false
+
+comparison:
+  paired_model: boltz2_msa1024_seed42
+  paired_experiment: exp008_boltz2_crystal_pose
+  pairs: 16
+  identical_reference_manifest: true
+  identical_alignment_and_ligand_mapping_policy: true
+
+stopping_rule: Analyze all 16 declared pairs and preserve every parsing, mapping, or scoring failure without silently excluding it.
+
+interpretation_limits:
+  - This measures the released FABind+ poses supplied with FlashBind, not a fresh rerun of FABind+.
+  - The fixed receptor coordinates are experimental structures supplied by the authors, although the crystallographic ligand coordinates are not used.
+  - These public structures may overlap model training and do not constitute prospective validation.
+
+observed_status_2026_08_17:
+  complete_pairs: 16
+  failed_pairs: 0
+  median_pocket_aligned_ligand_rmsd_angstrom: 0.634337861775331
+  mean_pocket_aligned_ligand_rmsd_angstrom: 0.6507138584155987
+  pose_success_below_2_angstrom: 16
+  pose_success_fraction: 1.0
+  flashbind_lower_rmsd_than_boltz2_pairs: 9
+  boltz2_lower_rmsd_than_flashbind_pairs: 7
+  raw_metrics: runs/exp010_flashbind_crystal_pose/released_poses/pose_metrics.json
+  reviewed_summary: reports/exp010_flashbind_crystal_pose/README.md

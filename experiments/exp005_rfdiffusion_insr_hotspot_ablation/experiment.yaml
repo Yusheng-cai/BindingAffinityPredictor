@@ -1,0 +1,131 @@
+id: exp005_rfdiffusion_insr_hotspot_ablation
+title: Matched RFdiffusion hotspot-conditioning ablation on the insulin-receptor example
+status: completed
+question: How does removing target hotspot labels change RFdiffusion backbone location and geometry when every other configured variable is held fixed?
+hypothesis: Hotspot-conditioned designs will place their binder backbones closer to the A59/A83/A91 region than hotspot-free designs, while both arms remain structurally diverse.
+
+model: configs/models/rfdiffusion.yaml
+
+target:
+  source_path: external/src/RFdiffusion/examples/input_pdbs/insulin_target.pdb
+  sha256: b5ab52ee165f33b3d467407ecc3607cb5b70fb6c2972cf2d6ed7ff3294153480
+  retained_residues: A1-150
+  target_chain: A
+  binder_chain: B
+
+experimental_reference:
+  manifest: data/manifests/4oga_insulin_receptor_site1.json
+  pdb_id: 4OGA
+  raw_path: data/raw/experimental_references/4OGA.pdb
+  sha256: 98f5dd550455403046e2e683e674c8bcd3efec227bddb2a312af0c97a2faa7a8
+  alignment: 4OGA chain E residues 6-155 to RFdiffusion target chain A residues 1-150 by C-alpha Kabsch fit
+  included_components: [insulin_chain_A, insulin_chain_B_modeled_residues, receptor_alphaCT_chain_F]
+  excluded_components: [Fab_chains_C_D, glycans]
+
+shared_rfdiffusion_settings:
+  contig: "[A1-150/0 70-100]"
+  checkpoint: Complex_base_ckpt.pt
+  checkpoint_sha256: 76e4e260aefee3b582bd76b77ab95d2592e64f00c51bf344968ab9239f3250bc
+  deterministic: true
+  design_indices_and_seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+  num_designs_per_arm: 10
+  diffusion_steps: 50
+  final_step: 1
+  noise_scale_ca: 0
+  noise_scale_frame: 0
+  write_trajectory: false
+
+arms:
+  guided:
+    hotspots: [A59, A83, A91]
+    seed_42_source: runs/exp003_rfdiffusion_insr_binder_smoke/rfdiffusion/seed42/raw
+    seeds_43_51_source: runs/exp004_rfdiffusion_insr_structural_diversity/rfdiffusion/raw
+  unguided:
+    hotspots: null
+    output_root: runs/exp005_rfdiffusion_insr_hotspot_ablation/rfdiffusion/no_hotspots/raw
+
+comparison_policy:
+  align_on: all_target_chain_A_CA_atoms
+  nominal_hotspots: [A59, A83, A91]
+  ca_contact_threshold_angstrom: 10.0
+  clash_threshold_angstrom: 2.0
+  retain_all_paired_seeds: true
+  metrics:
+    - minimum_binder_CA_distance_to_each_nominal_hotspot
+    - binder_center_to_hotspot_centroid_distance
+    - target_contact_residue_set
+    - matched_contact_set_jaccard
+    - target_relative_pose_chamfer_distance
+    - intrinsic_resampled_trace_rmsd
+
+interpretation:
+  predicts_binding_affinity: false
+  hotspot_free_mode_is_validated_pocket_discovery: false
+  confidence_is_binding_probability: false
+  sequence_design_included: false
+
+provenance:
+  repository_revision_at_definition: 122da1b0c3d87fb616aa1f56a4f19ae588c4ae71
+  repository_worktree_dirty: true
+  source_revision: 86507b6538f51fce57b5a72477165f03999ed7ae
+  environment: external/envs/rfdiffusion
+  gpu: NVIDIA GeForce RTX 3080
+  exact_unguided_command: >-
+    /usr/bin/time -v env -u PYTHONPATH DGLBACKEND=pytorch HYDRA_FULL_ERROR=1
+    external/envs/rfdiffusion/bin/python external/src/RFdiffusion/scripts/run_inference.py
+    inference.output_prefix=/mnt/hdd2/BindingAffinityPredictor/runs/exp005_rfdiffusion_insr_hotspot_ablation/rfdiffusion/no_hotspots/raw/design_ppi
+    inference.input_pdb=/mnt/hdd2/BindingAffinityPredictor/external/src/RFdiffusion/examples/input_pdbs/insulin_target.pdb
+    'contigmap.contigs=[A1-150/0 70-100]'
+    inference.num_designs=10 inference.design_startnum=42 inference.deterministic=True
+    inference.ckpt_override_path=/mnt/hdd2/BindingAffinityPredictor/external/checkpoints/RFdiffusion/Complex_base_ckpt.pt
+    inference.model_directory_path=/mnt/hdd2/BindingAffinityPredictor/external/checkpoints/RFdiffusion
+    inference.schedule_directory_path=/mnt/hdd2/BindingAffinityPredictor/external/cache/rfdiffusion/schedules
+    inference.write_trajectory=False denoiser.noise_scale_ca=0 denoiser.noise_scale_frame=0
+
+stopping_rule: Generate exactly ten hotspot-free designs, seeds 42-51, then stop model execution and analyze all paired designs.
+
+execution:
+  started_at: 2026-08-15T11:27:43-04:00
+  completed_at: 2026-08-15T11:37:56-04:00
+  wall_seconds: 613.16
+  maximum_resident_kib: 5356480
+  exit_status: 0
+  completed_designs: 10
+  failed_designs: 0
+  raw_output_root: runs/exp005_rfdiffusion_insr_hotspot_ablation/rfdiffusion/no_hotspots/raw
+  preflight_failure:
+    occurred_at: 2026-08-15T11:26:12-04:00
+    exit_status: 1
+    generated_designs: 0
+    reason: Omitting hotspots triggered RFdiffusion's automatic selection of unavailable Base_ckpt.pt.
+    resolution: Explicitly override the checkpoint with the matched Complex_base_ckpt.pt used by the guided arm.
+
+observed_results:
+  sampled_lengths: [90, 71, 83, 78, 98, 81, 87, 72, 85, 77]
+  pairs_with_guided_minimum_hotspot_distance_smaller: 9
+  pairs_total: 10
+  guided_minimum_hotspot_distance_median_angstrom: 6.3835
+  unguided_minimum_hotspot_distance_median_angstrom: 9.7155
+  guided_center_to_hotspot_centroid_median_angstrom: 14.9260
+  unguided_center_to_hotspot_centroid_median_angstrom: 17.4138
+  matched_contact_jaccard_median: 0.2447
+  matched_pose_chamfer_median_angstrom: 9.4588
+  matched_center_displacement_median_angstrom: 16.3174
+  matched_intrinsic_trace_rmsd_median_angstrom: 14.2542
+  guided_designs_with_backbone_pairs_below_2_angstrom: 0
+  unguided_designs_with_backbone_pairs_below_2_angstrom: 0
+  experimental_4oga_l1_alignment_rmsd_angstrom: 0.4234
+  guided_median_experimental_insulin_CA_coverage_within_8_angstrom: 0.5833
+  unguided_median_experimental_insulin_CA_coverage_within_8_angstrom: 0.4524
+  guided_median_experimental_alphaCT_CA_coverage_within_8_angstrom: 0.8000
+  unguided_median_experimental_alphaCT_CA_coverage_within_8_angstrom: 0.4000
+
+tracked_outputs:
+  paired_table: reports/exp005_rfdiffusion_insr_hotspot_ablation/paired_designs.csv
+  summary: reports/exp005_rfdiffusion_insr_hotspot_ablation/summary.json
+  experimental_reference_table: reports/exp005_rfdiffusion_insr_hotspot_ablation/experimental_reference_4oga.csv
+  experimental_reference_summary: reports/exp005_rfdiffusion_insr_hotspot_ablation/experimental_reference_4oga.json
+  reviewed_report: reports/exp005_rfdiffusion_insr_hotspot_ablation/README.md
+  analysis_script: scripts/analyze_rfdiffusion_hotspot_ablation.py
+  experimental_reference_analysis_script: scripts/analyze_insr_experimental_reference.py
+  interactive_notebook: notebooks/real_rfdiffusion_proteinmpnn_insr.ipynb

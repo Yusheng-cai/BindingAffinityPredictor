@@ -1,0 +1,49 @@
+id: fepplus4_crystal16_pose
+status: protocol_frozen
+manifest: data/manifests/fepplus4_crystal16.json
+
+question: How accurately does a predicted ligand pose reproduce the 16 exact FEP+4 cocrystal structures, after aligning only the corresponding protein coordinates?
+
+prediction_source_policy:
+  declared_by_each_experiment: true
+  reference_coordinates_used_during_prediction: false
+  requirement: score_one_declared_pose_per_pair_without_top_k_selection
+
+reference_policy:
+  source: RCSB_PDB_mmcif
+  exact_ligand_identity: full_InChIKey_match_to_fepplus4_manifest
+  exact_target_identity: target_UniProt_match
+  model: first_coordinate_model
+  alternate_location: highest_occupancy_per_atom_name
+  hydrogens: excluded
+
+alignment:
+  target_chain: primary_kinase_chain_only
+  residue_mapping: global_pairwise_sequence_alignment_of_observed_CA_residues
+  global_fit_atoms: all_sequence_mapped_CA_atoms
+  pocket_definition: reference_protein_residue_with_any_heavy_atom_within_5_angstrom_of_reference_ligand
+  pocket_fit_atoms: sequence_mapped_CA_atoms_of_reference_pocket_residues
+  prohibited: ligand_atoms_must_not_contribute_to_either_protein_fit
+
+ligand_mapping:
+  graph_source: RCSB_CCD
+  stereochemistry: required
+  symmetry_policy: enumerate_chirality_compatible_graph_isomorphisms_and_report_minimum_unfitted_RMSD
+  note: The protein-derived rigid transform is held fixed while ligand atom mappings are evaluated.
+
+primary_metric:
+  name: symmetry_corrected_ligand_heavy_atom_RMSD_after_reference_pocket_CA_alignment
+  unit: angstrom
+  direction: lower_is_better
+  descriptive_success_threshold_angstrom: 2.0
+
+secondary_metrics:
+  - symmetry_corrected_ligand_heavy_atom_RMSD_after_global_kinase_CA_alignment
+  - fitted_global_kinase_CA_RMSD
+  - fitted_reference_pocket_CA_RMSD
+  - native_contact_precision_recall_and_Jaccard_at_4_angstrom
+  - ligand_internal_conformation_RMSD
+
+interpretation:
+  scope: retrospective_in_distribution_pose_reproduction
+  warning: These structures predate the released model and may overlap its training data; success is not evidence of prospective generalization.

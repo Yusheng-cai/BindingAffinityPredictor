@@ -1,0 +1,95 @@
+{
+  "manifest_id": "fepplus4_87_da7c337",
+  "aggregation": "per-target metrics; compound-count-weighted target average",
+  "temperature_k": 298.15,
+  "bootstrap": {
+    "iterations": 2000,
+    "seed": 20260817
+  },
+  "models": {
+    "boltz2": {
+      "complete_samples": 16,
+      "targets_analyzed": [
+        "tyk2"
+      ],
+      "per_target": {
+        "tyk2": {
+          "n": 16,
+          "pearson_r": 0.8074042575380007,
+          "spearman_rho": 0.7794117647058825,
+          "kendall_tau": 0.6166666666666666,
+          "pairwise_mae_kcal_mol": 0.9042148534519576,
+          "mae_kcal_mol": 1.6814552238357048,
+          "centered_mae_kcal_mol": 0.6631320112589212
+        }
+      },
+      "compound_weighted": {
+        "pearson_r": 0.8074042575380007,
+        "spearman_rho": 0.7794117647058825,
+        "kendall_tau": 0.6166666666666666,
+        "pairwise_mae_kcal_mol": 0.9042148534519576,
+        "mae_kcal_mol": 1.6814552238357048,
+        "centered_mae_kcal_mol": 0.6631320112589212
+      },
+      "bootstrap_95_percent": {
+        "pearson_r": {
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "seed": 20260817,
+          "lower_95": 0.5422002605978024,
+          "median": 0.8077497863216235,
+          "upper_95": 0.9244036760742242
+        },
+        "spearman_rho": {
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "seed": 20260817,
+          "lower_95": 0.39936225346061416,
+          "median": 0.7801204819277108,
+          "upper_95": 0.9491074854761414
+        },
+        "kendall_tau": {
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "seed": 20260817,
+          "lower_95": 0.2972722722722723,
+          "median": 0.6296296296296297,
+          "upper_95": 0.8558558558558559
+        },
+        "pairwise_mae_kcal_mol": {
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "seed": 20260817,
+          "lower_95": 0.6361180278600012,
+          "median": 0.853732577041717,
+          "upper_95": 1.0515929504830086
+        },
+        "mae_kcal_mol": {
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "seed": 20260817,
+          "lower_95": 1.3325114752400118,
+          "median": 1.6718128538238197,
+          "upper_95": 2.047425071513742
+        },
+        "centered_mae_kcal_mol": {
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "seed": 20260817,
+          "lower_95": 0.44061846105772395,
+          "median": 0.6305952060944842,
+          "upper_95": 0.8038279364054295
+        }
+      }
+    }
+  },
+  "paper_reference": {
+    "boltz2": {
+      "weighted_pearson_r": 0.66,
+      "weighted_kendall_tau": 0.48
+    },
+    "nesso1": {
+      "weighted_pearson_r": 0.8
+    }
+  }
+}

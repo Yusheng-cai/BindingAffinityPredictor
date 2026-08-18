@@ -1,0 +1,25 @@
+{
+  "id": "4oga_insulin_receptor_site1",
+  "pdb_id": "4OGA",
+  "title": "Insulin in complex with site 1 of the human insulin receptor",
+  "source_url": "https://files.rcsb.org/download/4OGA.pdb",
+  "downloaded_at": "2026-08-15",
+  "raw_path": "data/raw/experimental_references/4OGA.pdb",
+  "sha256": "98f5dd550455403046e2e683e674c8bcd3efec227bddb2a312af0c97a2faa7a8",
+  "experimental_method": "X-ray diffraction",
+  "resolution_angstrom": 3.5,
+  "chains": {
+    "A": "human insulin A chain, residues A1-A21 modeled",
+    "B": "human insulin B chain, residues B7-B27 modeled",
+    "E": "human insulin receptor L1-CR construct; E6-E155 aligns to RFdiffusion target A1-A150",
+    "F": "human insulin receptor alphaCT peptide; F705-F719 modeled",
+    "C_D": "Fab 83-7 crystallization chains; excluded from biological comparison"
+  },
+  "numbering_map": {
+    "rfdiffusion_target_A1": "4OGA E6; UniProt P06213 residue 33; mature receptor residue 6",
+    "rfdiffusion_target_A59": "4OGA E64; UniProt P06213 residue 91; mature receptor Phe64",
+    "rfdiffusion_target_A83": "4OGA E88; UniProt P06213 residue 115; mature receptor Phe88",
+    "rfdiffusion_target_A91": "4OGA E96; UniProt P06213 residue 123; mature receptor Phe96"
+  },
+  "interpretation": "Experimental site-1 geometry reference only; not an affinity label or validation of a generated binder."
+}

@@ -1,0 +1,59 @@
+id: exp002_boltz2_gal3_galactose
+title: Boltz-2 human galectin-3 CRD–beta-D-galactose structural smoke test
+status: completed_pending_review
+question: Can pinned Boltz-2 cofold the human galectin-3 CRD with beta-D-galactose and recover the post-release 9D63 binding pose while exposing auditable intermediate artifacts?
+hypothesis: The run will complete locally and place beta-D-galactose in the canonical carbohydrate-recognition site, but the native affinity values will remain uninterpretable as accuracy measurements because no matched quantitative assay label is available.
+
+manifest: data/manifests/exp002_gal3_9d63_galactose.json
+model_config: configs/models/boltz2.yaml
+model_input: experiments/exp002_boltz2_gal3_galactose/inputs/gal3_9d63_gal.yaml
+
+primary_run:
+  seed: 42
+  structure_diffusion_samples: 1
+  structure_sampling_steps: 200
+  structure_recycling_steps: 3
+  affinity_diffusion_samples: 5
+  affinity_sampling_steps: 200
+  affinity_recycling_steps: 5
+  msa: colabfold_mmseqs2_server
+  templates: none
+  constraints: none
+  reference_coordinates_available_during_inference: false
+  write_full_pae: true
+  write_full_pde: true
+  write_embeddings: true
+
+resolved_implementation_notes:
+  - At pinned revision b1ebfc46ecf57f5414e0d1a6f9027bbb122c53bc the CLI applies --recycling_steps to the structure pass, while the separate affinity pass constructs predict_args with recycling_steps fixed at 5.
+  - MSA subsampling was false in the resolved checkpoint hyperparameters for this run; all 6387 parsed MSA sequences were presented to the MSA module, below max_msa_seqs 8192.
+
+readouts:
+  pipeline:
+    - parsed_input_and_ligand_chemistry
+    - msa_depth_and_coverage
+    - token_atom_and_feature_dimensions
+    - trunk_embedding_dimensions_and_summaries
+    - diffusion_and_recycling_settings
+    - runtime_and_peak_gpu_memory
+  native:
+    - structure_mmcif
+    - confidence_json
+    - plddt_npz
+    - pae_npz
+    - pde_npz
+    - affinity_json
+  post_prediction_structure:
+    - protein_ca_rmsd_angstrom
+    - symmetry_corrected_ligand_heavy_atom_rmsd_angstrom
+    - ligand_contact_recovery
+    - ligand_geometry_checks
+
+forbidden_claims:
+  - affinity_accuracy
+  - affinity_calibration
+  - affinity_ranking
+  - selectivity
+  - proof_of_training_independence
+
+stopping_rule: Stop after one complete seed-42 prediction and audit; inspect results before adding seeds, ligands, or protocol variants.

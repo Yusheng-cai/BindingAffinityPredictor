@@ -1,0 +1,118 @@
+id: exp004_rfdiffusion_insr_structural_diversity
+title: RFdiffusion insulin-receptor ten-seed structural-diversity panel
+status: completed
+question: How much structural variation does the frozen insulin-receptor RFdiffusion protocol produce across ten deterministic random seeds?
+hypothesis: Independent seeds will produce multiple binder lengths, backbone shapes, and target-relative poses despite identical target and hotspot conditioning.
+
+model: configs/models/rfdiffusion.yaml
+reference_experiment: experiments/exp003_rfdiffusion_insr_binder_smoke/experiment.yaml
+
+target:
+  source_path: external/src/RFdiffusion/examples/input_pdbs/insulin_target.pdb
+  sha256: b5ab52ee165f33b3d467407ecc3607cb5b70fb6c2972cf2d6ed7ff3294153480
+  retained_residues: A1-150
+  reference_available_during_generation: true
+
+sampling:
+  seeds_and_design_numbers: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+  seed_42_reused_from: runs/exp003_rfdiffusion_insr_binder_smoke/rfdiffusion/seed42/raw/design_ppi_42.pdb
+  newly_generated_design_numbers: [43, 44, 45, 46, 47, 48, 49, 50, 51]
+  contig: "[A1-150/0 70-100]"
+  hotspots: [A59, A83, A91]
+  checkpoint: Complex_base_ckpt.pt
+  deterministic: true
+  diffusion_steps: 50
+  final_step: 1
+  noise_scale_ca: 0
+  noise_scale_frame: 0
+  write_trajectory: false
+
+prespecified_metrics:
+  per_design:
+    - sampled_binder_length_residues
+    - final_binder_mean_rfdiffusion_plddt_like_output
+    - binder_ca_radius_of_gyration_angstrom
+    - target_residues_with_binder_ca_within_10_angstrom
+    - minimum_binder_ca_distance_to_each_configured_hotspot_angstrom
+    - interchain_backbone_heavy_atom_pairs_below_2_angstrom
+  pairwise:
+    - target_aligned_binder_center_of_mass_distance_angstrom
+    - target_aligned_binder_ca_symmetric_chamfer_distance_angstrom
+    - target_contact_residue_jaccard_similarity
+    - intrinsic_resampled_trace_kabsch_rmsd_angstrom
+
+metric_definitions:
+  target_alignment: Kabsch least-squares fit of the 150 target C-alpha coordinates to seed 42 before target-relative comparisons.
+  ca_contact_set: Target residues having at least one binder C-alpha within 10 angstrom.
+  symmetric_chamfer: Mean of nearest-neighbor C-alpha distances in both directions, averaged; retains target-relative position after target alignment and tolerates different binder lengths.
+  intrinsic_trace_rmsd: Each ordered binder C-alpha trace is resampled at 64 equally spaced arc-length positions, then optimally Kabsch-aligned; removes global rotation and translation but is a descriptive curve-shape metric, not TM-score.
+  backbone_close_pair: Interchain N, C-alpha, C, or O atom pair closer than 2 angstrom; side chains are absent from RFdiffusion's poly-glycine output.
+
+success_criteria:
+  - all_ten_final_pdbs_parse
+  - all_target_chains_have_150_residues
+  - all_binder_chains_have_70_to_100_residues
+  - all_runs_use_the_pinned_checkpoint_and_gpu
+  - compact_per_design_and_pairwise_tables_are_written
+  - website_displays_all_ten_designs_without_calling_them_predictions_of_binding
+
+interpretation_limits:
+  - ten_samples_are_exploratory_not_a_converged_distribution
+  - pairwise_distances_are_descriptive_not_benchmark_scores
+  - rfdiffusion_confidence_is_not_affinity_or_probability_of_binding
+  - ca_contacts_do_not_establish_favorable_atomic_interactions
+  - no_sequence_design_or_independent_structure_prediction_is_run_for_seeds_43_to_51
+
+stopping_rule: Stop after exactly ten total backbones including reused seed 42, compute the prespecified metrics, and require review before increasing the ensemble or applying sequence/affinity filters.
+
+execution:
+  completed_at: 2026-08-11
+  repository_revision: 122da1b0c3d87fb616aa1f56a4f19ae588c4ae71
+  repository_worktree_dirty: true
+  gpu: NVIDIA GeForce RTX 3080
+  environment: external/envs/rfdiffusion
+  source_revision: 86507b6538f51fce57b5a72477165f03999ed7ae
+  checkpoint_sha256: 76e4e260aefee3b582bd76b77ab95d2592e64f00c51bf344968ab9239f3250bc
+  new_designs_wall_seconds: 556.63
+  new_designs_maximum_resident_kib: 5385508
+  new_designs_exit_status: 0
+  exact_command: >-
+    env -u PYTHONPATH DGLBACKEND=pytorch HYDRA_FULL_ERROR=1
+    external/envs/rfdiffusion/bin/python external/src/RFdiffusion/scripts/run_inference.py
+    inference.output_prefix=/mnt/hdd2/BindingAffinityPredictor/runs/exp004_rfdiffusion_insr_structural_diversity/rfdiffusion/raw/design_ppi
+    inference.input_pdb=/mnt/hdd2/BindingAffinityPredictor/external/src/RFdiffusion/examples/input_pdbs/insulin_target.pdb
+    'contigmap.contigs=[A1-150/0 70-100]' 'ppi.hotspot_res=[A59,A83,A91]'
+    inference.num_designs=9 inference.design_startnum=43 inference.deterministic=True
+    inference.model_directory_path=/mnt/hdd2/BindingAffinityPredictor/external/checkpoints/RFdiffusion
+    inference.schedule_directory_path=/mnt/hdd2/BindingAffinityPredictor/external/cache/rfdiffusion/schedules
+    inference.write_trajectory=False denoiser.noise_scale_ca=0 denoiser.noise_scale_frame=0
+
+observed_results:
+  completed_designs: 10
+  failed_designs: 0
+  sampled_lengths: [90, 71, 83, 78, 98, 81, 87, 72, 85, 77]
+  length_range_residues: [71, 98]
+  mean_length_residues: 82.2
+  final_binder_confidence_range: [0.9909, 0.9929]
+  median_intrinsic_trace_rmsd_angstrom: 13.3646
+  intrinsic_trace_rmsd_range_angstrom: [4.6763, 16.4472]
+  median_pose_chamfer_angstrom: 5.0806
+  pose_chamfer_range_angstrom: [2.6564, 10.3972]
+  median_center_of_mass_distance_angstrom: 6.3678
+  center_of_mass_distance_range_angstrom: [0.5370, 14.1963]
+  median_contact_jaccard_similarity: 0.5000
+  contact_jaccard_range: [0.3611, 0.7812]
+  target_contact_residue_count_range: [20, 35]
+  designs_with_backbone_pairs_below_2_angstrom: 0
+  maximum_target_alignment_rmsd_angstrom: 0.0283
+  closest_intrinsic_shape_pair: {seeds: [42, 48], rmsd_angstrom: 4.6763}
+  most_different_intrinsic_shape_pair: {seeds: [42, 43], rmsd_angstrom: 16.4472}
+  closest_target_relative_pose_pair: {seeds: [49, 50], chamfer_angstrom: 2.6564}
+  most_different_target_relative_pose_pair: {seeds: [43, 50], chamfer_angstrom: 10.3972}
+
+tracked_outputs:
+  per_design_table: reports/exp004_rfdiffusion_insr_structural_diversity/per_design.csv
+  pairwise_table: reports/exp004_rfdiffusion_insr_structural_diversity/pairwise.csv
+  summary: reports/exp004_rfdiffusion_insr_structural_diversity/summary.json
+  browser_data: docs/rfdiffusion_binder_tutorial/diversity-data.js
+  analysis_script: scripts/analyze_rfdiffusion_diversity.py

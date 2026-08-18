@@ -1,0 +1,129 @@
+{
+  "manifest_id": "fepplus4_87_da7c337",
+  "aggregation": "per-target metrics; compound-count-weighted target average",
+  "temperature_k": 298.15,
+  "bootstrap": {
+    "iterations": 2000,
+    "seed": 20260817
+  },
+  "models": {
+    "flashbind": {
+      "complete_samples": 87,
+      "targets_analyzed": [
+        "cdk2",
+        "jnk1",
+        "p38",
+        "tyk2"
+      ],
+      "per_target": {
+        "cdk2": {
+          "n": 16,
+          "pearson_r": 0.6115412321774817,
+          "spearman_rho": 0.6411764705882352,
+          "kendall_tau": 0.43333333333333335,
+          "pairwise_mae_kcal_mol": 1.177399724714995,
+          "mae_kcal_mol": 0.7746495143925248,
+          "centered_mae_kcal_mol": 0.7537325798312283
+        },
+        "tyk2": {
+          "n": 16,
+          "pearson_r": 0.1335116252511943,
+          "spearman_rho": 0.14705882352941177,
+          "kendall_tau": 0.08333333333333334,
+          "pairwise_mae_kcal_mol": 1.502470211166738,
+          "mae_kcal_mol": 1.075718766586987,
+          "centered_mae_kcal_mol": 1.0212442783919617
+        },
+        "jnk1": {
+          "n": 21,
+          "pearson_r": 0.5462022504711438,
+          "spearman_rho": 0.5781098063915159,
+          "kendall_tau": 0.4248222122875161,
+          "pairwise_mae_kcal_mol": 0.7541547159790137,
+          "mae_kcal_mol": 0.8659870946912344,
+          "centered_mae_kcal_mol": 0.5085537338810961
+        },
+        "p38": {
+          "n": 34,
+          "pearson_r": 0.6765795822719278,
+          "spearman_rho": 0.5909895611104666,
+          "kendall_tau": 0.4126367264933306,
+          "pairwise_mae_kcal_mol": 0.8865402499737292,
+          "mae_kcal_mol": 0.8446341113484434,
+          "centered_mae_kcal_mol": 0.610726920351705
+        }
+      },
+      "compound_weighted": {
+        "pearson_r": 0.5332735491494067,
+        "spearman_rho": 0.515467996757012,
+        "kendall_tau": 0.3588227796031925,
+        "pairwise_mae_kcal_mol": 1.0213509943537218,
+        "mae_kcal_mol": 0.8794158766670711,
+        "centered_mae_kcal_mol": 0.6878617636210578
+      },
+      "bootstrap_95_percent": {
+        "pearson_r": {
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "seed": 20260817,
+          "lower_95": 0.382109688501529,
+          "median": 0.539296825424606,
+          "upper_95": 0.6693451190214997
+        },
+        "spearman_rho": {
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "seed": 20260817,
+          "lower_95": 0.31397242921257756,
+          "median": 0.5018217633925157,
+          "upper_95": 0.6595800051741529
+        },
+        "kendall_tau": {
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "seed": 20260817,
+          "lower_95": 0.2051324866253054,
+          "median": 0.36140455475215016,
+          "upper_95": 0.5017745933331175
+        },
+        "pairwise_mae_kcal_mol": {
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "seed": 20260817,
+          "lower_95": 0.8090347933707258,
+          "median": 0.9723964446636836,
+          "upper_95": 1.1460898532297215
+        },
+        "mae_kcal_mol": {
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "seed": 20260817,
+          "lower_95": 0.7438199017803436,
+          "median": 0.8787426363812181,
+          "upper_95": 1.0405472180814708
+        },
+        "centered_mae_kcal_mol": {
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "seed": 20260817,
+          "lower_95": 0.5483576816892419,
+          "median": 0.6733810879204347,
+          "upper_95": 0.8194533599898303
+        }
+      }
+    }
+  },
+  "paper_reference": {
+    "boltz2": {
+      "weighted_pearson_r": 0.66,
+      "weighted_kendall_tau": 0.48
+    },
+    "nesso1": {
+      "weighted_pearson_r": 0.8
+    },
+    "flashbind": {
+      "weighted_pearson_r": 0.53,
+      "weighted_kendall_tau": 0.38
+    }
+  }
+}

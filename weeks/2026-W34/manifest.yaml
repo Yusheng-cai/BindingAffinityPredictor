@@ -1,0 +1,131 @@
+week: 2026-W34
+date_range: 2026-08-17_to_2026-08-23
+title: Boltz-2, Nesso-1, FlashBind, and an FEP+ four-kinase reproduction
+status: complete_github_ready_overleaf_pending
+
+project_git_revision: 122da1b0c3d87fb616aa1f56a4f19ae588c4ae71
+working_tree_dirty_at_build: true
+
+overleaf:
+  configured: true
+  project: https://www.overleaf.com/project/6a83302c4c0b7793d0f0bc20
+  git_remote: https://git.overleaf.com/6a83302c4c0b7793d0f0bc20
+  branch: main
+  source_of_truth: overleaf
+  local_clone: /home/yusheng/source/binding-affinity-overleaf-w34
+  pushed: false
+  remote_commit: 404e6c6f5e546e682825e12e157000ca5d47b62c
+  local_change: replace_paired_pose_scatter_with_RMSD_bars_and_add_Pearson_bars
+
+experiments:
+  - experiments/exp007_fepplus4_boltz2_nesso1/experiment.yaml
+  - experiments/exp008_boltz2_crystal_pose/experiment.yaml
+  - experiments/exp009_flashbind_fepplus4_released_poses/experiment.yaml
+  - experiments/exp010_flashbind_crystal_pose/experiment.yaml
+
+canonical_inputs:
+  manifest: data/manifests/fepplus4_87.json
+  manifest_sha256: 5f0fb23bb97ea84f3da153e050d5913b97da9bba091fb84cd556b9894fdac1e1
+  source_revision: da7c3372256446222e424368be38ef3d2b55a67b
+
+evaluated_runs:
+  nesso1:
+    seed: 42
+    compounds_complete: 87
+    run_records:
+      - runs/exp007_fepplus4_boltz2_nesso1/nesso1/seed42/cdk2/run.json
+      - runs/exp007_fepplus4_boltz2_nesso1/nesso1/seed42/tyk2/run.json
+      - runs/exp007_fepplus4_boltz2_nesso1/nesso1/seed42/jnk1/run.json
+      - runs/exp007_fepplus4_boltz2_nesso1/nesso1/seed42/p38/run.json
+    metrics: reports/exp007_fepplus4_boltz2_nesso1/nesso1_metrics.json
+  boltz2:
+    seed: 42
+    pilot_target: tyk2
+    compounds_requested: 16
+    compounds_complete: 0
+    status: failed_hardware_feasibility
+    reason: structure_pass_cuda_out_of_memory_at_8192_MSA_sequences
+    run_record: runs/exp007_fepplus4_boltz2_nesso1/boltz2/seed42/tyk2/run.json
+  boltz2_msa1024:
+    seed: 42
+    targets: [cdk2, tyk2, jnk1, p38]
+    compounds_requested: 87
+    compounds_complete: 87
+    failed_samples: 0
+    status: complete_full_benchmark
+    max_msa_seqs_parsed: 8192
+    subsampled_msa_rows: 1024
+    run_records:
+      - runs/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024/seed42/cdk2/run.json
+      - runs/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024/seed42/tyk2/run.json
+      - runs/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024/seed42/jnk1/run.json
+      - runs/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024/seed42/p38/run.json
+    predictions: runs/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024/seed42/predictions.csv
+    metrics: reports/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024_vs_nesso1_metrics.json
+  flashbind_released_poses:
+    seed: 42
+    targets: [cdk2, tyk2, jnk1, p38]
+    compounds_requested: 87
+    compounds_complete: 87
+    failed_samples: 0
+    status: complete_full_benchmark
+    input_mode: authors_released_FABind_plus_poses_and_representations
+    source_revision: f161268176237ab6ce5757031a8c1b93937e0d37
+    model_revision: fa6362c85b3350109af4634e3e2c364644338b3c
+    data_revision: 50b1511e080236d80f9b8ff1e4d0cd38bb2480b9
+    run_record: runs/exp009_flashbind_fepplus4_released_poses/flashbind_released_poses/seed42/full87/run.json
+    predictions: runs/exp009_flashbind_fepplus4_released_poses/flashbind_released_poses/seed42/full87/predictions.csv
+    metrics: reports/exp009_flashbind_fepplus4_released_poses/flashbind_metrics.json
+  paired_crystal_pose_recovery:
+    manifest: data/manifests/fepplus4_crystal16.json
+    compounds_requested: 16
+    flashbind_complete: 16
+    boltz2_complete: 16
+    metric: symmetry_corrected_ligand_heavy_atom_RMSD_after_reference_pocket_CA_alignment
+    flashbind_pose_source: authors_released_FABind_plus_archive
+    flashbind_median_rmsd_angstrom: 0.634337861775331
+    flashbind_below_2_angstrom: 16
+    boltz2_pose_source: boltz2_msa1024_seed42_one_structure_sample
+    boltz2_median_rmsd_angstrom: 0.8975727563378975
+    boltz2_below_2_angstrom: 14
+    paired_lower_rmsd_counts:
+      flashbind: 9
+      boltz2: 7
+    raw_flashbind_metrics: runs/exp010_flashbind_crystal_pose/released_poses/pose_metrics.json
+    paired_metrics: reports/exp010_flashbind_crystal_pose/paired_pose_comparison.json
+
+commands:
+  - bash weeks/2026-W34/code/01_setup_models.sh --check
+  - bash weeks/2026-W34/code/02_download_assets.sh --check
+  - bash weeks/2026-W34/code/03_prepare_inputs.sh --check
+  - bash weeks/2026-W34/code/04_run_inference.sh --model=all --check
+  - bash weeks/2026-W34/code/05_collect_outputs.sh --check
+  - bash weeks/2026-W34/code/06_analyze_affinity.sh --check
+  - bash weeks/2026-W34/code/07_analyze_poses.sh --check
+  - bash weeks/2026-W34/code/08_build_report.sh
+  - bash weeks/2026-W34/code/09_launch_notebook.sh --check
+
+workflow_code:
+  path: weeks/2026-W34/code
+  manifest: weeks/2026-W34/code/workflow_manifest.yaml
+  organization_added_after_report_build: true
+  scientific_commands_reconstructed_from_preserved_run_records: true
+  raw_runs_modified: false
+  interactive_notebook: weeks/2026-W34/notebooks/fepplus4_nesso1_analysis.ipynb
+
+compact_results:
+  affinity_summary: weeks/2026-W34/results/benchmark_summary.csv
+  pose_summary: weeks/2026-W34/results/pose_summary.csv
+  pose_by_target: weeks/2026-W34/results/pose_rmsd_by_target.csv
+
+pdf:
+  path: weeks/2026-W34/report/report.pdf
+  pages: 13
+  latex_engine: pdflatex
+  sha256: ec460d3c74cbf2671aa2911154e1192074d2572860ae73f79c136151a54d120e
+
+citations:
+  - jiang2026flashbind
+  - passaro2025boltz2
+  - shenoy2026nesso1
+  - hahn2022bindingbenchmarks

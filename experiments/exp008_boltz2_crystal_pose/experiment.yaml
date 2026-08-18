@@ -1,0 +1,25 @@
+id: exp008_boltz2_crystal_pose
+title: Boltz-2 pose recovery on 16 exact FEP+4 cocrystal pairs
+status: complete
+question: How accurately do the existing Boltz-2 MSA-1024 predictions reproduce experimentally deposited ligand poses?
+manifest: data/manifests/fepplus4_crystal16.json
+benchmark_config: configs/benchmarks/fepplus4_crystal16_pose.yaml
+model_config: configs/models/boltz2.yaml
+prediction_experiment: exp007_fepplus4_boltz2_nesso1
+prediction_protocol: boltz2_msa1024
+seed: 42
+reference_coordinates_used_during_inference: false
+stopping_rule: Analyze all 16 declared pairs and report every mapping or parsing failure without silently excluding it.
+
+observed_status_2026_08_17:
+  complete_pairs: 16
+  failed_pairs: 0
+  median_pocket_aligned_ligand_rmsd_angstrom: 0.8975727563378975
+  mean_pocket_aligned_ligand_rmsd_angstrom: 0.9768182120036957
+  pose_success_below_2_angstrom: 14
+  pose_success_fraction: 0.875
+  outliers_above_2_angstrom:
+    cdk2_1oiu: 2.1521057384931104
+    p38_p38a_3fmh: 2.790291324702183
+  raw_metrics: runs/exp008_boltz2_crystal_pose/seed42/pose_metrics.json
+  reviewed_summary: reports/exp008_boltz2_crystal_pose/README.md

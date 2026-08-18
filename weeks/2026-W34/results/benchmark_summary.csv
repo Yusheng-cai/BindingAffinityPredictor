@@ -1,0 +1,4 @@
+model,benchmark_compounds,weighted_pearson_r,paper_pearson_r,weighted_spearman_rho,weighted_kendall_tau,centered_mae_kcal_per_mol
+Nesso-1,87,0.807,0.800,0.819,0.641,0.545
+Boltz-2 MSA-1024,87,0.627,0.660,0.666,0.497,0.633
+FlashBind released FABind+ poses,87,0.533,0.530,0.515,0.359,0.688

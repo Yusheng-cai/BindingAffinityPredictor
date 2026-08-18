@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A scientifically careful guide to protein-ligand affinity AI models, their outputs, and their benchmarks." />
+  <title>Protein–ligand affinity models: what do they actually predict?</title>
+  <style>
+    :root {
+      --paper: #f4f1e9;
+      --paper-2: #ebe6da;
+      --ink: #18231f;
+      --muted: #5d6963;
+      --line: #cbc7ba;
+      --card: #fffdf8;
+      --green: #174f3d;
+      --green-2: #2d7c5e;
+      --mint: #dcebe2;
+      --orange: #d26037;
+      --orange-soft: #f6dfd2;
+      --blue: #315b78;
+      --blue-soft: #dfeaf0;
+      --violet: #6b527c;
+      --violet-soft: #e9e0ed;
+      --yellow: #f3e4a6;
+      --red: #9b3934;
+      --shadow: 0 14px 40px rgba(24, 35, 31, 0.08);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 5%, rgba(210, 96, 55, 0.12), transparent 25rem),
+        radial-gradient(circle at 92% 15%, rgba(45, 124, 94, 0.12), transparent 28rem),
+        var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.58;
+    }
+    a { color: var(--blue); text-underline-offset: 0.16em; }
+    a:hover { color: var(--orange); }
+    button, input { font: inherit; }
+    code { font-family: var(--mono); font-size: 0.91em; }
+
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(203, 199, 186, 0.8);
+      background: rgba(244, 241, 233, 0.88);
+      backdrop-filter: blur(14px);
+    }
+    .nav-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0.72rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand {
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 780;
+      letter-spacing: -0.02em;
+    }
+    .nav-links { display: flex; flex-wrap: wrap; gap: 0.85rem; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.88rem; }
+
+    main, footer { max-width: 1180px; margin: 0 auto; padding: 0 1.25rem; }
+    section { scroll-margin-top: 5rem; }
+
+    .hero {
+      min-height: 72vh;
+      padding: 6.2rem 0 3.5rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.7fr);
+      align-items: end;
+      gap: 3rem;
+    }
+    .eyebrow {
+      margin: 0 0 1rem;
+      color: var(--orange);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 { line-height: 1.08; letter-spacing: -0.035em; }
+    h1 { margin: 0; max-width: 890px; font-size: clamp(3rem, 7.4vw, 6.7rem); font-weight: 830; }
+    h2 { margin: 0; font-size: clamp(2rem, 4vw, 3.6rem); }
+    h3 { margin: 0; font-size: 1.3rem; }
+    .hero .dek { max-width: 760px; margin: 1.5rem 0 0; color: var(--muted); font-size: 1.13rem; }
+    .hero-note {
+      border-top: 3px solid var(--ink);
+      padding-top: 1rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .hero-note strong { color: var(--ink); }
+    .stamp { display: block; margin-top: 1.3rem; font-family: var(--mono); font-size: 0.76rem; }
+
+    .thesis {
+      margin-bottom: 5rem;
+      padding: 1.4rem 1.6rem;
+      border: 1px solid var(--line);
+      border-left: 7px solid var(--orange);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      font-size: clamp(1.2rem, 2vw, 1.55rem);
+    }
+    .thesis p { margin: 0; max-width: 1020px; }
+
+    .section-head {
+      margin: 6rem 0 2rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 0.65fr);
+      gap: 2rem;
+      align-items: end;
+    }
+    .section-head p { margin: 0; color: var(--muted); }
+
+    .endpoint-flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.7rem;
+    }
+    .endpoint {
+      position: relative;
+      min-height: 185px;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--card);
+    }
+    .endpoint:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -0.65rem;
+      top: 50%;
+      z-index: 2;
+      width: 1.25rem;
+      color: var(--orange);
+      background: var(--paper);
+      text-align: center;
+      font-weight: 800;
+    }
+    .endpoint .kicker { display: block; margin-bottom: 0.45rem; color: var(--orange); font: 700 0.72rem var(--mono); }
+    .endpoint strong { display: block; font-size: 1.05rem; }
+    .endpoint p { margin: 0.55rem 0 0; color: var(--muted); font-size: 0.86rem; }
+    .endpoint code { display: inline-block; margin-top: 0.55rem; color: var(--green); }
+
+    .stack {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.7rem;
+    }
+    .stack-stage {
+      position: relative;
+      min-height: 230px;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--card);
+    }
+    .stack-stage:not(:last-child)::after {
+      content: "\2192";
+      position: absolute;
+      right: -0.65rem;
+      top: 3.2rem;
+      z-index: 2;
+      width: 1.25rem;
+      color: var(--orange);
+      background: var(--paper);
+      text-align: center;
+      font-weight: 800;
+    }
+    .stack-stage .kicker { color: var(--orange); font: 800 0.7rem var(--mono); }
+    .stack-stage h3 { margin-top: 0.6rem; font-size: 1.08rem; }
+    .stack-stage p { margin: 0.65rem 0; color: var(--muted); font-size: 0.84rem; }
+    .stack-models { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.8rem; }
+    .stack-models span { padding: 0.2rem 0.45rem; border-radius: 999px; color: var(--green); background: var(--mint); font-size: 0.7rem; font-weight: 720; }
+    .stack-stage.masif-stage { border: 2px solid var(--orange); background: #fff8f2; }
+    .stack-note { margin-top: 1rem; padding: 1rem 1.15rem; border-left: 5px solid var(--green); background: var(--card); color: var(--muted); }
+    .stack-note strong { color: var(--ink); }
+
+    .calculator {
+      margin-top: 1.2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--card);
+    }
+    .calc-controls, .calc-result { padding: 1.35rem; }
+    .calc-result { background: var(--green); color: white; }
+    .calc-result p { margin: 0.45rem 0; color: rgba(255,255,255,0.78); }
+    .calc-big { display: block; margin-top: 0.25rem; font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1; font-weight: 800; letter-spacing: -0.05em; }
+    label { display: block; margin-bottom: 0.4rem; font-weight: 700; }
+    input[type="number"] {
+      width: 100%;
+      max-width: 300px;
+      padding: 0.7rem 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: white;
+    }
+    .fine { color: var(--muted); font-size: 0.82rem; }
+
+    .filters { margin: 1rem 0 1.5rem; display: flex; flex-wrap: wrap; gap: 0.55rem; }
+    .filter {
+      padding: 0.5rem 0.85rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+    }
+    .filter[aria-pressed="true"] { border-color: var(--green); color: white; background: var(--green); }
+
+    .model-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .model-card {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 1rem;
+      padding: 1.35rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: 0 8px 24px rgba(24, 35, 31, 0.045);
+      transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+    .model-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .model-card[hidden] { display: none; }
+    .model-top { display: flex; justify-content: space-between; align-items: start; gap: 1rem; }
+    .model-year { color: var(--muted); font-family: var(--mono); font-size: 0.75rem; }
+    .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .badge { padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.72rem; font-weight: 720; }
+    .badge.cofold { color: var(--green); background: var(--mint); }
+    .badge.surface { color: var(--orange); background: var(--orange-soft); }
+    .badge.score { color: var(--blue); background: var(--blue-soft); }
+    .badge.relative { color: var(--violet); background: var(--violet-soft); }
+    .badge.physics { color: #754d07; background: var(--yellow); }
+    .badge.preprint { color: var(--red); background: var(--orange-soft); }
+    .badge.peer { color: var(--green); background: var(--mint); }
+    .model-summary { margin: 0; color: var(--muted); }
+    .model-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .fact { padding-top: 0.65rem; border-top: 1px solid var(--line); }
+    .fact dt { color: var(--muted); font: 700 0.7rem var(--mono); text-transform: uppercase; }
+    .fact dd { margin: 0.28rem 0 0; font-size: 0.9rem; }
+    .benchmark-note { padding: 0.8rem; border-radius: 10px; background: var(--paper); font-size: 0.84rem; }
+    .benchmark-note strong { color: var(--green); }
+    .model-links { display: flex; flex-wrap: wrap; gap: 0.8rem; font-size: 0.82rem; }
+    .zero-state { display: none; padding: 2rem; text-align: center; color: var(--muted); }
+
+    .compare-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); }
+    table { width: 100%; border-collapse: collapse; min-width: 980px; }
+    th, td { padding: 0.9rem 0.85rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 0.85rem; }
+    th { position: sticky; top: 3.15rem; z-index: 5; color: white; background: var(--green); font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+    td:first-child { font-weight: 760; }
+    .yes { color: var(--green-2); font-weight: 800; }
+    .no { color: var(--muted); }
+
+    .benchmark-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .benchmark-card { padding: 1.25rem; border-radius: var(--radius); background: var(--ink); color: white; }
+    .benchmark-card:nth-child(2n) { background: var(--green); }
+    .benchmark-card:nth-child(3n) { background: var(--blue); }
+    .benchmark-card p { color: rgba(255,255,255,0.72); font-size: 0.88rem; }
+    .benchmark-card .metric { display: block; margin: 1rem 0 0.3rem; color: #ffbd91; font: 760 0.77rem var(--mono); }
+    .benchmark-card .limit { margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.18); }
+
+    .warning-box {
+      margin-top: 1rem;
+      padding: 1.2rem 1.3rem;
+      border: 1px solid #d6a79a;
+      border-radius: var(--radius);
+      background: var(--orange-soft);
+    }
+    .warning-box h3 { color: var(--red); }
+    .warning-box p { margin-bottom: 0; }
+
+    .case-study {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      gap: 0;
+      overflow: hidden;
+      border-radius: calc(var(--radius) + 4px);
+      background: var(--green);
+      color: white;
+      box-shadow: var(--shadow);
+    }
+    .case-copy { padding: clamp(1.5rem, 4vw, 3rem); }
+    .case-copy p { color: rgba(255,255,255,0.75); }
+    .case-data { padding: clamp(1.5rem, 4vw, 3rem); background: var(--card); color: var(--ink); }
+    .results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+    .result { padding: 0.9rem; border: 1px solid var(--line); border-radius: 12px; }
+    .result span { display: block; color: var(--muted); font-size: 0.72rem; }
+    .result strong { display: block; margin-top: 0.28rem; font-size: 1.45rem; letter-spacing: -0.04em; }
+    .verdict { margin-top: 1rem; padding: 1rem; border-left: 5px solid var(--orange); background: var(--paper); }
+    .verdict p { margin: 0; color: var(--ink); }
+
+    .protocol { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.55rem; counter-reset: protocol; }
+    .protocol-step { min-height: 175px; padding: 0.9rem; border: 1px solid var(--line); border-radius: 13px; background: var(--card); }
+    .protocol-step::before { counter-increment: protocol; content: "0" counter(protocol); display: block; margin-bottom: 1.2rem; color: var(--orange); font: 800 0.78rem var(--mono); }
+    .protocol-step strong { display: block; }
+    .protocol-step p { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.8rem; }
+
+    .sources { columns: 2; column-gap: 2rem; }
+    .source { break-inside: avoid; margin: 0 0 1rem; padding: 0 0 1rem; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
+    .source strong { display: block; }
+    .source span { color: var(--muted); }
+
+    footer { margin-top: 6rem; padding-top: 1.5rem; padding-bottom: 3rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.7rem; }
+
+    @media (max-width: 920px) {
+      .hero, .section-head, .case-study { grid-template-columns: 1fr; }
+      .hero { min-height: auto; padding-top: 4.5rem; }
+      .endpoint-flow { grid-template-columns: repeat(2, 1fr); }
+      .endpoint::after { display: none; }
+      .stack { grid-template-columns: repeat(2, 1fr); }
+      .stack-stage::after { display: none; }
+      .benchmark-grid { grid-template-columns: repeat(2, 1fr); }
+      .protocol { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 660px) {
+      .nav-links { display: none; }
+      .model-grid, .calculator, .benchmark-grid { grid-template-columns: 1fr; }
+      .endpoint-flow { grid-template-columns: 1fr; }
+      .endpoint { min-height: auto; }
+      .stack { grid-template-columns: 1fr; }
+      .stack-stage { min-height: auto; }
+      .model-facts { grid-template-columns: 1fr; }
+      .results { grid-template-columns: 1fr; }
+      .protocol { grid-template-columns: repeat(2, 1fr); }
+      .sources { columns: 1; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="Page navigation">
+    <div class="nav-inner">
+      <a class="brand" href="#top">Affinity model field guide</a>
+      <div class="nav-links">
+        <a href="#outputs">Outputs</a>
+        <a href="#structural-stack">Structural map</a>
+        <a href="#models">Models</a>
+        <a href="#benchmarks">Benchmarks</a>
+        <a href="#our-test">Our test</a>
+        <a href="#sources">Literature</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="top">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Protein–ligand modeling · field guide</p>
+        <h1>Affinity is not one prediction.</h1>
+        <p class="dek">A pose, a binder probability, an IC<sub>50</sub>, a K<sub>d</sub>, and a binding free energy answer different scientific questions. This guide compares current models by their real inputs, outputs, and evidence—not by a single headline score.</p>
+      </div>
+      <aside class="hero-note">
+        <strong>Start with the endpoint.</strong><br />Before asking which model is “best,” ask what quantity was measured, how the test was split, and whether the benchmark resembles the chemistry you care about.
+        <span class="stamp">LITERATURE SNAPSHOT · 2026-08-09</span>
+      </aside>
+    </header>
+
+    <aside class="thesis">
+      <p><strong>The central rule:</strong> compare models only on a shared experimental endpoint and a shared test set. Pearson <em>r</em> on a congeneric ligand series, AUROC on binders versus decoys, and ligand RMSD are not interchangeable measures of “affinity accuracy.”</p>
+    </aside>
+
+    <section id="outputs">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">01 · Read the output label</p>
+          <h2>Five outputs that are often blurred together</h2>
+        </div>
+        <p>These quantities are related, but they require different labels, assumptions, and benchmarks. Moving from left to right generally asks a more quantitative thermodynamic question.</p>
+      </div>
+
+      <div class="endpoint-flow">
+        <article class="endpoint">
+          <span class="kicker">GEOMETRY</span>
+          <strong>Binding pose</strong>
+          <p>Where the ligand sits and how the atoms are arranged. A correct pose can still have a wrong affinity.</p>
+          <code>coordinates, RMSD</code>
+        </article>
+        <article class="endpoint">
+          <span class="kicker">CLASSIFICATION</span>
+          <strong>Binder probability</strong>
+          <p>A ranking score for active versus inactive compounds. It is not a concentration or equilibrium constant.</p>
+          <code>P(binder)</code>
+        </article>
+        <article class="endpoint">
+          <span class="kicker">POTENCY</span>
+          <strong>IC<sub>50</sub> / EC<sub>50</sub></strong>
+          <p>Assay-dependent concentrations giving 50% inhibition or response. Conditions and mechanism matter.</p>
+          <code>log10(IC50/µM)</code>
+        </article>
+        <article class="endpoint">
+          <span class="kicker">EQUILIBRIUM</span>
+          <strong>K<sub>d</sub> / K<sub>i</sub></strong>
+          <p>K<sub>d</sub> describes binding equilibrium; K<sub>i</sub> describes inhibition under a mechanistic model.</p>
+          <code>pKd = −log10(Kd/M)</code>
+        </article>
+        <article class="endpoint">
+          <span class="kicker">THERMODYNAMICS</span>
+          <strong>ΔG° / ΔΔG</strong>
+          <p>Absolute standard binding free energy or a free-energy change between two related ligands.</p>
+          <code>kcal mol⁻¹</code>
+        </article>
+      </div>
+
+      <div class="calculator" aria-label="Boltz output converter">
+        <div class="calc-controls">
+          <label for="boltz-value">Boltz/Nesso affinity value, y</label>
+          <input id="boltz-value" type="number" value="2.104" step="0.001" min="-6" max="6" />
+          <p class="fine"><code>y = log10(IC50 / µM)</code>. Lower values indicate greater predicted potency. Try −3, 0, or 2.</p>
+        </div>
+        <div class="calc-result" aria-live="polite">
+          <span class="fine" style="color:rgba(255,255,255,.72)">Equivalent potency scale</span>
+          <strong class="calc-big" id="ic50-result">127 µM</strong>
+          <p id="pic50-result">pIC50 = 3.896</p>
+          <p class="fine" style="color:rgba(255,255,255,.72)">This is an IC<sub>50</sub>-like model output—not a measured K<sub>d</sub> and not a rigorous ΔG°.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="structural-stack">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">02 · Where structure models fit</p>
+          <h2>From protein shape to binding thermodynamics</h2>
+        </div>
+        <p>“Structure-based” covers several different tasks. A method may describe a protein surface, find a pocket, generate a ligand pose, score a static complex, or sample a thermodynamic ensemble. Those are not equivalent predictions.</p>
+      </div>
+
+      <div class="stack" aria-label="Protein-ligand modeling pipeline">
+        <article class="stack-stage">
+          <span class="kicker">1 · TARGET STRUCTURE</span>
+          <h3>What shape can the protein adopt?</h3>
+          <p>Experimental structures or predictors provide the 3D receptor. An apo structure is not guaranteed to contain the ligand-bound pocket conformation.</p>
+          <div class="stack-models"><span>PDB</span><span>AlphaFold</span><span>ESMFold</span></div>
+        </article>
+        <article class="stack-stage masif-stage">
+          <span class="kicker">2 · SURFACE / SITE</span>
+          <h3>Where could an interaction occur?</h3>
+          <p>Protein-only models annotate geometric and chemical patterns on the surface or identify likely ligand-binding residues. They usually do not place a specified ligand.</p>
+          <div class="stack-models"><span>MaSIF / dMaSIF</span><span>AF2BIND</span></div>
+        </article>
+        <article class="stack-stage">
+          <span class="kicker">3 · POSE / COMPLEX</span>
+          <h3>How might this ligand bind?</h3>
+          <p>Docking or cofolding generates relative protein–ligand coordinates. Flexible methods may also alter side chains or the protein backbone.</p>
+          <div class="stack-models"><span>DiffDock</span><span>DynamicBind</span><span>Boltz-2</span></div>
+        </article>
+        <article class="stack-stage">
+          <span class="kicker">4 · LEARNED SCORE</span>
+          <h3>Does the pose resemble labeled binders?</h3>
+          <p>A supervised head maps learned features to binder labels, potency, or affinity-like values. The training assay defines the meaning of the number.</p>
+          <div class="stack-models"><span>Boltz-2</span><span>Nesso-1</span><span>FlashAffinity</span><span>PIGNet2</span></div>
+        </article>
+        <article class="stack-stage">
+          <span class="kicker">5 · ENSEMBLE PHYSICS</span>
+          <h3>What is the free-energy difference?</h3>
+          <p>MD and alchemical workflows sample solvent, protein, and ligand configurations under a force field to estimate ΔG or ΔΔG.</p>
+          <div class="stack-models"><span>OpenFE</span><span>FEP+</span></div>
+        </article>
+      </div>
+      <p class="stack-note"><strong>MaSIF stops mainly at stage 2.</strong> It can supply surface fingerprints or interaction-site hypotheses to later design, docking, or scoring workflows, but it does not natively predict a ligand pose, K<sub>d</sub>, IC<sub>50</sub>, or binding free energy. Boltz-2 instead jumps from molecular inputs to stages 3 and 4 in one model.</p>
+    </section>
+
+    <section id="models">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">03 · Model explorer</p>
+          <h2>Representative models and workflows</h2>
+        </div>
+        <p>Boltz-2, Nesso-1, and FlashAffinity are the affinity starting set. MaSIF and DynamicBind show two distinct meanings of structure-based learning: surface understanding and ligand-specific complex generation.</p>
+      </div>
+
+      <div class="filters" role="group" aria-label="Filter model cards">
+        <button class="filter" data-filter="all" aria-pressed="true">All</button>
+        <button class="filter" data-filter="cofold" aria-pressed="false">Cofolding</button>
+        <button class="filter" data-filter="surface" aria-pressed="false">Surfaces &amp; sites</button>
+        <button class="filter" data-filter="dock" aria-pressed="false">Pose generation</button>
+        <button class="filter" data-filter="score" aria-pressed="false">3D scoring</button>
+        <button class="filter" data-filter="relative" aria-pressed="false">Relative affinity</button>
+        <button class="filter" data-filter="physics" aria-pressed="false">Physics reference</button>
+      </div>
+
+      <div class="model-grid" id="model-grid">
+        <article class="model-card" data-kind="surface">
+          <div class="model-top">
+            <div><h3>MaSIF family</h3><span class="model-year">2020–2021 · peer reviewed</span></div>
+            <div class="badges"><span class="badge surface">protein surfaces</span><span class="badge peer">peer reviewed</span></div>
+          </div>
+          <p class="model-summary">Molecular Surface Interaction Fingerprinting learns local geometric and chemical patterns on a protein’s solvent-excluded surface, rather than treating the protein only as a residue sequence or atom graph.</p>
+          <dl class="model-facts">
+            <div class="fact"><dt>Input</dt><dd>A protein 3D structure. Original MaSIF builds a triangulated surface mesh and local geodesic patches; dMaSIF creates a differentiable surface point cloud directly from atomic coordinates and chemical types.</dd></div>
+            <div class="fact"><dt>Native outputs</dt><dd><strong>MaSIF-ligand:</strong> logits for seven cofactor classes in an already defined pocket. <strong>MaSIF-site:</strong> protein–protein interaction propensity per surface vertex. <strong>MaSIF-search:</strong> patch fingerprints for surface matching.</dd></div>
+            <div class="fact"><dt>Best-fit use</dt><dd>Protein function and interface analysis, pocket characterization, PPI search, and protein-binder design.</dd></div>
+            <div class="fact"><dt>Does not provide</dt><dd>An arbitrary small-molecule pose, a compound-specific affinity ranking, K<sub>d</sub>, IC<sub>50</sub>, or ΔG.</dd></div>
+          </dl>
+          <div class="benchmark-note"><strong>Comparison rule:</strong> evaluate MaSIF on its native classification, PPI-site, or surface-retrieval task. The released MaSIF-ligand classifier covers ADP, CoA, FAD, haem, NAD, NADP, and SAM—not arbitrary drug-like ligands or galactose. The original code also uses an older TensorFlow and surface-preprocessing stack; dMaSIF removes much of that precomputation but was demonstrated on PPI tasks.</div>
+          <div class="model-links"><a href="https://www.nature.com/articles/s41592-019-0666-6">MaSIF paper</a><a href="https://github.com/lpdi-epfl/masif">MaSIF code</a><a href="https://openaccess.thecvf.com/content/CVPR2021/html/Sverrisson_Fast_End-to-End_Learning_on_Protein_Surfaces_CVPR_2021_paper.html">dMaSIF paper</a></div>
+        </article>
+
+        <article class="model-card" data-kind="dock score">
+          <div class="model-top">
+            <div><h3>DynamicBind</h3><span class="model-year">2024 · peer reviewed</span></div>
+            <div class="badges"><span class="badge cofold">flexible docking</span><span class="badge peer">peer reviewed</span></div>
+          </div>
+          <p class="model-summary">A ligand-specific structural model that starts from an apo-like receptor and jointly adjusts ligand translation, rotation, torsions, and protein conformation toward a predicted holo complex.</p>
+          <dl class="model-facts">
+            <div class="fact"><dt>Input</dt><dd>An apo-like protein structure, often an AlphaFold prediction, plus ligand SMILES or SDF.</dd></div>
+            <div class="fact"><dt>Native output</dt><dd>Sampled protein–ligand complex coordinates, a confidence score, and a PDBbind-trained affinity score.</dd></div>
+            <div class="fact"><dt>Best-fit use</dt><dd>Pose generation when induced fit, alternate receptor states, or cryptic pockets may matter.</dd></div>
+            <div class="fact"><dt>Not the same as</dt><dd>An equilibrium ensemble or rigorous free-energy calculation; generated states are learned structural hypotheses.</dd></div>
+          </dl>
+          <div class="benchmark-note"><strong>Authors report:</strong> pose and pocket recovery on chronological PDBbind and major-drug-target sets, plus mean AUROC = 0.68 on a 12-target antibiotics screen. These pose, screening, and affinity tasks must remain separate in our evaluation.</div>
+          <div class="model-links"><a href="https://www.nature.com/articles/s41467-024-45461-2">paper</a><a href="https://github.com/luwei0917/DynamicBind">code</a></div>
+        </article>
+
+        <article class="model-card" data-kind="cofold score">
+          <div class="model-top">
+            <div><h3>Boltz-2</h3><span class="model-year">2025 · open-source preprint</span></div>
+            <div class="badges"><span class="badge cofold">full-atom cofolding</span><span class="badge preprint">preprint</span></div>
+          </div>
+          <p class="model-summary">Jointly predicts a protein–ligand complex, structure confidence, binder likelihood, and an IC<sub>50</sub>-like continuous score from biomolecular inputs.</p>
+          <dl class="model-facts">
+            <div class="fact"><dt>Input</dt><dd>Protein sequence, ligand SMILES/CCD, usually an MSA; optional templates or pocket constraints.</dd></div>
+            <div class="fact"><dt>Native output</dt><dd>Full-atom coordinates, confidence arrays, <code>P(binder)</code>, and <code>log10(IC50/µM)</code>.</dd></div>
+            <div class="fact"><dt>Best-fit use</dt><dd>Pose hypothesis plus binder triage and ranking related active molecules.</dd></div>
+            <div class="fact"><dt>Not the same as</dt><dd>An equilibrium K<sub>d</sub> measurement or explicit-solvent free-energy calculation.</dd></div>
+          </dl>
+          <div class="benchmark-note"><strong>Authors report:</strong> average Pearson <em>r</em> = 0.62 on the 876-pair OpenFE subset and 0.66 on the 87-ligand, four-kinase subset; also CASP16 affinity and MF-PCBA classification. Target sequence holdout does not guarantee novel ligand chemistry.</div>
+          <div class="model-links"><a href="https://jeremywohlwend.com/assets/boltz2.pdf">paper</a><a href="https://github.com/jwohlwend/boltz">code</a><a href="../model-notes/boltz2_architecture.html">our architecture guide</a></div>
+        </article>
+
+        <article class="model-card" data-kind="cofold score">
+          <div class="model-top">
+            <div><h3>Nesso-1</h3><span class="model-year">2026 · open-source preprint</span></div>
+            <div class="badges"><span class="badge cofold">coarse cofolding</span><span class="badge preprint">preprint</span></div>
+          </div>
+          <p class="model-summary">Keeps token-level protein–ligand geometry but removes Boltz-2’s heavy-atom diffusion decoder. It uses ESM-2 embeddings and requires no MSA.</p>
+          <dl class="model-facts">
+            <div class="fact"><dt>Input</dt><dd>Protein sequence and ligand SMILES, CCD, or SDF; ESM-2 embeddings are generated or supplied.</dd></div>
+            <div class="fact"><dt>Native output</dt><dd>Coarse pair-distance distributions and entropy, <code>P(binder)</code>, and <code>log10(IC50/µM)</code>.</dd></div>
+            <div class="fact"><dt>Best-fit use</dt><dd>High-throughput affinity ranking when an all-atom complex is not required.</dd></div>
+            <div class="fact"><dt>Structural limit</dt><dd>No atomistic protein pose or resolved binding-site side-chain geometry.</dd></div>
+          </dl>
+          <div class="benchmark-note"><strong>Authors report:</strong> weighted Pearson <em>r</em> = 0.80 (FEP+ four), 0.66 (OpenFE), and 0.68 (CASP16), plus best reported AI results on the 494-compound OpenBind set. Their report explicitly labels the first three benchmarks largely in-distribution and reports &gt;10× speedup over Boltz-2 on an H100, excluding fixed per-target costs.</div>
+          <div class="model-links"><a href="https://www.valencelabs.com/wp-content/uploads/2026/07/nesso1.pdf">report</a><a href="https://github.com/recursionpharma/nesso">code</a><a href="https://github.com/recursionpharma/nesso/blob/main/docs/prediction.md">output spec</a></div>
+        </article>
+
+        <article class="model-card" data-kind="score">
+          <div class="model-top">
+            <div><h3>FlashAffinity / FlashBind</h3><span class="model-year">2025 · preprint / weights</span></div>
+            <div class="badges"><span class="badge score">dock then score</span><span class="badge preprint">preprint</span></div>
+          </div>
+          <p class="model-summary">The paper calls the scorer FlashAffinity; related weights and assets are released under FlashAffinity/FlashBind. It trades full cofolding for a docking stage followed by a PairFormer/EGNN-style scorer.</p>
+          <dl class="model-facts">
+            <div class="fact"><dt>Input</dt><dd>Protein sequence plus ligand SMILES, or a supplied complex. The full pipeline retrieves/predicts a receptor structure and docks the ligand before scoring.</dd></div>
+            <div class="fact"><dt>Native output</dt><dd>Continuous affinity regression and binary binder classification; it is a scorer, not an alchemical ΔG engine.</dd></div>
+            <div class="fact"><dt>Best-fit use</dt><dd>Fast virtual-screening prioritization when a usable receptor structure and pocket are known.</dd></div>
+            <div class="fact"><dt>Main dependency</dt><dd>Performance can be limited by docking pose and receptor-state quality.</dd></div>
+          </dl>
+          <div class="benchmark-note"><strong>Authors report:</strong> Pearson <em>r</em> = 0.53 on the four-target FEP+ test, CASP16 Kendall τ = 0.51, and MF-PCBA target-average AUROC = 0.776. Their L40S timing is 0.7 s per full-pipeline pair versus 35 s for their Boltz-2 baseline; timings are hardware and protocol specific.</div>
+          <div class="model-links"><a href="https://openreview.net/pdf?id=TZTahjQNjX">paper</a><a href="https://huggingface.co/clorf6/FlashAffinity">model card</a><a href="https://huggingface.co/clorf6/FlashBind">assets</a></div>
+        </article>
+
+        <article class="model-card" data-kind="score">
+          <div class="model-top">
+            <div><h3>PIGNet2</h3><span class="model-year">2024 · peer reviewed</span></div>
+            <div class="badges"><span class="badge score">physics-informed score</span><span class="badge peer">peer reviewed</span></div>
+          </div>
+          <p class="model-summary">A 3D graph neural scoring function with physically motivated interaction components, trained for affinity scoring and active/decoy or pose discrimination.</p>
+          <dl class="model-facts">
+            <div class="fact"><dt>Input</dt><dd>A prepared 3D protein–ligand complex or docked poses.</dd></div>
+            <div class="fact"><dt>Native output</dt><dd>A learned binding-affinity score and virtual-screening ranking.</dd></div>
+            <div class="fact"><dt>Best-fit use</dt><dd>Rescoring known or docked complex geometries and inspecting interaction contributions.</dd></div>
+            <div class="fact"><dt>Main dependency</dt><dd>Requires a pose; static complexes omit explicit ensemble, solvent, and entropy sampling.</dd></div>
+          </dl>
+          <div class="benchmark-note"><strong>Evidence:</strong> evaluated on all four CASF-2016 “powers” and on larger DUD-E/DEKOIS active–decoy screens. CASF scoring uses crystal poses and should not be equated with blind pose generation or novel-target generalization.</div>
+          <div class="model-links"><a href="https://www.sciencedirect.com/org/science/article/pii/S2635098X24000214">paper</a><a href="https://github.com/ACE-KAIST/PIGNet2">code</a></div>
+        </article>
+
+        <article class="model-card" data-kind="score">
+          <div class="model-top">
+            <div><h3>DrΔG-Net</h3><span class="model-year">2024 · peer reviewed</span></div>
+            <div class="badges"><span class="badge score">3D directional GNN</span><span class="badge peer">peer reviewed</span></div>
+          </div>
+          <p class="model-summary">A useful label-audit case: despite the “ΔG” name, the published readouts regress to pK<sub>i</sub>. The model can be transferred to a local ligand series using a small calibration set.</p>
+          <dl class="model-facts">
+            <div class="fact"><dt>Input</dt><dd>3D protein-pocket and ligand atomic coordinates; a ligand-only variant was also tested.</dd></div>
+            <div class="fact"><dt>Native output</dt><dd>pK<sub>i</sub>, linearly related to ΔG° at fixed temperature but still an experimentally trained label.</dd></div>
+            <div class="fact"><dt>Best-fit use</dt><dd>Global scoring followed by target- or series-specific transfer learning.</dd></div>
+            <div class="fact"><dt>Scientific lesson</dt><dd>Names and energy-like architecture do not determine the supervised endpoint.</dd></div>
+          </dl>
+          <div class="benchmark-note"><strong>Reported test:</strong> CASF-2016 RMSE = 1.36 pK units. A ligand-only version reached 1.43, warning that familiar benchmarks may reward ligand-set correlations or leakage more than protein-specific physics.</div>
+          <div class="model-links"><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10966643/">paper</a><a href="https://github.com/derekmetcalf/apnet">code</a></div>
+        </article>
+
+        <article class="model-card" data-kind="relative score">
+          <div class="model-top">
+            <div><h3>PBCNet2.0</h3><span class="model-year">2026 · peer reviewed</span></div>
+            <div class="badges"><span class="badge relative">relative affinity</span><span class="badge peer">peer reviewed</span></div>
+          </div>
+          <p class="model-summary">A Siamese 3D network designed to compare two ligands bound to the same target—a question closer to medicinal-chemistry optimization than global absolute scoring.</p>
+          <dl class="model-facts">
+            <div class="fact"><dt>Input</dt><dd>A pair of protein–ligand complex structures for related chemical alternatives.</dd></div>
+            <div class="fact"><dt>Native output</dt><dd>Relative binding-affinity change / ordering between the pair.</dd></div>
+            <div class="fact"><dt>Best-fit use</dt><dd>Prioritizing local chemical modifications within a target program.</dd></div>
+            <div class="fact"><dt>Not designed for</dt><dd>Universal absolute affinity from an arbitrary sequence–ligand pair.</dd></div>
+          </dl>
+          <div class="benchmark-note"><strong>Evidence:</strong> the 2026 study reports retrospective and prospective tests, including ENPP1 and ALDH1B1. This paired setting is conceptually comparable to RBFE ranking, but the network is learned rather than a thermodynamic simulation.</div>
+          <div class="model-links"><a href="https://www.nature.com/articles/s41589-026-02241-x">paper</a></div>
+        </article>
+
+        <article class="model-card" data-kind="physics relative">
+          <div class="model-top">
+            <div><h3>OpenFE</h3><span class="model-year">current · non-AI reference</span></div>
+            <div class="badges"><span class="badge physics">alchemical simulation</span></div>
+          </div>
+          <p class="model-summary">An open physical workflow, included as the thermodynamic reference point. It samples force-field models across alchemical states instead of learning a direct mapping from structures to assay labels.</p>
+          <dl class="model-facts">
+            <div class="fact"><dt>Input</dt><dd>Carefully prepared receptor, bound poses, ligand states, atom mappings, solvent, force field, and protocol.</dd></div>
+            <div class="fact"><dt>Native output</dt><dd>RBFE ΔΔG between ligands; current workflows also support ABFE ΔG with statistical uncertainties.</dd></div>
+            <div class="fact"><dt>Best-fit use</dt><dd>Lead optimization for a limited, related ligand series after careful system preparation.</dd></div>
+            <div class="fact"><dt>Tradeoff</dt><dd>Much more compute and expertise; errors arise from sampling, force fields, protonation, and setup.</dd></div>
+          </dl>
+          <div class="benchmark-note"><strong>Comparison rule:</strong> RBFE and potency models can both rank a congeneric series, but their native quantities and uncertainty models differ. Benchmark them against the same assay measurements—not just against each other.</div>
+          <div class="model-links"><a href="https://docs.openfree.energy/en/latest/tutorials/index.html">tutorials</a><a href="https://docs.openfree.energy/en/latest/tutorials/abfe_tutorial.html">ABFE guide</a><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8388617/">best practices</a></div>
+        </article>
+      </div>
+      <p class="zero-state" id="zero-state">No models match this filter.</p>
+
+      <div class="section-head" style="margin-top:4rem">
+        <div><p class="eyebrow">At a glance</p><h2>What can be compared directly?</h2></div>
+        <p>This table describes native tasks. A check means the method exposes that quantity or object—it does not certify accuracy.</p>
+      </div>
+      <div class="compare-wrap">
+        <table>
+          <thead><tr><th>Method</th><th>Starts from sequence?</th><th>Needs receptor pose?</th><th>Generates full atoms?</th><th>Binder class</th><th>Continuous label</th><th>Thermodynamic ΔG / ΔΔG?</th><th>Natural test unit</th></tr></thead>
+          <tbody>
+            <tr><td>Boltz-2</td><td class="yes">Yes</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td><td>log<sub>10</sub>(IC<sub>50</sub>/µM)</td><td class="no">No</td><td>Protein + ligand</td></tr>
+            <tr><td>MaSIF / dMaSIF</td><td class="no">No; needs 3D protein</td><td class="yes">Protein structure only</td><td class="no">No; embeds a surface</td><td class="no">Not compound specific</td><td>Site, pocket-class, or surface-match score</td><td class="no">No</td><td>Surface patch / pocket</td></tr>
+            <tr><td>DynamicBind</td><td class="no">Needs 3D receptor</td><td>Apo-like receptor</td><td class="yes">Yes</td><td>Screening score</td><td>PDBbind-trained affinity score</td><td class="no">No</td><td>Protein + ligand</td></tr>
+            <tr><td>Nesso-1</td><td class="yes">Yes</td><td class="no">No</td><td class="no">No; coarse geometry</td><td class="yes">Yes</td><td>log<sub>10</sub>(IC<sub>50</sub>/µM)</td><td class="no">No</td><td>Protein + ligand</td></tr>
+            <tr><td>FlashAffinity / FlashBind</td><td class="yes">Yes, via preprocessing</td><td>Retrieves/predicts then docks</td><td class="no">Uses docked atoms</td><td class="yes">Yes</td><td>Affinity regression</td><td class="no">No</td><td>Protein + ligand / pose</td></tr>
+            <tr><td>PIGNet2</td><td class="no">No</td><td class="yes">Yes</td><td class="no">Scores input pose</td><td>Screening score</td><td>Affinity score</td><td class="no">No explicit ensemble</td><td>3D complex</td></tr>
+            <tr><td>DrΔG-Net</td><td class="no">No</td><td class="yes">Yes</td><td class="no">Scores input pose</td><td class="no">No</td><td>pK<sub>i</sub></td><td class="no">Label-derived</td><td>3D complex</td></tr>
+            <tr><td>PBCNet2.0</td><td class="no">No</td><td class="yes">Yes</td><td class="no">Scores input poses</td><td class="no">No</td><td>Relative affinity</td><td>Learned ΔΔG-like task</td><td>Pair on one target</td></tr>
+            <tr><td>OpenFE</td><td class="no">No</td><td class="yes">Yes</td><td>Simulates atoms</td><td class="no">No</td><td>ΔG or ΔΔG</td><td class="yes">Yes</td><td>Series / transformation</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="benchmarks">
+      <div class="section-head">
+        <div><p class="eyebrow">04 · Benchmark literacy</p><h2>The same model can look different on each test</h2></div>
+        <p>A benchmark is a scientific question encoded as a dataset, split, and metric. Its limitations travel with every number reported on it.</p>
+      </div>
+
+      <div class="benchmark-grid">
+        <article class="benchmark-card">
+          <h3>Surface / site prediction</h3>
+          <p>MaSIF-ligand classifies known pockets; MaSIF-site labels protein–protein interface surface vertices. AF2BIND instead predicts small-molecule-contact residues.</p>
+          <span class="metric">METRIC · AUROC/AUPRC, top-k recall, pocket class</span>
+          <p class="limit"><strong>Supports:</strong> whether a model localizes or characterizes a site. <strong>Limit:</strong> it does not test ligand pose or affinity, and nearby homologous surfaces can leak across splits.</p>
+        </article>
+        <article class="benchmark-card">
+          <h3>FEP+ / OpenFE series</h3>
+          <p>OpenFE subset: 876 protein–ligand pairs. A smaller set has 87 neutral ligands across CDK2, TYK2, JNK1, and p38.</p>
+          <span class="metric">METRIC · within-assay Pearson r, RMSE</span>
+          <p class="limit"><strong>Supports:</strong> ranking related ligands within targets. <strong>Limit:</strong> recent analyses find high chemical similarity to common public training data.</p>
+        </article>
+        <article class="benchmark-card">
+          <h3>CASP16 affinity</h3>
+          <p>A blind-at-the-time affinity challenge with 140 protein–ligand complexes—but only two target systems.</p>
+          <span class="metric">METRIC · correlation / rank by target</span>
+          <p class="limit"><strong>Supports:</strong> a controlled blind case. <strong>Limit:</strong> two targets cannot establish broad target-family generalization.</p>
+        </article>
+        <article class="benchmark-card">
+          <h3>MF-PCBA</h3>
+          <p>A large active/inactive benchmark intended to resemble high-throughput hit identification, with up to millions of interactions.</p>
+          <span class="metric">METRIC · AP, AUROC, EF at top x%</span>
+          <p class="limit"><strong>Supports:</strong> binder enrichment. <strong>Limit:</strong> says nothing direct about continuous potency error among actives.</p>
+        </article>
+        <article class="benchmark-card">
+          <h3>CASF-2016</h3>
+          <p>285 high-quality PDBbind core complexes grouped into 57 clusters, with scoring, ranking, docking, and screening tasks.</p>
+          <span class="metric">METRIC · Pearson, Spearman, pose and screen success</span>
+          <p class="limit"><strong>Supports:</strong> standardized scoring-function tests. <strong>Limit:</strong> crystal-pose scoring and PDBbind-derived training can invite similarity leakage.</p>
+        </article>
+        <article class="benchmark-card">
+          <h3>OpenBind affinity</h3>
+          <p>494 compounds against EV-A71 2A protease, a flexible target with an apo-to-holo loop change and less familiar chemistry.</p>
+          <span class="metric">METRIC · RMSE, Spearman ρ</span>
+          <p class="limit"><strong>Supports:</strong> a harder zero-shot campaign-like test. <strong>Limit:</strong> one target; molecular weight was a surprisingly strong baseline.</p>
+        </article>
+        <article class="benchmark-card">
+          <h3>Prospective assay</h3>
+          <p>Predictions are frozen before new compounds are synthesized and measured using a specified biochemical or biophysical assay.</p>
+          <span class="metric">METRIC · decision utility + calibrated error</span>
+          <p class="limit"><strong>Supports:</strong> real operational value. <strong>Limit:</strong> expensive, small, and often proprietary—but scientifically the most persuasive.</p>
+        </article>
+      </div>
+
+      <aside class="warning-box">
+        <h3>Why there is no honest single leaderboard</h3>
+        <p>Boltz-2’s OpenFE Pearson, FlashAffinity’s MF-PCBA AUROC, PIGNet2’s CASF docking success, and an OpenFE ΔΔG RMSE describe different endpoints and evaluation units. Even two Pearson values can differ in target weighting, assay grouping, test chemistry, and training overlap. Treat paper scores as claims tied to a protocol, not permanent properties of a model.</p>
+      </aside>
+    </section>
+
+    <section id="our-test">
+      <div class="section-head">
+        <div><p class="eyebrow">05 · Concrete example</p><h2>Our galectin-3–galactose smoke test</h2></div>
+        <p>This one-case run checks that the Boltz-2 pipeline works and asks whether it can recover a known binding geometry. It is not yet an affinity benchmark.</p>
+      </div>
+
+      <div class="case-study">
+        <div class="case-copy">
+          <h3>Human galectin-3 CRD + β-D-galactose</h3>
+          <p>Boltz-2 received the protein sequence and ligand identity without the reference complex coordinates. We compared the predicted structure with PDB 9D63 afterward.</p>
+          <p class="fine" style="color:rgba(255,255,255,.68)">Reference: 1.15 Å X-ray structure. The experiment intentionally has no validated affinity label for free galactose.</p>
+        </div>
+        <div class="case-data">
+          <div class="results">
+            <div class="result"><span>Ligand pose RMSD</span><strong>0.475 Å</strong></div>
+            <div class="result"><span>Binder probability</span><strong>0.575</strong></div>
+            <div class="result"><span>Predicted y</span><strong>2.104</strong></div>
+          </div>
+          <div class="verdict">
+            <p><strong>What we can say:</strong> this sample recovered the crystallographic ligand pose closely after protein alignment, and the pipeline emitted plausible files and scores.</p>
+          </div>
+          <div class="verdict">
+            <p><strong>What we cannot say:</strong> that ~127 µM is accurate. There is no matched experimental IC<sub>50</sub> label here, and pose RMSD does not validate potency or ΔG°.</p>
+          </div>
+          <p class="fine"><a href="../../reports/exp002_boltz2_gal3_galactose/report.md">Open the full local experiment report</a></p>
+        </div>
+      </div>
+      <aside class="warning-box">
+        <h3>Would MaSIF help this particular test?</h3>
+        <p>Not as a galactose-affinity model. Galectin-3’s structure could be converted to a molecular surface for exploratory fingerprints, but the released MaSIF-ligand task neither discovers an arbitrary small-molecule pocket nor includes galactose among its seven ligand classes. A cleaner structural-site test would give an apo or predicted galectin-3 structure to a general pocket predictor such as AF2BIND, then compare its predicted residues with the ligand-contact residues in PDB 9D63. Boltz-2 would remain the pose and affinity-like model.</p>
+      </aside>
+    </section>
+
+    <section id="protocol">
+      <div class="section-head">
+        <div><p class="eyebrow">06 · Our benchmark ladder</p><h2>A small test that can grow into evidence</h2></div>
+        <p>The first useful comparison should be narrow and reproducible: one endpoint, one assay family, a frozen split, and baselines simple enough to expose bias.</p>
+      </div>
+
+      <div class="protocol">
+        <article class="protocol-step"><strong>Define the claim</strong><p>Pose recovery, binder enrichment, absolute potency, or within-series ranking—choose one.</p></article>
+        <article class="protocol-step"><strong>Freeze labels</strong><p>Use one assay type where possible; retain units, conditions, censoring, and provenance.</p></article>
+        <article class="protocol-step"><strong>Control leakage</strong><p>Audit both protein similarity and ligand/scaffold similarity to every model’s training data.</p></article>
+        <article class="protocol-step"><strong>Add baselines</strong><p>Include molecular weight, ligand-only fingerprints, docking, and a physics method when appropriate.</p></article>
+        <article class="protocol-step"><strong>Measure uncertainty</strong><p>Report confidence intervals, per-target results, failures, and sensitivity to seeds or poses.</p></article>
+        <article class="protocol-step"><strong>Test prospectively</strong><p>Eventually freeze predictions before measurement; retrospective success is hypothesis generation.</p></article>
+      </div>
+    </section>
+
+    <section id="sources">
+      <div class="section-head">
+        <div><p class="eyebrow">07 · Primary reading</p><h2>Sources behind this guide</h2></div>
+        <p>Preprints are labeled as such. Reported benchmark results remain author-reported unless independently reproduced in this project.</p>
+      </div>
+
+      <div class="sources">
+        <p class="source"><strong><a href="https://jeremywohlwend.com/assets/boltz2.pdf">Boltz-2 technical report</a></strong><span>Architecture, training objectives, FEP+/OpenFE, CASP16, and MF-PCBA results. Preprint.</span></p>
+        <p class="source"><strong><a href="https://github.com/jwohlwend/boltz/blob/main/docs/prediction.md">Boltz prediction specification</a></strong><span>Authoritative CLI input, output, and <code>log10(IC50/µM)</code> semantics.</span></p>
+        <p class="source"><strong><a href="https://www.valencelabs.com/wp-content/uploads/2026/07/nesso1.pdf">Nesso-1 technical report</a></strong><span>Coarse architecture, speed protocol, benchmark scores, OpenBind, and benchmark-distribution caveats. Preprint.</span></p>
+        <p class="source"><strong><a href="https://github.com/recursionpharma/nesso/blob/main/docs/prediction.md">Nesso-1 output specification</a></strong><span>Inputs, ESM handling, entropy outputs, binder probability, and continuous-affinity scale.</span></p>
+        <p class="source"><strong><a href="https://openreview.net/pdf?id=TZTahjQNjX">FlashAffinity report</a></strong><span>Dock-and-score architecture, speed comparison, FEP+/CASP16 regression, and MF-PCBA classification. Preprint.</span></p>
+        <p class="source"><strong><a href="https://www.nature.com/articles/s41592-019-0666-6">MaSIF</a></strong><span>Molecular-surface fingerprints and the MaSIF-ligand, MaSIF-site, and MaSIF-search proof-of-concept tasks.</span></p>
+        <p class="source"><strong><a href="https://openaccess.thecvf.com/content/CVPR2021/html/Sverrisson_Fast_End-to-End_Learning_on_Protein_Surfaces_CVPR_2021_paper.html">dMaSIF</a></strong><span>End-to-end surface point-cloud learning from atomic coordinates and chemical types.</span></p>
+        <p class="source"><strong><a href="https://doi.org/10.1038/s41592-026-03011-2">AF2BIND</a></strong><span>A modern protein-only small-molecule binding-site predictor using AlphaFold2 pair representations.</span></p>
+        <p class="source"><strong><a href="https://www.nature.com/articles/s41467-024-45461-2">DynamicBind</a></strong><span>Ligand-specific flexible protein–ligand complex generation and PDBbind-trained scoring.</span></p>
+        <p class="source"><strong><a href="https://www.sciencedirect.com/org/science/article/pii/S2635098X24000214">PIGNet2</a></strong><span>Physics-informed 3D scoring, CASF-2016, DUD-E, and DEKOIS evaluation.</span></p>
+        <p class="source"><strong><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10966643/">DrΔG-Net</a></strong><span>Directional 3D message passing, pK<sub>i</sub> label, global versus local models, and ligand-only control.</span></p>
+        <p class="source"><strong><a href="https://www.nature.com/articles/s41589-026-02241-x">PBCNet2.0</a></strong><span>Siamese relative-affinity learning with retrospective and prospective tests.</span></p>
+        <p class="source"><strong><a href="https://pubmed.ncbi.nlm.nih.gov/35380443/">Multitask Siamese RBFE network</a></strong><span>An earlier explicit example of simultaneous learned ΔΔG and ΔG prediction from paired bound complexes.</span></p>
+        <p class="source"><strong><a href="https://docs.openfree.energy/en/latest/tutorials/index.html">OpenFE documentation</a></strong><span>Open RBFE and ABFE simulation workflows used here as the non-AI thermodynamic reference.</span></p>
+        <p class="source"><strong><a href="https://pubmed.ncbi.nlm.nih.gov/30481020/">CASF-2016 benchmark</a></strong><span>Original definition of the 285-complex scoring, ranking, docking, and screening benchmark.</span></p>
+        <p class="source"><strong><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9662604/">Affinity benchmark best practices</a></strong><span>Assay curation, test preparation, statistical analysis, and reproducible reporting.</span></p>
+        <p class="source"><strong><a href="https://www.biorxiv.org/content/10.64898/2026.06.29.735309v1.full">Novelty-tiered leakage analysis</a></strong><span>Recent evidence that sequence-only filtering can leave substantial ligand-chemistry leakage. Preprint.</span></p>
+        <p class="source"><strong><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8388617/">Alchemical free-energy best practices</a></strong><span>Protocol design, convergence, uncertainty, and evaluation guidance for RBFE/ABFE calculations.</span></p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <strong>BindingAffinityPredictor learning site</strong><br />This is an educational, versioned snapshot—not medical advice and not a substitute for experimental validation.
+    <div class="footer-links">
+      <a href="../msa_simple/index.html">MSA primer</a>
+      <a href="../model-notes/boltz2_architecture.html">Boltz-2 architecture</a>
+      <a href="../fep_reversibility/index.html">FEP reversibility guide</a>
+      <a href="../literature.md">Project literature map</a>
+    </div>
+  </footer>
+
+  <script>
+    const filterButtons = document.querySelectorAll('.filter');
+    const modelCards = document.querySelectorAll('.model-card');
+    const zeroState = document.getElementById('zero-state');
+
+    filterButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const selected = button.dataset.filter;
+        filterButtons.forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+        let shown = 0;
+        modelCards.forEach((card) => {
+          const match = selected === 'all' || card.dataset.kind.split(' ').includes(selected);
+          card.hidden = !match;
+          if (match) shown += 1;
+        });
+        zeroState.style.display = shown ? 'none' : 'block';
+      });
+    });
+
+    const boltzValue = document.getElementById('boltz-value');
+    const ic50Result = document.getElementById('ic50-result');
+    const pic50Result = document.getElementById('pic50-result');
+
+    function updateConversion() {
+      const y = Number(boltzValue.value);
+      if (!Number.isFinite(y)) return;
+      const micromolar = 10 ** y;
+      let display;
+      if (micromolar < 0.001) display = `${(micromolar * 1e6).toPrecision(3)} pM`;
+      else if (micromolar < 1) display = `${(micromolar * 1e3).toPrecision(3)} nM`;
+      else if (micromolar < 1000) display = `${micromolar.toPrecision(3)} µM`;
+      else display = `${(micromolar / 1000).toPrecision(3)} mM`;
+      ic50Result.textContent = display;
+      pic50Result.textContent = `pIC50 = ${(6 - y).toFixed(3)}`;
+    }
+    boltzValue.addEventListener('input', updateConversion);
+    updateConversion();
+  </script>
+</body>
+</html>

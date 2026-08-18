@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A source-critical report on independent evaluations of the RFdiffusion and ProteinMPNN protein-binder design pipeline, interpreted for a local ten-backbone insulin-receptor experiment." />
+  <title>How often do RFdiffusion binders work? | Evidence report</title>
+  <link rel="stylesheet" href="evaluation.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to the report</a>
+
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="Return to the RFdiffusion tutorial">
+      <span class="brand-mark" aria-hidden="true">R</span>
+      <span><strong>Binder design lab</strong><small>Evidence report · 12 August 2026</small></span>
+    </a>
+    <nav aria-label="Report sections">
+      <a href="#answer">Answer</a>
+      <a href="#evidence">Evidence</a>
+      <a href="#papers">Paper summaries</a>
+      <a href="#estimate">Our ten</a>
+      <a href="#protocol">Next test</a>
+      <a href="#references">References</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div>
+        <p class="eyebrow">Independent evaluation · source-critical summary</p>
+        <h1>Out of ten RFdiffusion designs, how many might actually work?</h1>
+        <p class="lede">RFdiffusion proposes a binder backbone. ProteinMPNN proposes sequences for that backbone. Neither model directly predicts an experimental probability of binding. The only defensible estimate comes from following the full computational-and-experimental funnel.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#answer">Read the answer</a>
+          <a class="button secondary" href="index.html">Return to the interactive tutorial</a>
+        </div>
+      </div>
+      <aside class="hero-result" aria-label="Summary estimate">
+        <p>Planning estimate for our ten <em>raw</em> backbones</p>
+        <strong>1–2</strong>
+        <span>may survive computational validation</span>
+        <strong>0–1</strong>
+        <span>is the sober wet-lab expectation</span>
+        <small>This is an extrapolation, not a model output or measured success rate.</small>
+      </aside>
+    </section>
+
+    <section class="notice" aria-labelledby="boundary-title">
+      <span aria-hidden="true">≠</span>
+      <div>
+        <h2 id="boundary-title">Backbone confidence is not binding probability</h2>
+        <p>The approximately 0.99 RFdiffusion confidence values in our ten structures cannot rank experimental binding. ProteinMPNN likelihood scores measure sequence compatibility with a supplied backbone; they are not affinities, free energies, or probabilities of laboratory success.</p>
+      </div>
+    </section>
+
+    <section class="section" id="answer">
+      <div class="section-heading">
+        <p class="eyebrow">01 · Short answer</p>
+        <h2>For our current panel, zero is still a scientifically plausible outcome</h2>
+      </div>
+      <div class="answer-grid">
+        <article class="answer-card">
+          <span class="number">10</span>
+          <h3>RFdiffusion backbones</h3>
+          <p>All ten are valid generated coordinate sets and show coarse contact with the chosen insulin-receptor region.</p>
+        </article>
+        <article class="answer-card partial">
+          <span class="number">1</span>
+          <h3>backbone with sequences</h3>
+          <p>Only seed 42 currently has ProteinMPNN output: four candidate sequences. Seeds 43–51 remain poly-glycine backbone proposals.</p>
+        </article>
+        <article class="answer-card pending">
+          <span class="number">0</span>
+          <h3>independently validated</h3>
+          <p>No sequence has yet been independently refolded as a target complex or tested experimentally.</p>
+        </article>
+      </div>
+      <p class="callout"><strong>Present evidence-based count:</strong> 0 of 10 has been demonstrated to be a computationally credible or experimental binder. This means “not tested,” not “failed.”</p>
+    </section>
+
+    <section class="section dark-section" id="definitions">
+      <div class="section-heading">
+        <p class="eyebrow">02 · Define the endpoint</p>
+        <h2>“Success” changes at every stage</h2>
+        <p>A percentage is uninterpretable unless its denominator and endpoint are stated.</p>
+      </div>
+      <ol class="stage-list">
+        <li>
+          <span>1</span>
+          <div><h3>Generated backbone</h3><p>RFdiffusion produced coordinates with the requested target, hotspot, and length conditioning. This is an engineering completion criterion.</p></div>
+          <strong>Our state: 10</strong>
+        </li>
+        <li>
+          <span>2</span>
+          <div><h3>Sequence-designable backbone</h3><p>At least one ProteinMPNN sequence independently refolds close to the intended backbone.</p></div>
+          <strong>Not measured</strong>
+        </li>
+        <li>
+          <span>3</span>
+          <div><h3>Predicted complex</h3><p>An independent structure predictor supports the intended target-bound pose and interface with prespecified confidence thresholds.</p></div>
+          <strong>Not measured</strong>
+        </li>
+        <li>
+          <span>4</span>
+          <div><h3>Experimental binder</h3><p>The expressed protein produces target-dependent binding signal under a defined assay concentration and threshold.</p></div>
+          <strong>Not measured</strong>
+        </li>
+        <li>
+          <span>5</span>
+          <div><h3>Useful binder</h3><p>Affinity, specificity, folding, expression, oligomeric state, stability, and biological function satisfy the intended application.</p></div>
+          <strong>Not measured</strong>
+        </li>
+      </ol>
+    </section>
+
+    <section class="section" id="evidence">
+      <div class="section-heading wide">
+        <div>
+          <p class="eyebrow">03 · Published and independent evidence</p>
+          <h2>The observed hit rate is strongly target- and assay-dependent</h2>
+        </div>
+        <p class="side-note">Peer review establishes that a study passed journal review; it does not make a developer evaluation independent. Both properties are shown separately.</p>
+      </div>
+
+      <div class="evidence-table-wrap">
+        <table>
+          <caption>Evaluations relevant to the RFdiffusion → ProteinMPNN → structure-filtering pipeline</caption>
+          <thead>
+            <tr>
+              <th>Source</th>
+              <th>What was tested</th>
+              <th>Result</th>
+              <th>How to interpret it</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag peer">Peer reviewed</span><span class="tag developer">Developer study</span><a href="#ref-1">Watson et al., 2023</a></td>
+              <td>Five protein targets; 95 AF2-filtered designs selected per target for BLI.</td>
+              <td>19% overall experimental success. For the matching zero-noise, non-fold-conditioned insulin-receptor benchmark, 17.9% passed the stated in-silico criteria; the filtered InsR set had roughly a 20% BLI hit rate.</td>
+              <td>Most relevant target and protocol, but optimistic for ten raw samples because the laboratory set had already passed computational selection.</td>
+            </tr>
+            <tr>
+              <td><span class="tag technical">Technical report</span><span class="tag independent">Independent re-test</span><a href="#ref-4">Zambaldi et al., 2024</a></td>
+              <td>Google DeepMind synthesized the 95 published RFdiffusion sequences for each of IL-7Rα, PD-L1, and TrkA and tested them in the same yeast-display workflow.</td>
+              <td><strong>16/95</strong> IL-7Rα, <strong>12/95</strong> PD-L1, and <strong>0/95</strong> TrkA showed measurable binding.</td>
+              <td>The cleanest independent comparison. It demonstrates a 0–17% range even among published, computationally filtered candidates.</td>
+            </tr>
+            <tr>
+              <td><span class="tag technical">Company case study</span><span class="tag independent">Independent replication</span><a href="#ref-5">Adaptyv Bio, 2024</a></td>
+              <td>All 32 reported IL-7Rα binders plus 10 randomly chosen reported non-binders were retested with a different BLI configuration.</td>
+              <td><strong>27/32</strong> reported binders reproduced; one of ten reported negatives showed weak 6.4 µM binding. Fitted affinities were obtained for 23 variants.</td>
+              <td>Supports reproducibility of many reported hits, but the deliberately enriched 42-design sample cannot estimate prospective hit rate.</td>
+            </tr>
+            <tr>
+              <td><span class="tag preprint">Preprint</span><span class="tag independent">Independent small study</span><a href="#ref-7">Jiang et al., 2025</a></td>
+              <td>Five designs for each of Strep-tag II and five eukaryotic protein targets.</td>
+              <td>Two Strep-tag designs showed biochemical activity; none of the 25 candidates against the five protein targets was satisfactory.</td>
+              <td>Small, application-specific and not peer reviewed, but it shows that a five- or ten-design experiment can readily yield zero useful binders.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="independent-panel">
+        <div>
+          <p class="eyebrow">Direct independent re-test</p>
+          <h3>Measurable binding among 95 published RFdiffusion designs</h3>
+          <p>All three groups of sequences were tested by Google DeepMind in the same yeast-display system. Target concentration was 0.5–1 µM, versus 10 µM in the original BLI screen; weak binders were therefore less likely to be counted.</p>
+        </div>
+        <div class="bar-chart" role="img" aria-label="Independent RFdiffusion experimental success rates: IL-7R alpha 16.8 percent, PD-L1 12.6 percent, TrkA 0 percent">
+          <div class="bar-row"><span>IL-7Rα</span><i><b style="--bar: 16.8%"></b></i><strong>16.8%</strong></div>
+          <div class="bar-row"><span>PD-L1</span><i><b style="--bar: 12.6%"></b></i><strong>12.6%</strong></div>
+          <div class="bar-row"><span>TrkA</span><i><b style="--bar: 0%"></b></i><strong>0.0%</strong></div>
+          <small>Success means measurable binding in that study's yeast-display assay. Source: <a href="#ref-4">Zambaldi et al.</a></small>
+        </div>
+      </div>
+    </section>
+
+    <section class="section paper-section" id="papers">
+      <div class="section-heading wide">
+        <div>
+          <p class="eyebrow">04 · Paper-by-paper summaries</p>
+          <h2>What each study contributes—and what it cannot establish</h2>
+        </div>
+        <p class="side-note">The studies answer different questions. ProteinMPNN evaluates sequence design; RFdiffusion evaluates backbone generation; the independent studies examine whether filtered candidates reproduce in new laboratories.</p>
+      </div>
+
+      <div class="paper-map" aria-label="Conceptual order of the papers">
+        <span>Backbone generation</span><i>→</i><span>Sequence design</span><i>→</i><span>Structure filtering</span><i>→</i><span>Experimental binding</span>
+      </div>
+
+      <div class="paper-cards">
+        <article class="paper-card" id="paper-proteinmpnn">
+          <header>
+            <div><span class="tag peer">Peer reviewed</span><span class="tag developer">Methods paper</span></div>
+            <strong>01</strong>
+          </header>
+          <p class="paper-citation">Dauparas et al. · <em>Science</em> · 2022 <a href="#ref-2">[2]</a></p>
+          <h3>ProteinMPNN: which sequence fits a supplied backbone?</h3>
+          <dl class="paper-details">
+            <div><dt>Question</dt><dd>Can a graph neural network assign amino-acid sequences that encode a given protein backbone more robustly and quickly than Rosetta?</dd></div>
+            <div><dt>Method</dt><dd>Residues are nodes in a spatial graph. The model samples residue identities using the backbone geometry and neighboring sequence context.</dd></div>
+            <div><dt>Main result</dt><dd>Native-sequence recovery was 52.4%, versus 32.9% for Rosetta. Experimental structures and functional tests showed broad utility, including rescue of previously failed designs.</dd></div>
+            <div><dt>Boundary</dt><dd>ProteinMPNN likelihood is sequence–backbone compatibility—not binding affinity, free energy, or probability of experimental success.</dd></div>
+          </dl>
+          <p class="paper-takeaway"><strong>For our project:</strong> use several sequences per backbone; do not rank binders by ProteinMPNN score alone.</p>
+        </article>
+
+        <article class="paper-card" id="paper-filtering">
+          <header>
+            <div><span class="tag peer">Peer reviewed</span><span class="tag developer">Developer study</span></div>
+            <strong>02</strong>
+          </header>
+          <p class="paper-citation">Bennett et al. · <em>Nature Communications</em> · 2023 <a href="#ref-3">[3]</a></p>
+          <h3>AlphaFold filtering: reject candidates that do not refold or dock as designed</h3>
+          <dl class="paper-details">
+            <div><dt>Question</dt><dd>Can structure-prediction networks identify two common failures: the sequence does not adopt the designed fold, or the folded binder does not form the intended interface?</dd></div>
+            <div><dt>Method</dt><dd>Approximately one million previously tested designs were analyzed retrospectively, followed by prospective campaigns. Binder RMSD, pLDDT and interchain pAE were evaluated as filters.</dd></div>
+            <div><dt>Main result</dt><dd>AlphaFold/RoseTTAFold filtering enriched experimental success by nearly tenfold. Interface pAE below about 10 was especially useful. ProteinMPNN was much faster than Rosetta sequence design without reducing observed hit rate.</dd></div>
+            <div><dt>Boundary</dt><dd>Absolute success remained below 1% in these precursor campaigns, and one target site produced no binder. Prediction is enrichment, not proof.</dd></div>
+          </dl>
+          <p class="paper-takeaway"><strong>For our project:</strong> independent refolding and complex prediction is the necessary next filter after ProteinMPNN.</p>
+        </article>
+
+        <article class="paper-card featured" id="paper-rfdiffusion">
+          <header>
+            <div><span class="tag peer">Peer reviewed</span><span class="tag developer">Original RFdiffusion</span></div>
+            <strong>03</strong>
+          </header>
+          <p class="paper-citation">Watson et al. · <em>Nature</em> · 2023 <a href="#ref-1">[1]</a></p>
+          <h3>RFdiffusion: generate a backbone around a chosen target surface</h3>
+          <dl class="paper-details">
+            <div><dt>Question</dt><dd>Can a RoseTTAFold-derived denoising model generate new, designable protein structures and target-conditioned protein binders?</dd></div>
+            <div><dt>Method</dt><dd>RFdiffusion denoises residue positions and orientations; ProteinMPNN supplies sequences; AlphaFold2 filters designs; 95 selected candidates per protein target were tested by BLI.</dd></div>
+            <div><dt>Main result</dt><dd>Across five binder targets, the filtered set had a 19% experimental hit rate. All five yielded binders. An HA complex matched the design with 0.63 Å backbone RMSD. The matching zero-noise InsR calculation reported 17.9% in-silico success.</dd></div>
+            <div><dt>Boundary</dt><dd>The 19% refers to selected, computationally filtered candidates—not raw backbones. The 10 µM single-point screen could count weak interactions, and this was the model developers' study.</dd></div>
+          </dl>
+          <p class="paper-takeaway"><strong>For our project:</strong> this is the closest same-target reference, but its experimental percentage is an optimistic comparison for our current unfiltered ten.</p>
+        </article>
+
+        <article class="paper-card" id="paper-alphaproteo">
+          <header>
+            <div><span class="tag technical">Technical report</span><span class="tag independent">Independent re-test</span></div>
+            <strong>04</strong>
+          </header>
+          <p class="paper-citation">Zambaldi et al. · arXiv technical report · 2024 <a href="#ref-4">[4]</a></p>
+          <h3>AlphaProteo study: resynthesize published RFdiffusion designs</h3>
+          <dl class="paper-details">
+            <div><dt>Question</dt><dd>How does AlphaProteo compare experimentally with prior methods, and do published RFdiffusion candidates reproduce under one standardized external assay?</dd></div>
+            <div><dt>Method</dt><dd>Google DeepMind synthesized 95 published RFdiffusion sequences for each of IL-7Rα, PD-L1 and TrkA and tested them by yeast display at 0.5–1 µM target.</dd></div>
+            <div><dt>Main result</dt><dd>RFdiffusion hit rates were 16.8%, 12.6% and 0%, respectively. AlphaProteo itself succeeded on seven targets but failed on a deliberately difficult eighth target, TNFα.</dd></div>
+            <div><dt>Boundary</dt><dd>Assay format and concentration differed from the original 10 µM BLI screen. This is the strongest independent re-test here, but remains a non-peer-reviewed technical report.</dd></div>
+          </dl>
+          <p class="paper-takeaway"><strong>For our project:</strong> even 95 filtered designs can yield zero binders; target identity and assay definition dominate any universal percentage.</p>
+        </article>
+
+        <article class="paper-card" id="paper-biochemical">
+          <header>
+            <div><span class="tag preprint">Preprint</span><span class="tag independent">Independent small study</span></div>
+            <strong>05</strong>
+          </header>
+          <p class="paper-citation">Jiang et al. · bioRxiv · 2025 <a href="#ref-7">[7]</a></p>
+          <h3>Biochemical detection: what happens in a small five-design campaign?</h3>
+          <dl class="paper-details">
+            <div><dt>Question</dt><dd>Can small RFdiffusion design sets provide practical affinity reagents for Western blotting and biochemical detection?</dd></div>
+            <div><dt>Method</dt><dd>Five designs were evaluated for Strep-tag II and for each of five eukaryotic protein targets: STAT3, FGF4, EGF, PDGF-BB and CD4.</dd></div>
+            <div><dt>Main result</dt><dd>Two Strep-tag designs showed activity but did not match conventional antibodies. None of the 25 designs against the five protein targets was satisfactory; failure modes included expression, specificity and undetectable affinity.</dd></div>
+            <div><dt>Boundary</dt><dd>Five candidates per target provide weak statistical power. The application and implementation differ from the original benchmark, and the report is not peer reviewed.</dd></div>
+          </dl>
+          <p class="paper-takeaway"><strong>For our project:</strong> it is direct evidence that a small set of attractive structures can reasonably produce zero useful reagents.</p>
+        </article>
+
+        <article class="paper-card" id="paper-crowdsourced">
+          <header>
+            <div><span class="tag preprint">Preprint</span><span class="tag independent">Crowdsourced benchmark</span></div>
+            <strong>06</strong>
+          </header>
+          <p class="paper-citation">Cotet et al. · bioRxiv · 2025 <a href="#ref-8">[8]</a></p>
+          <h3>EGFR competition: methods matter, and the leaderboard is not a controlled benchmark</h3>
+          <dl class="paper-details">
+            <div><dt>Question</dt><dd>What can be learned when many groups use diverse computational strategies to design EGFR binders under a common experimental measurement pipeline?</dd></div>
+            <div><dt>Method</dt><dd>More than 1,800 designs were submitted over two rounds; 601 selected proteins were experimentally characterized. Workflows included RFdiffusion–ProteinMPNN, hallucination, known-binder redesign and antibody optimization.</dd></div>
+            <div><dt>Main result</dt><dd>Sixty binders were validated. The selected-design hit rate improved from roughly 3% to 13–14% between rounds, while expression rose from 73% to 95%. Most second-round de novo hits came from hallucination workflows; one came from RFdiffusion.</dd></div>
+            <div><dt>Boundary</dt><dd>Selection was non-random, workflows were heterogeneous and many entries began from known binders. The overall hit rate cannot be assigned to RFdiffusion.</dd></div>
+          </dl>
+          <p class="paper-takeaway"><strong>For our project:</strong> expert candidate selection and protocol details can matter as much as the named generative model.</p>
+        </article>
+
+        <article class="paper-card" id="paper-beta">
+          <header>
+            <div><span class="tag peer">Peer reviewed</span><span class="tag developer">Developer follow-up</span></div>
+            <strong>07</strong>
+          </header>
+          <p class="paper-citation">Sappington et al. · <em>Nature Communications</em> · 2026 <a href="#ref-6">[6]</a></p>
+          <h3>β-pairing conditioning: target chemistry changes designability</h3>
+          <dl class="paper-details">
+            <div><dt>Question</dt><dd>Can explicit β-strand pairing geometry improve binder design against polar, exposed target edge strands that standard hotspot conditioning handles poorly?</dd></div>
+            <div><dt>Method</dt><dd>RFdiffusion was conditioned on binder–target β-strand pairing. In a comparison, 500 backbones per method and ten ProteinMPNN sequences per backbone were filtered computationally.</dd></div>
+            <div><dt>Main result</dt><dd>Standard hotspot conditioning had a 0.98% in-silico pass rate versus 9.2% with β-pairing conditioning. Experimentally validated binders spanned picomolar to mid-nanomolar affinity, and a KIT complex closely matched its design.</dd></div>
+            <div><dt>Boundary</dt><dd>Experimental effort ranged from 96 candidates to libraries of thousands, and some difficult targets had below-1% strong-hit rates. The study comes from the broader RFdiffusion development ecosystem.</dd></div>
+          </dl>
+          <p class="paper-takeaway"><strong>For our project:</strong> “RFdiffusion success rate” is not a model constant; epitope geometry, polarity and conditioning can alter it by an order of magnitude.</p>
+        </article>
+      </div>
+
+      <div class="synthesis-box">
+        <p class="eyebrow">Synthesis across all seven</p>
+        <h3>The robust conclusion is a funnel, not a single accuracy number.</h3>
+        <ol>
+          <li><strong>Generate:</strong> RFdiffusion samples plausible target-conditioned backbones.</li>
+          <li><strong>Sequence:</strong> ProteinMPNN assigns sequences compatible with each geometry.</li>
+          <li><strong>Filter:</strong> an independent structure predictor rejects many fold and interface failures.</li>
+          <li><strong>Measure:</strong> expression, aggregation, specificity and concentration-dependent binding remain experimental questions.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section estimate-section" id="estimate">
+      <div class="section-heading">
+        <p class="eyebrow">05 · Translation to our experiment</p>
+        <h2>A transparent planning calculation—not a calibrated forecast</h2>
+        <p>Our protocol uses the official 150-residue insulin-receptor target, hotspots A59/A83/A91, binder length 70–100, the base complex checkpoint, and zero Cα/frame noise. This closely resembles the original zero-noise InsR benchmark.</p>
+      </div>
+
+      <div class="funnel" aria-label="Heuristic success funnel for ten raw backbones">
+        <article>
+          <span>Observed</span>
+          <strong>10</strong>
+          <p>raw RFdiffusion backbones</p>
+        </article>
+        <div class="funnel-arrow"><b>× 0.179</b><span>original InsR computational pass fraction</span></div>
+        <article>
+          <span>Heuristic expectation</span>
+          <strong>1.79</strong>
+          <p>computational survivors</p>
+        </article>
+        <div class="funnel-arrow"><b>× ≈0.20</b><span>original filtered InsR BLI hit fraction</span></div>
+        <article>
+          <span>Heuristic expectation</span>
+          <strong>0.36</strong>
+          <p>experimental binders</p>
+        </article>
+      </div>
+
+      <div class="interpretation-grid">
+        <article class="conclusion">
+          <p class="eyebrow">Practical interpretation</p>
+          <h3>Expect 1–2 computational survivors and plan experimentally for 0–1 binders.</h3>
+          <p>If the naïvely multiplied 3.58% per-backbone rate were a true independent probability, ten trials would have a 30.6% chance of at least one hit and a 69.4% chance of none. Those probabilities are shown only to make the arithmetic tangible.</p>
+        </article>
+        <article class="limitations">
+          <p class="eyebrow">Why the arithmetic is fragile</p>
+          <ul>
+            <li>The computational and experimental rates come from selected stages, not a single randomized prospective experiment.</li>
+            <li>Backbones share one target and epitope, so failures can be correlated.</li>
+            <li>ProteinMPNN samples on one backbone are correlated, not independent trials.</li>
+            <li>Assay format, target concentration, expression system, aggregation, and threshold alter the measured hit rate.</li>
+            <li>The original study targeted relatively non-polar sites and warned that polar sites can be harder.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section protocol-section" id="protocol">
+      <div class="section-heading wide">
+        <div>
+          <p class="eyebrow">06 · The decisive next experiment</p>
+          <h2>Run a prespecified computational funnel on all ten</h2>
+        </div>
+        <p class="side-note">The purpose is enrichment, not proof. Wet-lab measurements remain the ground truth for binding.</p>
+      </div>
+      <div class="protocol-grid">
+        <article><span>1</span><h3>Sequence</h3><p>Generate eight ProteinMPNN sequences per backbone while fixing the receptor: 80 sequence–backbone candidates.</p></article>
+        <article><span>2</span><h3>Refold independently</h3><p>Predict each designed monomer and target complex with a sequence-based model that did not generate the backbone.</p></article>
+        <article><span>3</span><h3>Apply frozen criteria</h3><p>Reproduce the classic AF2 filter: binder pLDDT &gt;80, interface pAE &lt;10, and binder RMSD to design &lt;1 Å.</p></article>
+        <article><span>4</span><h3>Check the interface</h3><p>Inspect clashes, buried surface, shape complementarity, unsatisfied polar atoms, exposed hydrophobics, and agreement across predictors.</p></article>
+        <article><span>5</span><h3>Preserve diversity</h3><p>Select representatives from distinct backbone and interface clusters rather than eight near-duplicate sequences from one fold.</p></article>
+        <article><span>6</span><h3>Measure binding</h3><p>Test expression and monodispersity, then perform concentration-dependent BLI or SPR with negative, competition, and specificity controls.</p></article>
+      </div>
+      <div class="criteria-note">
+        <h3>Why independent structure prediction is useful</h3>
+        <p>The sequence-design problem asks whether a sampled amino-acid sequence actually encodes the RFdiffusion backbone and its intended complex. AlphaFold filtering was shown to enrich experimental binders in the pre-RFdiffusion pipeline, but it is an imperfect classifier and cannot substitute for affinity measurement. <a href="#ref-3">Bennett et al., 2023</a></p>
+      </div>
+    </section>
+
+    <section class="section references-section" id="references">
+      <div class="section-heading">
+        <p class="eyebrow">07 · Linked literature</p>
+        <h2>Technical and primary sources</h2>
+        <p>Links point to the journal article, technical report, DOI record, or openly available data. Publication status is stated explicitly.</p>
+      </div>
+      <ol class="references">
+        <li id="ref-1">
+          <span>[1]</span>
+          <div><strong>Watson JL et al. De novo design of protein structure and function with RFdiffusion.</strong> <em>Nature</em> 620, 1089–1100 (2023). Peer reviewed; original developer study. <a href="https://doi.org/10.1038/s41586-023-06415-8" target="_blank" rel="noopener">Journal and DOI</a> · <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10468394/" target="_blank" rel="noopener">Open full text</a> · <a href="https://figshare.com/s/439fdd59488215753bc3" target="_blank" rel="noopener">designs and experimental data</a></div>
+        </li>
+        <li id="ref-2">
+          <span>[2]</span>
+          <div><strong>Dauparas J et al. Robust deep learning–based protein sequence design using ProteinMPNN.</strong> <em>Science</em> 378, 49–56 (2022). Peer reviewed; ProteinMPNN methods paper. <a href="https://doi.org/10.1126/science.add2187" target="_blank" rel="noopener">Journal and DOI</a> · <a href="https://github.com/dauparas/ProteinMPNN" target="_blank" rel="noopener">official code</a></div>
+        </li>
+        <li id="ref-3">
+          <span>[3]</span>
+          <div><strong>Bennett NR et al. Improving de novo protein binder design with deep learning.</strong> <em>Nature Communications</em> 14, 2625 (2023). Peer reviewed; establishes ProteinMPNN sequence design and AlphaFold-based enrichment in a precursor binder pipeline. <a href="https://doi.org/10.1038/s41467-023-38328-5" target="_blank" rel="noopener">Open journal article and DOI</a></div>
+        </li>
+        <li id="ref-4">
+          <span>[4]</span>
+          <div><strong>Zambaldi V et al. De novo design of high-affinity protein binders with AlphaProteo.</strong> arXiv:2409.08022 (2024). Technical report/preprint; contains the independent yeast-display re-test of published RFdiffusion designs. <a href="https://arxiv.org/html/2409.08022" target="_blank" rel="noopener">HTML technical report</a> · <a href="https://arxiv.org/abs/2409.08022" target="_blank" rel="noopener">record and PDF</a></div>
+        </li>
+        <li id="ref-5">
+          <span>[5]</span>
+          <div><strong>Adaptyv Bio. Benchmarking RFdiffusion generated binders for IL-7Rα.</strong> Independent company case study (2024); not peer reviewed. <a href="https://www.adaptyvbio.com/blog/rfdiff_il7ra" target="_blank" rel="noopener">Case-study report</a> · <a href="https://github.com/adaptyvbio/rfdiff_il7ra" target="_blank" rel="noopener">methods and raw data repository</a></div>
+        </li>
+        <li id="ref-6">
+          <span>[6]</span>
+          <div><strong>Sappington I et al. Improved protein binder design using β-pairing targeted RFdiffusion.</strong> <em>Nature Communications</em> 17, 1101 (2026). Peer reviewed; developer-group follow-up demonstrating strong target-site dependence and improved results from specialized conditioning. <a href="https://doi.org/10.1038/s41467-025-67866-3" target="_blank" rel="noopener">Open journal article and DOI</a></div>
+        </li>
+        <li id="ref-7">
+          <span>[7]</span>
+          <div><strong>Jiang B et al. RFdiffusion Exhibits Low Success Rate in De Novo Design of Functional Protein Binders for Biochemical Detection.</strong> bioRxiv 2025.02.07.636769 (2025). Independent preprint; small experiment, not peer reviewed. <a href="https://doi.org/10.1101/2025.02.07.636769" target="_blank" rel="noopener">Preprint and DOI</a></div>
+        </li>
+        <li id="ref-8">
+          <span>[8]</span>
+          <div><strong>Cotet T-S et al. Crowdsourced Protein Design: Lessons From the Adaptyv EGFR Binder Competition.</strong> bioRxiv 2025.04.17.648362 (2025). Independent crowdsourced preprint; experimentally compares heterogeneous submitted workflows rather than one controlled RFdiffusion implementation. <a href="https://doi.org/10.1101/2025.04.17.648362" target="_blank" rel="noopener">Preprint and DOI</a> · <a href="https://github.com/adaptyvbio/egfr_competition_2/" target="_blank" rel="noopener">Round-2 results data</a></div>
+        </li>
+      </ol>
+    </section>
+  </main>
+
+  <footer>
+    <p><strong>Scope:</strong> This report evaluates the RFdiffusion → ProteinMPNN binder-design workflow. It does not claim that an in-silico confidence metric measures equilibrium affinity or binding free energy.</p>
+    <a href="#top">Back to top ↑</a>
+  </footer>
+</body>
+</html>

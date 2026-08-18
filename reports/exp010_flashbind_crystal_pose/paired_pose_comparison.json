@@ -1,0 +1,48 @@
+{
+  "metric": "symmetry-corrected ligand heavy-atom RMSD after reference-pocket protein CA alignment",
+  "unit": "angstrom",
+  "paired_samples": 16,
+  "descriptive_success_threshold_angstrom": 2.0,
+  "flashbind_released_FABind_plus": {
+    "mean": 0.6507138584155987,
+    "median": 0.634337861775331,
+    "below_2A": 16
+  },
+  "boltz2_msa1024_seed42": {
+    "mean": 0.976818211875,
+    "median": 0.897572755,
+    "below_2A": 14
+  },
+  "paired_difference_flashbind_minus_boltz2_angstrom": {
+    "mean": -0.32610435345940125,
+    "median": -0.10871754028604019
+  },
+  "lower_rmsd_counts": {
+    "flashbind": 9,
+    "boltz2": 7,
+    "ties": 0
+  },
+  "by_target": {
+    "cdk2": {
+      "n": 6,
+      "flashbind_median_rmsd_A": 0.4416483912433901,
+      "boltz2_median_rmsd_A": 0.7876638650000001
+    },
+    "jnk1": {
+      "n": 1,
+      "flashbind_median_rmsd_A": 0.608858596306388,
+      "boltz2_median_rmsd_A": 0.50185189
+    },
+    "p38": {
+      "n": 7,
+      "flashbind_median_rmsd_A": 0.7683550256432835,
+      "boltz2_median_rmsd_A": 1.11113024
+    },
+    "tyk2": {
+      "n": 2,
+      "flashbind_median_rmsd_A": 0.14992040781128113,
+      "boltz2_median_rmsd_A": 0.23811343000000001
+    }
+  },
+  "interpretation": "Descriptive retrospective paired comparison; the two pose sources use different receptor inputs and neither is a prospective time split."
+}

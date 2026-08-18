@@ -1,0 +1,80 @@
+id: nesso1_1_0_0
+status: installed_verified_and_fepplus4_87_run_complete
+observed_on: 2026-08-17
+
+implementation:
+  source_url: https://github.com/recursionpharma/nesso
+  source_revision: f0156e9a22326448684bae09ee96f73415902dcd
+  package_version: 1.0.0
+  clone_path: /home/yusheng/source/nesso
+  environment_path: /home/yusheng/programs/nesso-1.0.0
+
+environment:
+  specification: environments/nesso-1.0.0/
+  python: 3.11.15
+  pytorch: 2.5.1+cu121
+  pytorch_cuda_build: 12.1
+  numpy: 2.1.3
+  gpu: NVIDIA GeForce RTX 3080
+  gpu_memory_mib: 10240
+  nvidia_driver: 535.230.02
+  unset_external_pythonpath: true
+
+cache:
+  path: /mnt/hdd2/BindingAffinityPredictor/cache/nesso
+  git_policy: ignored
+  installed_size_gib: 3.0
+
+checkpoints:
+  model_hub: recursionpharma/nesso
+  model_revision: v1.0.0
+  resolved_hub_commit: 1896c84c7186c506c7efd79051480809d51098bf
+  model_file: v1.0.0/model.safetensors
+  model_size_bytes: 165426752
+  model_sha256: 9928a8a824d147d665e76656804af1cd91c86731516d0b561f9fd1c91ee45622
+  hparams_file: v1.0.0/hparams.json
+  hparams_sha256: 06aa0c44fcd44eaa2c5c2473bfcf0d9a3af892d867e5279859bb22eb0f6e2d72
+  ccd_size_bytes: 412923533
+  ccd_sha256: 7ed0ccd3903f19627926a5e41a5c0b5309c127a071cb9498dcae96926799ffd8
+  esm_model: facebook/esm2_t33_650M_UR50D
+  esm_revision: 08e4846e537177426273712802403f7ba8261b6c
+
+input:
+  format: nesso_yaml
+  protein: exact_deposited_complex_construct_sequences
+  ligand: stereochemical_smiles
+  msa: none
+  pocket: none
+  structural_template: none
+
+inference:
+  accelerator: gpu
+  devices: 1
+  precision: bf16-mixed
+  recycling_steps: 5
+  refine_protein_inference: true
+  refine_protein_cutoff_angstrom: 22.0
+  refine_protein_tokens_budget: 256
+  affinity_protein_cutoff_angstrom: 15.0
+  no_kernels: true
+  seed: 42
+
+native_outputs:
+  continuous_affinity:
+    field: affinity_pred_value
+    approximate_scale: log10(IC50 / micromolar)
+    direction: lower_is_stronger
+  binder_classification:
+    field: affinity_probability_binary
+    scale: probability
+    direction: higher_is_more_binder_like
+  ensemble_members:
+    - affinity_pred_value1
+    - affinity_pred_value2
+  interface_uncertainty: entropy_crop_pl
+
+verification_notes:
+  - Upstream CPU test suite completed with 21 passed and 7 expected skips before the CCD was cached.
+  - A seed-42 GPU smoke prediction completed with finite affinity, binder-probability, and entropy outputs.
+  - The optional cuEquivariance kernels are disabled because the retained driver-compatible PyTorch stack uses CUDA 12.1.
+  - The first model-asset transfer stalled after writing the complete ESM safetensors byte count; the file was promoted only after its 573-tensor safetensors header was successfully validated.

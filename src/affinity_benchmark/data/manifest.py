@@ -77,6 +77,31 @@ def _validate_protein(protein: Any, prefix: str, issues: list[str]) -> None:
         issues.append(f"{path} must be an object")
         return
 
+    chains = protein.get("chains")
+    if chains is None:
+        _validate_protein_sequence(protein, path, issues)
+        return
+    if not isinstance(chains, list) or not chains:
+        issues.append(f"{path}.chains must be a non-empty list")
+        return
+
+    seen_chain_ids: set[str] = set()
+    for index, chain in enumerate(chains):
+        chain_path = f"{path}.chains[{index}]"
+        if not isinstance(chain, dict):
+            issues.append(f"{chain_path} must be an object")
+            continue
+        chain_id = chain.get("id")
+        if not _nonempty_string(chain_id):
+            issues.append(f"{chain_path}.id must be a non-empty string")
+        elif chain_id in seen_chain_ids:
+            issues.append(f"{chain_path}.id duplicates {chain_id!r}")
+        else:
+            seen_chain_ids.add(chain_id)
+        _validate_protein_sequence(chain, chain_path, issues)
+
+
+def _validate_protein_sequence(protein: dict[str, Any], path: str, issues: list[str]) -> None:
     sequence = protein.get("sequence")
     if not _nonempty_string(sequence):
         issues.append(f"{path}.sequence must be a non-empty string")
@@ -105,6 +130,10 @@ def _validate_ligand(ligand: Any, prefix: str, issues: list[str]) -> None:
 
 def _validate_measurement(measurement: Any, prefix: str, issues: list[str]) -> None:
     path = f"{prefix}.measurement"
+    # A structural smoke test may have no matched quantitative affinity
+    # measurement.  Keep that absence explicit instead of inventing a label.
+    if measurement is None:
+        return
     if not isinstance(measurement, dict):
         issues.append(f"{path} must be an object")
         return

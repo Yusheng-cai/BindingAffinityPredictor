@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A presentation-ready scientific briefing on RFdiffusion, ProteinMPNN, hydration-aware physics, and a prospective protein-binder design pilot." />
+  <title>From backbone generation to physics-guided binder design</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <nav class="view-switcher" aria-label="Presentation controls">
+    <a data-view="slides" href="./" title="Present as slides">Present</a>
+    <a data-view="scroll" href="?view=scroll" title="Read as a scrolling page">Read</a>
+    <a href="../rfdiffusion_binder_tutorial/" title="Open the interactive molecular tutorial">3D tutorial</a>
+  </nav>
+
+  <div class="reveal">
+    <div class="slides">
+
+      <section class="title-slide" data-background-color="#edf2ec">
+        <div class="title-grid">
+          <div>
+            <p class="kicker">Project briefing · August 2026</p>
+            <h1>From backbone generation to <span>physics-guided</span> binder design</h1>
+            <p class="subtitle">Understanding RFdiffusion + ProteinMPNN, deciding where solvent physics belongs, and choosing a first experiment that can genuinely fail.</p>
+            <div class="mode-hint"><b>Read:</b> choose “Read” above &nbsp;·&nbsp; <b>Present:</b> arrows navigate, <kbd>S</kbd> opens notes</div>
+          </div>
+          <div class="hero-graphic" aria-label="A target protein surface, a generated binder backbone and a hydration field">
+            <svg viewBox="0 0 620 520" role="img">
+              <defs>
+                <linearGradient id="target-fill" x1="0" x2="1"><stop stop-color="#315e73"/><stop offset="1" stop-color="#213f51"/></linearGradient>
+                <linearGradient id="binder-fill" x1="0" x2="1"><stop stop-color="#df805c"/><stop offset="1" stop-color="#a54542"/></linearGradient>
+                <radialGradient id="water-fill"><stop stop-color="#60b8c6" stop-opacity=".9"/><stop offset="1" stop-color="#60b8c6" stop-opacity="0"/></radialGradient>
+              </defs>
+              <path class="target-blob" d="M78 213C94 112 187 47 300 63c90 13 126 90 114 167-10 65-43 87-90 102-50 16-45 73-117 74-94 1-150-91-129-193Z"/>
+              <path class="binder-ribbon" d="M387 98c79 18 138 63 140 119 2 45-31 79-78 87-55 10-99-18-113-52-17-41 6-82 47-91 34-8 73 5 84 29 9 19-6 40-31 42-22 2-40-10-42-28"/>
+              <g class="water-field">
+                <circle cx="340" cy="170" r="76"/><circle cx="360" cy="258" r="54"/><circle cx="284" cy="355" r="62"/>
+              </g>
+              <g class="contact-dots"><circle cx="355" cy="175" r="7"/><circle cx="368" cy="208" r="7"/><circle cx="352" cy="241" r="7"/></g>
+              <text x="82" y="443">target</text><text x="425" y="350">designed binder</text><text x="340" y="88">water response</text>
+            </svg>
+          </div>
+        </div>
+        <aside class="notes">The goal is not simply to run RFdiffusion. The project asks whether a solvent-aware physical signal helps choose better binders from a controlled candidate set. Emphasize that every layer has a different output and a different evidential status.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">The thesis in one sentence</p>
+          <h2>Hold generation fixed; test whether physics improves selection.</h2>
+        </div>
+        <div class="thesis-layout">
+          <div class="big-question">
+            <span>Falsifiable question</span>
+            <p>Given the <em>same target epitope</em>, the <em>same RFdiffusion backbones</em>, and the <em>same ProteinMPNN sequence pools</em>, does a hydration-aware interface score enrich binders with lower experimental <i>K</i><sub>d</sub>?</p>
+          </div>
+          <div class="boundary-list">
+            <article><b>Not the first claim</b><span>“We can predict absolute binding free energy.”</span></article>
+            <article><b>Not sufficient evidence</b><span>One attractive structure or one high confidence score.</span></article>
+            <article><b>What would count</b><span>A prospective, matched comparison against strong and simple baselines.</span></article>
+          </div>
+        </div>
+        <div class="takeaway">The physics model is tested as an <strong>incremental decision rule</strong>, not protected by changes elsewhere in the pipeline.</div>
+        <aside class="notes">This matched design is the conceptual center of the proposal. If the backbone pool or sequence pool differs by method, an apparent gain cannot be attributed to the new score.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">01 · Define the object</p>
+          <h2>“Protein–ligand” can mean two different design problems</h2>
+        </div>
+        <div class="two-paths">
+          <article class="path-card selected">
+            <header><span>A</span><b>Protein target + protein binder</b></header>
+            <div class="molecule-pair"><i class="protein-shape target"></i><span>+</span><i class="protein-shape binder"></i></div>
+            <h3>Our recommended first project</h3>
+            <p>Original RFdiffusion proposes a new binder backbone around a fixed target. ProteinMPNN proposes its amino-acid sequence.</p>
+            <code>RFdiffusion → ProteinMPNN</code>
+          </article>
+          <article class="path-card">
+            <header><span>B</span><b>Small molecule + designed protein</b></header>
+            <div class="molecule-pair"><i class="ligand-shape">⬡</i><span>+</span><i class="protein-shape pocket"></i></div>
+            <h3>A related, later problem</h3>
+            <p>Nonprotein atoms must be explicit context. RFdiffusion All-Atom or RFdiffusion2 is paired naturally with LigandMPNN.</p>
+            <code>RFdiffusionAA / RFdiffusion2 → LigandMPNN</code>
+          </article>
+        </div>
+        <p class="precision"><strong>Terminology:</strong> in the rest of this talk, “binder” means a newly designed protein chain, while “target” is the protein it should bind.</p>
+        <div class="source-line"><a href="https://doi.org/10.1038/s41586-023-06415-8">Watson et al., Nature (2023)</a> · <a href="https://doi.org/10.1038/s41592-025-02626-1">Dauparas et al., Nature Methods (2025)</a> · <a href="https://doi.org/10.1038/s41592-025-02975-x">Vázquez Torres et al., Nature Methods (2025)</a></div>
+        <aside class="notes">This distinction prevents a common conceptual error. ProteinMPNN does not model ligand atoms. LigandMPNN is the relevant inverse-folding model when the context contains a small molecule, metal or nucleic acid.</aside>
+      </section>
+
+      <section class="dark-slide" data-background-color="#142a2b">
+        <div class="slide-heading">
+          <p class="kicker">The complete workflow</p>
+          <h2>Each stage answers a different question</h2>
+        </div>
+        <div class="workflow" role="img" aria-label="Target site selection, RFdiffusion backbone generation, ProteinMPNN sequence generation, all atom modeling, physics based ranking and experimental testing">
+          <article><span>1</span><b>Choose site</b><small>Where should binding occur?</small></article><i>→</i>
+          <article><span>2</span><b>RFdiffusion</b><small>Where should binder residues go?</small></article><i>→</i>
+          <article><span>3</span><b>ProteinMPNN</b><small>Which amino acids fit?</small></article><i>→</i>
+          <article><span>4</span><b>Pack + predict</b><small>Is an all-atom complex plausible?</small></article><i>→</i>
+          <article class="accent"><span>5</span><b>Our score</b><small>Which interfaces best satisfy the physical objective?</small></article><i>→</i>
+          <article class="experiment"><span>6</span><b>Experiment</b><small>Does it fold, bind, and function?</small></article>
+        </div>
+        <div class="output-ledger">
+          <div><b>Coordinates</b><span>≠</span><small>sequence</small></div>
+          <div><b>Sequence likelihood</b><span>≠</span><small>binding affinity</small></div>
+          <div><b>Structure confidence</b><span>≠</span><small>experimental evidence</small></div>
+          <div><b>Interface score</b><span>≠</span><small>ΔG<sub>bind</sub></small></div>
+        </div>
+        <aside class="notes">Walk left to right. A major purpose of the slide is to keep native outputs separate. Several confidence scores in these pipelines are easy to misread as affinity.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">02 · RFdiffusion</p>
+          <h2>A conditional generator of protein backbone geometry</h2>
+        </div>
+        <div class="io-architecture">
+          <div class="io-column">
+            <h3>Input</h3>
+            <ul>
+              <li>Target protein coordinates</li>
+              <li>Requested binder length or contig</li>
+              <li>Optional target “hotspot” residues</li>
+              <li>Optional fixed motifs / topology constraints</li>
+              <li>Random seed and sampling settings</li>
+            </ul>
+          </div>
+          <div class="architecture-core">
+            <div class="noisy-frames"><i></i><i></i><i></i><i></i><i></i></div>
+            <p>iterative equivariant denoising</p>
+            <div class="denoise-arrow"><span>t = T</span><b>⟶</b><span>t = 0</span></div>
+            <div class="folded-trace"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="io-column output">
+            <h3>Output</h3>
+            <ul>
+              <li>Binder backbone coordinates</li>
+              <li>Target-relative binding pose</li>
+              <li>A reverse denoising trajectory</li>
+              <li>Internal confidence values</li>
+            </ul>
+            <p class="not-output">Not a designed sequence.<br/>Not a <i>K</i><sub>d</sub>.</p>
+          </div>
+        </div>
+        <div class="equation-band"><span>Learned task</span><b>predict a clean residue-frame arrangement from a noisy one, conditioned on the target</b></div>
+        <div class="source-line"><a href="https://doi.org/10.1038/s41586-023-06415-8">RFdiffusion paper</a> · <a href="https://github.com/RosettaCommons/RFdiffusion">official implementation</a></div>
+        <aside class="notes">A residue frame contains translation and orientation information derived from backbone atoms. The target remains conditioning context; the binder is the part being generated in the usual complex-design setup.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">Why equivariance?</p>
+          <h2>The answer should rotate when the molecular system rotates</h2>
+        </div>
+        <div class="equivariance-demo">
+          <div class="transform-card">
+            <svg viewBox="0 0 300 250" aria-label="Protein and predicted vector before rotation">
+              <path d="M50 155C32 90 83 42 142 64c36 13 48 48 30 75-15 22-43 25-57 12-14-14-5-37 14-39"/>
+              <line x1="142" y1="125" x2="235" y2="72"/><polygon points="235,72 216,75 226,91"/>
+              <text x="49" y="211">system x</text><text x="188" y="56">output f(x)</text>
+            </svg>
+          </div>
+          <div class="math-arrow">rotate by R<br/><b>⟶</b></div>
+          <div class="transform-card rotated">
+            <svg viewBox="0 0 300 250" aria-label="Protein and predicted vector after rotation">
+              <g transform="rotate(75 145 130)">
+                <path d="M50 155C32 90 83 42 142 64c36 13 48 48 30 75-15 22-43 25-57 12-14-14-5-37 14-39"/>
+                <line x1="142" y1="125" x2="235" y2="72"/><polygon points="235,72 216,75 226,91"/>
+              </g>
+              <text x="38" y="226">rotated system Rx</text>
+            </svg>
+          </div>
+        </div>
+        <div class="equation-card"><b>f(Rx + a) = R f(x) + a</b><span>A global rotation <i>R</i> and translation <i>a</i> must change coordinates consistently—not change the protein design problem.</span></div>
+        <p class="precision">Equivariance is a geometric constraint on the network. It does <em>not</em> mean that a protein is physically symmetric.</p>
+        <aside class="notes">This distinction often resolves the confusion. Invariance would mean the output does not change under rotation, suitable for a scalar score. Equivariance means a coordinate output transforms with the input.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">03 · ProteinMPNN</p>
+          <h2>Inverse folding: sequence conditioned on backbone</h2>
+        </div>
+        <div class="mpnn-layout">
+          <svg class="residue-graph" viewBox="0 0 600 430" role="img" aria-label="Residue graph used by ProteinMPNN">
+            <g class="edges"><path d="M93 98L192 68L276 136L363 79L474 125M93 98L154 215L276 136L318 257L474 125M154 215L228 333L318 257L432 335M276 136L228 333M363 79L318 257M474 125L432 335"/></g>
+            <g class="target-nodes"><circle cx="93" cy="98" r="22"/><circle cx="192" cy="68" r="22"/><circle cx="154" cy="215" r="22"/><circle cx="228" cy="333" r="22"/></g>
+            <g class="binder-nodes"><circle cx="276" cy="136" r="22"/><circle cx="363" cy="79" r="22"/><circle cx="318" cy="257" r="31"/><circle cx="474" cy="125" r="22"/><circle cx="432" cy="335" r="22"/></g>
+            <text x="52" y="396">fixed target</text><text x="391" y="396">designed chain</text>
+            <g class="aa-probs"><rect x="349" y="207" width="112" height="94" rx="12"/><text x="369" y="232">L  0.31</text><text x="369" y="255">I   0.24</text><text x="369" y="278">V  0.17</text></g>
+          </svg>
+          <div class="mpnn-copy">
+            <ol>
+              <li><b>Graph</b><span>Residues are nodes; spatial neighbors form edges.</span></li>
+              <li><b>Geometry</b><span>Backbone atoms define relative distances and orientations.</span></li>
+              <li><b>Messages</b><span>Encoder layers aggregate local structural context.</span></li>
+              <li><b>Decode</b><span>The model emits probabilities over 20 amino acids.</span></li>
+              <li><b>Sample</b><span>Different orders, seeds and temperatures yield sequence diversity.</span></li>
+            </ol>
+          </div>
+        </div>
+        <div class="equation-band"><span>Native objective</span><b>P(S | X,T) = ∏<sub>i</sub> P(s<sub>i</sub> | X,T,S<sub>previous</sub>)</b><em>likelihood ≠ affinity</em></div>
+        <div class="source-line"><a href="https://doi.org/10.1126/science.add2187">Dauparas et al., Science (2022)</a> · <a href="https://github.com/dauparas/ProteinMPNN">official implementation</a></div>
+        <aside class="notes">ProteinMPNN learns which sequences are compatible with protein backbone geometry. It was trained using structure-derived sequence recovery, not measured Kd values. Its log probability is therefore a sequence prior, not a binding assay prediction.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">04 · Where physics can enter</p>
+          <h2>Start with reranking; integrate only after the score survives</h2>
+        </div>
+        <div class="integration-ladder">
+          <article class="recommended">
+            <span>Level 1 · first</span><h3>Generate → pack → score → rerank</h3>
+            <p>The physical model sees complete candidate interfaces but does not alter RFdiffusion or ProteinMPNN.</p>
+            <ul><li>works with nondifferentiable simulations</li><li>clean matched comparison</li><li>easy failure diagnosis</li></ul>
+          </article>
+          <article>
+            <span>Level 2</span><h3>Bias sequence decoding</h3>
+            <p>Modify amino-acid logits using a local chemical or hydration term.</p>
+            <div class="mini-equation">ℓ<sup>guided</sup><sub>i</sub>(a) = ℓ<sup>MPNN</sup><sub>i</sub>(a) − βΔE<sub>i</sub>(a)</div>
+            <ul><li>more sampling-efficient</li><li>requires local credit assignment</li></ul>
+          </article>
+          <article>
+            <span>Level 3</span><h3>Guide backbone diffusion</h3>
+            <p>Add gradients or auxiliary potentials during denoising so backbone geometry responds to physics.</p>
+            <ul><li>can repair geometric bottlenecks</li><li>hardest to stabilize and validate</li><li>generator may exploit score defects</li></ul>
+          </article>
+        </div>
+        <div class="equation-card"><b>P<sub>guided</sub>(S|X,T) ∝ P<sub>MPNN</sub>(S|X,T) exp[−βE<sub>phys</sub>(S,X,T)]</b><span>Useful mathematical target; not automatically a calibrated thermodynamic ensemble.</span></div>
+        <aside class="notes">This sequencing is methodological, not timid. A new score should first demonstrate predictive value on completed candidates. Guidance can magnify even a subtle score pathology through reward hacking.</aside>
+      </section>
+
+      <section class="water-slide" data-background-color="#e6f0ee">
+        <div class="slide-heading">
+          <p class="kicker">The Patel-group bridge</p>
+          <h2>Hydrophobicity is an emergent water response—not a carbon count</h2>
+        </div>
+        <div class="water-layout">
+          <div class="patch-cartoon">
+            <svg viewBox="0 0 620 430" role="img" aria-label="Two chemically heterogeneous protein patches with different water density fluctuations">
+              <defs><filter id="soft"><feGaussianBlur stdDeviation="8"/></filter></defs>
+              <path class="surface" d="M45 264c79-74 151-35 218-73 68-39 116-124 205-99 62 18 94 88 103 166H45Z"/>
+              <g class="surface-atoms"><circle cx="111" cy="229" r="16"/><circle cx="149" cy="209" r="13"/><circle cx="189" cy="207" r="15"/><circle cx="228" cy="188" r="13"/><circle cx="273" cy="157" r="16"/><circle cx="314" cy="128" r="13"/><circle cx="358" cy="99" r="16"/><circle cx="401" cy="82" r="13"/><circle cx="443" cy="83" r="16"/><circle cx="486" cy="110" r="13"/></g>
+              <g class="waters dense"><circle cx="105" cy="165" r="9"/><circle cx="139" cy="151" r="9"/><circle cx="170" cy="169" r="9"/><circle cx="202" cy="146" r="9"/><circle cx="231" cy="128" r="9"/></g>
+              <g class="waters sparse"><circle cx="353" cy="42" r="9"/><circle cx="465" cy="35" r="9"/></g>
+              <path class="fluctuation" d="M323 22c55-25 131-14 182 14 25 14 31 42 17 55-23 21-69-7-113-4-48 3-80 31-103 8-21-21-11-60 17-73Z"/>
+              <text x="76" y="335">water-retaining patch</text><text x="351" y="335">cavity-prone patch</text>
+            </svg>
+          </div>
+          <div class="water-copy">
+            <p>Specialized simulations displace waters from chosen protein-surface regions and measure how readily a cavity forms.</p>
+            <div class="result-box"><b>Published observation</b><span>Across five studied proteins, roughly 60–70% of interface contacts—but only about 10–20% of noncontacts—nucleated cavities under the chosen perturbation.</span></div>
+            <p>Polar and charged atoms can belong to a hydrophobic patch because nanoscale chemistry and topography act collectively.</p>
+          </div>
+        </div>
+        <div class="takeaway">Project opportunity: ask whether <strong>displacing weakly held interfacial water</strong> adds information beyond buried area, contact counts, and learned structure confidence.</div>
+        <div class="source-line"><a href="https://doi.org/10.1073/pnas.2018234118">Rego, Xi &amp; Patel, PNAS (2021)</a></div>
+        <aside class="notes">Be precise: the PNAS work supports interface identification, not an affinity predictor. Our proposed extension is a hypothesis. The reported percentages describe the five systems and the paper's perturbation protocol, not a universal classifier performance.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">What the score should see</p>
+          <h2>Reward complementarity; penalize hidden liabilities</h2>
+        </div>
+        <div class="score-ledger">
+          <div>
+            <h3>Favorable evidence</h3>
+            <article><i>H₂O</i><span><b>Water release</b>Weakly held waters displaced from complementary patches</span></article>
+            <article><i>↔</i><span><b>Directional polar contacts</b>Correct donor/acceptor identity, distance, and angle</span></article>
+            <article><i>±</i><span><b>Electrostatic complementarity</b>Screened, protonation-aware charge matching</span></article>
+            <article><i>⬡</i><span><b>Shape and packing</b>Burial without large cavities</span></article>
+          </div>
+          <div class="penalties">
+            <h3>Unfavorable evidence</h3>
+            <article><i>×</i><span><b>Steric clashes</b>Overlapping atoms or distorted geometry</span></article>
+            <article><i>O</i><span><b>Buried unsatisfied polarity</b>Desolvation without a compensating interaction</span></article>
+            <article><i>↯</i><span><b>Conformational strain</b>Bad rotamers or forced backbone deformation</span></article>
+            <article><i>●</i><span><b>Nonspecific stickiness</b>Exposed hydrophobic or highly charged patches</span></article>
+          </div>
+        </div>
+        <div class="score-formula">F<sub>interface</sub> = w<sub>hyd</sub>F<sub>water</sub> + w<sub>HB</sub>F<sub>HB</sub> + w<sub>elec</sub>F<sub>elec</sub> + w<sub>pack</sub>F<sub>pack</sub> − penalties</div>
+        <p class="precision">Every term, sign, unit, aggregation rule, and fitted weight must be recorded before prospective evaluation.</p>
+        <aside class="notes">Do not oversell a hand-built equation. This slide defines feature families. A useful first version may be an interpretable score with only a few terms plus an ensemble estimate across packed conformations.</aside>
+      </section>
+
+      <section class="dark-slide" data-background-color="#142a2b">
+        <div class="slide-heading">
+          <p class="kicker">Thermodynamic boundary</p>
+          <h2>An interface score is not automatically ΔG<sub>bind</sub></h2>
+        </div>
+        <div class="thermo-equation">ΔG°<sub>bind</sub> = −RT ln(K<sub>a</sub>C°) = RT ln(K<sub>d</sub>/C°)</div>
+        <div class="missing-physics">
+          <article><b>Ensembles</b><span>Bound and unbound conformations, not one minimized pose</span></article>
+          <article><b>Solvent</b><span>Water rearrangement, ions, dielectric response, and protonation</span></article>
+          <article><b>Entropy</b><span>Translational, rotational, backbone, and side-chain freedom</span></article>
+          <article><b>Standard state</b><span>A defined concentration convention is part of the thermodynamics</span></article>
+        </div>
+        <div class="dark-takeaway">Until calibrated against a defined endpoint, report an <strong>interface-quality score</strong> or <strong>binding proxy</strong>—not kcal mol<sup>−1</sup>, <i>K</i><sub>d</sub>, or “predicted affinity.”</div>
+        <aside class="notes">The difference between a ranking proxy and a free energy is central for a molecular-simulation audience. Even an explicit-solvent hydration term captures only one contribution unless embedded in a rigorous thermodynamic cycle.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">05 · If the binding site is unknown</p>
+          <h2>Pocket discovery is a separate uncertainty layer</h2>
+        </div>
+        <div class="site-options">
+          <article><span>Known biology</span><h3>Functional epitope</h3><p>Use catalytic residues, a known partner interface, mutagenesis, or a structure with a bound ligand.</p><b>Best for testing the scoring model</b></article>
+          <article><span>Predicted surface</span><h3>Hypothesis generator</h3><p>Use hydration maps, MaSIF-like surface fingerprints, conservation, or pocket/site predictors to nominate regions.</p><b>Requires site-level validation</b></article>
+          <article><span>No prior site</span><h3>Multi-site exploration</h3><p>Generate against several surface patches—or use a method such as BindCraft that can search without specified hotspots.</p><b>Most confounded first experiment</b></article>
+        </div>
+        <div class="logic-chain"><b>site hypothesis</b><i>→</i><b>backbone generation</b><i>→</i><b>sequence selection</b><i>→</i><b>binding test</b></div>
+        <p class="precision">A failure at the end does not reveal which upstream hypothesis failed. For the first score-validation study, choose a known, functionally testable site.</p>
+        <div class="source-line"><a href="https://doi.org/10.1073/pnas.2018234118">hydration patches</a> · <a href="https://doi.org/10.1038/s41592-019-0666-6">MaSIF</a> · <a href="https://doi.org/10.1038/s41586-025-09429-6">BindCraft</a></div>
+        <aside class="notes">This answers the templated-atoms question. Original RFdiffusion hotspots are target residue labels, not ligand atoms. If no site is known, one can sample broadly, but that changes the scientific question from score validation to simultaneous site discovery and design.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">06 · Choose the first biological system</p>
+          <h2>Optimize for interpretability, not glamour</h2>
+        </div>
+        <div class="decision-table-wrap">
+          <table class="decision-table">
+            <thead><tr><th>System</th><th>Known site</th><th>Simple protein production</th><th>Direct binding</th><th>Orthogonal function</th><th>Role</th></tr></thead>
+            <tbody>
+              <tr><td><b>TEM-1 β-lactamase</b></td><td class="yes">yes</td><td class="yes">E. coli</td><td class="yes">MST / SPR / ITC</td><td class="yes">nitrocefin inhibition</td><td><strong>Primary pilot</strong></td></tr>
+              <tr><td>MDM2–p53 site</td><td class="yes">yes</td><td class="yes">tractable domain</td><td class="yes">multiple formats</td><td class="maybe">competition</td><td>Hydration calibration</td></tr>
+              <tr><td>Galectin-3 glycan site</td><td class="yes">yes</td><td class="yes">tractable CRD</td><td class="yes">ITC / MST</td><td class="maybe">competition</td><td>Polar-site stress test</td></tr>
+              <tr><td>TmAFP ice-binding face</td><td class="maybe">unusual surface</td><td class="maybe">specialized</td><td class="no">no ordinary K<sub>d</sub></td><td class="maybe">ice growth</td><td>Later scientific target</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="takeaway">Recommendation: <strong>TEM-1 first</strong>, because binding, catalytic blockade, specificity, expression, and structural controls can all be separated.</div>
+        <aside class="notes">This is a decision matrix, not a universal target ranking. TmAFP is scientifically rich but its interface is ice, not a soluble protein partner, so the experimental endpoint and design architecture differ from a standard binder campaign.</aside>
+      </section>
+
+      <section class="target-slide" data-background-color="#f2ede4">
+        <div class="slide-heading">
+          <p class="kicker">Recommended system</p>
+          <h2>TEM-1 gives affinity, function, and specificity in one compact system</h2>
+        </div>
+        <div class="target-story">
+          <div class="target-visual">
+            <svg viewBox="0 0 600 460" role="img" aria-label="Schematic TEM-1 target, active site and designed binder">
+              <path class="enzyme" d="M104 297C36 216 77 100 174 68c89-30 196 9 223 76 18 45-4 76-41 101-31 21-34 58-75 91-54 44-129 26-177-39Z"/>
+              <path class="active-cleft" d="M292 117c-53 31-76 69-69 109 5 29 28 48 65 51 23 2 44-8 65-30-35 4-59-6-69-27-13-28-7-63 8-103Z"/>
+              <path class="designed-binder" d="M387 103c75-24 145 21 153 79 7 49-32 86-88 79-43-6-78-40-73-74 7-46 50-54 78-33 20 15 17 41-3 53"/>
+              <circle class="catalytic" cx="257" cy="213" r="12"/><text x="79" y="396">TEM-1 target</text><text x="414" y="326">new protein binder</text><text x="176" y="199">active-site region</text>
+            </svg>
+          </div>
+          <div class="target-evidence">
+            <article><span>Structural anchor</span><p>TEM-1 has a known active-site-blocking protein partner, BLIP, and a well-characterized complex structure.</p></article>
+            <article><span>Dynamic range</span><p>BLIP binds TEM-1 near 1.3 nM but much more weakly to homologous SHV-1, giving a specificity countertarget.</p></article>
+            <article><span>Functional readout</span><p>If the designed binder occludes the active site, nitrocefin turnover provides an orthogonal inhibition assay.</p></article>
+            <article><span>Important caveat</span><p>The natural BLIP interface and related structures may be represented in training data; this pilot tests our ranking increment, not de novo generalization of RFdiffusion.</p></article>
+          </div>
+        </div>
+        <div class="source-line"><a href="https://doi.org/10.1021/bi981772z">Albeck &amp; Schreiber, binding biophysics (1999)</a> · <a href="https://doi.org/10.1016/j.jmb.2008.05.051">Reynolds et al., interface redesign (2008)</a> · <a href="https://doi.org/10.1002/prot.22961">Hanes et al., specificity (2011)</a></div>
+        <aside class="notes">We are not trying to beat natural BLIP initially. We generate de novo binders to a known functional surface and compare ranking methods within that pool. SHV-1 provides a close structural countertarget for specificity.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">07 · Prospective pilot</p>
+          <h2>One pool, three blinded selection rules</h2>
+        </div>
+        <div class="pilot-flow">
+          <article><span>01</span><h3>Generate backbones</h3><p>TEM-1 structure + prespecified active-site hotspots; multiple independent RFdiffusion seeds.</p></article><i>→</i>
+          <article><span>02</span><h3>Generate sequences</h3><p>The same number of ProteinMPNN sequences per backbone, with frozen seed and temperature policy.</p></article><i>→</i>
+          <article><span>03</span><h3>Build ensembles</h3><p>Replicated side-chain packing and independent complex predictions; preserve all raw outputs.</p></article><i>→</i>
+          <article><span>04</span><h3>Select matched arms</h3><p>Standard pipeline, transparent physical baselines, and hydration-aware combined score.</p></article><i>→</i>
+          <article><span>05</span><h3>Test blinded</h3><p>Expression → monodispersity → direct <i>K</i><sub>d</sub> → inhibition → SHV-1 specificity.</p></article>
+        </div>
+        <div class="arms">
+          <article><b>Arm A</b><span>ProteinMPNN + structure-confidence filters</span></article>
+          <article><b>Arm B</b><span>buried area + clashes + H-bonds + composition</span></article>
+          <article class="accent"><b>Arm C</b><span>same controls + hydration-aware score</span></article>
+        </div>
+        <p class="precision">Match backbone representation and enforce sequence-diversity constraints so a ranking arm cannot win simply by selecting one lucky backbone family or many near-duplicates.</p>
+        <aside class="notes">Candidate counts should be finalized after discussing synthesis budget and assay throughput. The website intentionally avoids inventing a powered sample size. The key commitment is matched pools and blinded testing.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">Measurements and inference</p>
+          <h2>Separate folding, binding, function, and specificity</h2>
+        </div>
+        <div class="evidence-staircase">
+          <article><span>1</span><div><b>Produced?</b><p>soluble yield, SDS-PAGE</p></div><em>developability</em></article>
+          <article><span>2</span><div><b>Well behaved?</b><p>SEC / SEC–MALS, DLS, CD or DSF</p></div><em>state + fold</em></article>
+          <article><span>3</span><div><b>Binds?</b><p>MST, SPR, BLI, or ITC with a titration</p></div><em>direct <i>K</i><sub>d</sub></em></article>
+          <article><span>4</span><div><b>Blocks function?</b><p>nitrocefin turnover under defined conditions</p></div><em><i>K</i><sub>i</sub> / inhibition</em></article>
+          <article><span>5</span><div><b>Specific?</b><p>TEM-1 versus SHV-1; competition/site mutants</p></div><em>mechanism</em></article>
+        </div>
+        <div class="analysis-grid">
+          <div><b>Primary comparison</b><span>Top-k enrichment or binder success fraction, with confidence intervals.</span></div>
+          <div><b>Continuous comparison</b><span>Rank correlation with p<i>K</i><sub>d</sub> and paired ΔΔG where values are measured.</span></div>
+          <div><b>Censoring</b><span>Preserve “&gt;” and “&lt;” assay limits; do not convert them to exact numbers.</span></div>
+          <div><b>Unit of replication</b><span>Independent backbone families—not many closely related sequences treated as independent.</span></div>
+        </div>
+        <aside class="notes">IC50 is not the primary thermodynamic endpoint. The direct binding experiment gives Kd. The enzyme assay adds mechanism but depends on substrate concentration and kinetic model.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">Why this is feasible at Penn</p>
+          <h2>The local resource chain matches the experiment</h2>
+        </div>
+        <div class="penn-chain">
+          <article><span>Compute</span><h3>Local GPU workflow</h3><p>RFdiffusion and ProteinMPNN are already installed and provenance-pinned in this repository.</p></article><i>→</i>
+          <article><span>Produce</span><h3>Protein expression</h3><p>Penn HTSC supports construct advice, E. coli expression, scale-up, and purification.</p></article><i>→</i>
+          <article><span>Characterize</span><h3>Biophysics</h3><p>Johnson Foundation core lists thermodynamics, light scattering, AUC, SAXS, NMR, and X-ray capabilities, with MST training.</p></article><i>→</i>
+          <article><span>Function</span><h3>Plate assay</h3><p>Nitrocefin turnover is compatible with a low-cost spectrophotometric inhibition screen.</p></article>
+        </div>
+        <div class="resource-caution"><b>Before freezing the wet-lab protocol:</b> consult the relevant core about sample requirements, labeling strategy, instrument availability, cost, and assay dynamic range.</div>
+        <div class="source-line"><a href="https://www.med.upenn.edu/htsc/proteinexpression.html">Penn HTSC protein-expression services</a> · <a href="https://www.med.upenn.edu/jf/jfbsb/">Johnson Foundation Biophysics and Structural Biology Core</a></div>
+        <aside class="notes">These are facility capabilities from official Penn pages, not commitments that a specific assay will be accepted. A core consultation is a decision gate.</aside>
+      </section>
+
+      <section class="dark-slide" data-background-color="#142a2b">
+        <div class="slide-heading">
+          <p class="kicker">What can go wrong?</p>
+          <h2>Failure modes are scientifically useful if they remain separable</h2>
+        </div>
+        <div class="failure-matrix">
+          <article><b>No soluble protein</b><p>Sequence prior or developability failure—not evidence about binding physics.</p><span>Inspect expression, aggregation, and monomer prediction.</span></article>
+          <article><b>Folds but does not bind</b><p>Interface geometry, side-chain packing, or site hypothesis may be wrong.</p><span>Use complex prediction, site mutants, and alternative backbones.</span></article>
+          <article><b>Binds but does not inhibit</b><p>May bind outside the active-site mechanism or with unproductive geometry.</p><span>Competition and epitope mapping become decisive.</span></article>
+          <article><b>Score “wins” in silico only</b><p>Reward hacking or a baseline-confounded metric.</p><span>Prospective blinding and simple baselines expose this.</span></article>
+          <article><b>Strong but nonspecific binding</b><p>Sticky surface rather than complementary recognition.</p><span>SHV-1 and unrelated proteins test negative design.</span></article>
+          <article><b>Initial state changes score</b><p>Rotamer, water, protonation, or conformational sampling is incomplete.</p><span>Replicated ensembles and convergence diagnostics are mandatory.</span></article>
+        </div>
+        <aside class="notes">The final item connects directly to the user's molecular-simulation concern: a score based on one packing or one solvent configuration is not robust. Replicates and ensemble summaries should be part of the method, not post hoc troubleshooting.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">What we already know locally</p>
+          <h2>The machinery runs; the scientific test has not begun</h2>
+        </div>
+        <div class="local-results">
+          <article><span>Completed engineering result</span><strong>1</strong><p>audited insulin-receptor RFdiffusion trajectory, with four ProteinMPNN sequences</p></article>
+          <article><span>Completed diversity result</span><strong>10</strong><p>RFdiffusion backbones across seeds 42–51, spanning 71–98 residues</p></article>
+          <article><span>Important negative statement</span><strong>0</strong><p>independently predicted or experimentally validated binders so far</p></article>
+        </div>
+        <div class="local-interpretation">
+          <div><b>Observed</b><span>The ten backbones vary strongly in intrinsic shape and target-relative pose.</span></div>
+          <div><b>Not discriminating</b><span>RFdiffusion’s final internal confidence occupied a narrow 0.9909–0.9929 range.</span></div>
+          <div><b>Conclusion</b><span>Sampling diversity exists, but confidence is not a binding score. This motivates downstream sequence and interface evaluation.</span></div>
+        </div>
+        <div class="link-row"><a class="button" href="../rfdiffusion_binder_tutorial/">Open the rotatable 3D tutorial</a><a class="button secondary" href="../rfdiffusion_binder_tutorial/proteinmpnn_guidance.html">Read the detailed scoring explanation</a></div>
+        <aside class="notes">Clearly label these as local engineering results. They establish reproducibility and diversity, not biological success.</aside>
+      </section>
+
+      <section>
+        <div class="slide-heading">
+          <p class="kicker">Roadmap</p>
+          <h2>Four gates from understanding to evidence</h2>
+        </div>
+        <div class="roadmap">
+          <article class="done"><span>Gate 0 · done</span><h3>Understand the representations</h3><p>Run RFdiffusion, inspect trajectories, generate ProteinMPNN sequences, and visualize structural diversity.</p></article>
+          <article><span>Gate 1</span><h3>Freeze the scoring hypothesis</h3><p>Define hydration and control terms, ensemble protocol, output units, and failure rules before looking at prospective results.</p></article>
+          <article><span>Gate 2</span><h3>Retrospective calibration</h3><p>Use known interfaces such as MDM2 and BLIP complexes to check sign, robustness, and nontrivial value beyond surface area.</p></article>
+          <article><span>Gate 3</span><h3>TEM-1 prospective pilot</h3><p>Generate one common pool, select blinded matched arms, then measure folding, <i>K</i><sub>d</sub>, inhibition, and specificity.</p></article>
+          <article><span>Gate 4</span><h3>Generalize—or stop</h3><p>Freeze the method before a second target. A second system is needed before claiming general utility.</p></article>
+        </div>
+        <aside class="notes">A go/no-go decision belongs at every gate. Retrospective fit alone is not evidence. If the hydration score adds nothing beyond transparent baselines, that is a valuable and publishable constraint on the hypothesis.</aside>
+      </section>
+
+      <section class="summary-slide" data-background-color="#edf2ec">
+        <div class="slide-heading">
+          <p class="kicker">Take-home message</p>
+          <h2>The project is a controlled test of added physical information</h2>
+        </div>
+        <div class="three-takeaways">
+          <article><span>1</span><p><b>RFdiffusion</b> generates target-conditioned binder backbones; it does not predict affinity.</p></article>
+          <article><span>2</span><p><b>ProteinMPNN</b> samples sequences compatible with a backbone; its likelihood is not <i>K</i><sub>d</sub>.</p></article>
+          <article><span>3</span><p><b>Our first contribution</b> should be a hydration-aware, ensemble-robust reranker tested on a common candidate pool.</p></article>
+        </div>
+        <div class="final-proposal">
+          <span>Starter system</span>
+          <strong>TEM-1 active-site binder design</strong>
+          <p>with SHV-1 specificity, direct binding, and enzyme inhibition as separable experimental endpoints</p>
+        </div>
+        <p class="closing">A successful pilot would justify guided sequence design. It would not yet establish an absolute free-energy predictor.</p>
+        <aside class="notes">End on the experimental logic. Invite discussion on the scoring observable, synthesis budget, and assay format—not on whether a pretty generated structure “looks convincing.”</aside>
+      </section>
+
+      <section class="references-slide">
+        <div class="slide-heading">
+          <p class="kicker">Selected primary literature</p>
+          <h2>Sources and technical starting points</h2>
+        </div>
+        <div class="reference-columns">
+          <ol>
+            <li><b>Watson et al. (2023).</b> De novo design of protein structure and function with RFdiffusion. <i>Nature</i>. <a href="https://doi.org/10.1038/s41586-023-06415-8">doi</a></li>
+            <li><b>Dauparas et al. (2022).</b> Robust deep learning–based protein sequence design using ProteinMPNN. <i>Science</i>. <a href="https://doi.org/10.1126/science.add2187">doi</a></li>
+            <li><b>Dauparas et al. (2025).</b> Atomic context-conditioned protein sequence design using LigandMPNN. <i>Nature Methods</i>. <a href="https://doi.org/10.1038/s41592-025-02626-1">doi</a></li>
+            <li><b>Vázquez Torres et al. (2025).</b> Atom-level enzyme active-site scaffolding using RFdiffusion2. <i>Nature Methods</i>. <a href="https://doi.org/10.1038/s41592-025-02975-x">doi</a></li>
+            <li><b>Rego, Xi &amp; Patel (2021).</b> Identifying hydrophobic protein patches to inform protein interaction interfaces. <i>PNAS</i>. <a href="https://doi.org/10.1073/pnas.2018234118">doi</a></li>
+          </ol>
+          <ol start="6">
+            <li><b>Gainza et al. (2020).</b> Deciphering interaction fingerprints from protein molecular surfaces using geometric deep learning. <i>Nature Methods</i>. <a href="https://doi.org/10.1038/s41592-019-0666-6">doi</a></li>
+            <li><b>Bennett et al. (2023).</b> Improving de novo protein binder design with deep learning. <i>Nature Communications</i>. <a href="https://doi.org/10.1038/s41467-023-38328-5">doi</a></li>
+            <li><b>Pacesa et al. (2025).</b> One-shot design of functional protein binders with BindCraft. <i>Nature</i>. <a href="https://doi.org/10.1038/s41586-025-09429-6">doi</a></li>
+            <li><b>Reynolds et al. (2008).</b> Computational redesign of the SHV-1 β-lactamase/BLIP interface. <i>Journal of Molecular Biology</i>. <a href="https://doi.org/10.1016/j.jmb.2008.05.051">doi</a></li>
+            <li><b>Hanes et al. (2011).</b> Specificity and cooperativity at β-lactamase position 104. <i>Proteins</i>. <a href="https://doi.org/10.1002/prot.22961">doi</a></li>
+          </ol>
+        </div>
+        <div class="repo-note">Operational provenance and local results: <a href="../../configs/models/rfdiffusion.yaml">RFdiffusion config</a> · <a href="../../configs/models/proteinmpnn.yaml">ProteinMPNN config</a> · <a href="../../experiments/exp003_rfdiffusion_insr_binder_smoke/README.md">exp003</a> · <a href="../../experiments/exp004_rfdiffusion_insr_structural_diversity/README.md">exp004</a></div>
+        <aside class="notes">The deck uses primary research and official implementation sources wherever possible. Published author-reported success rates are contextual evidence, not guarantees for our target or protocol.</aside>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.2.1/plugin/notes/notes.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boltz-2: model structure and molecule representation</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --ink: #151a2a;
+      --muted: #57617a;
+      --accent: #2055d8;
+      --ok: #e8f6ef;
+      --warn: #fff4e5;
+      --bad: #ffe9e9;
+      --line: #c7d1ec;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    body { line-height: 1.55; padding: 2rem; }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      display: grid;
+      gap: 1rem;
+    }
+    .card {
+      background: var(--card);
+      padding: 1rem 1.2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(21, 26, 42, 0.08);
+    }
+    h1 { margin: 0 0 0.35rem; font-size: 1.75rem; }
+    h2 { margin: 1rem 0 0.45rem; font-size: 1.18rem; }
+    .mini { color: var(--muted); margin-top: 0; font-size: 0.95rem; }
+    code, pre { font-family: var(--mono); }
+    pre {
+      background: #f2f5ff;
+      border: 1px solid #dbe4ff;
+      border-radius: 8px;
+      padding: 0.7rem;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+    .layer {
+      display: grid;
+      gap: 0.6rem;
+      align-items: center;
+      grid-template-columns: 1fr;
+      margin: 0.6rem 0;
+    }
+    .node {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.65rem 0.75rem;
+      background: #fbfcff;
+      position: relative;
+    }
+    .node .title {
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+      color: #1a2d64;
+    }
+    .arrow::after {
+      content: "↓";
+      position: absolute;
+      right: 12px;
+      top: 100%;
+      transform: translateY(2px);
+      font-size: 1.1rem;
+      color: #6e79a6;
+    }
+    .lane {
+      display: grid;
+      gap: 0.65rem;
+      grid-template-columns: 1fr 1fr;
+      margin-top: 0.5rem;
+    }
+    .lane .panel {
+      border: 1px solid var(--line);
+      background: #fbfcff;
+      border-radius: 10px;
+      padding: 0.7rem;
+    }
+    .panel h3 {
+      margin: 0 0 0.35rem;
+      font-size: 0.98rem;
+      color: #1d2f6a;
+    }
+    .pill {
+      font-size: 0.8rem;
+      background: #e8edff;
+      color: #162f68;
+      border-radius: 999px;
+      padding: 0.18rem 0.55rem;
+      margin-right: 0.35rem;
+      display: inline-block;
+      margin-top: 0.2rem;
+    }
+    .note {
+      background: var(--warn);
+      border-left: 4px solid #db8f2a;
+      padding: 0.7rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .warn {
+      background: var(--bad);
+      border-left: 4px solid #c13a45;
+      padding: 0.7rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .graph-wrap {
+      background: #fbfcff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.8rem;
+      overflow-x: auto;
+    }
+    .graph {
+      width: 100%;
+      min-width: 760px;
+      max-width: 980px;
+      display: block;
+    }
+    .graph rect,
+    .graph .muted-box {
+      fill: #eef3ff;
+      stroke: #4e63a5;
+      stroke-width: 1.4;
+    }
+    .graph .muted-box {
+      fill: #f7faff;
+    }
+    .graph text {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+      fill: #1d2f6a;
+    }
+    .graph .label {
+      font-size: 11px;
+      fill: #3e4c76;
+      opacity: 0.95;
+    }
+    .graph .line {
+      fill: none;
+      stroke: #4f62a3;
+      stroke-width: 1.4;
+      marker-end: url(#arrowBlue);
+    }
+    .graph .loop {
+      fill: none;
+      stroke: #8d68cd;
+      stroke-width: 1.4;
+      marker-start: url(#arrowPurple);
+      marker-end: url(#arrowPurple);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+    }
+    th, td {
+      border: 1px solid #d7e0f7;
+      padding: 0.45rem 0.55rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #edf1ff; }
+    .legend { color: #3d4f7b; font-size: 0.9rem; margin-top: 0.3rem; }
+    .mini-note { font-size: 0.9rem; color: #3f4b6b; margin-top: 0.55rem; margin-bottom: 0.35rem; }
+    footer {
+      color: #6a7387;
+      font-size: 0.86rem;
+      margin-top: 0.2rem;
+    }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card">
+      <h1>Boltz-2: what the model is doing</h1>
+      <p class="mini">
+        Think of Boltz-2 as an end-to-end graph of learned modules:
+        sequence/SMILES + MSA + chemistry -> token graph -> pairwise stack -> structure
+        diffusion -> confidence and affinity heads.
+      </p>
+      <div class="node arrow">
+        <div class="title">Inputs</div>
+        Protein sequence + optional MSA, ligand SMILES/CCD, optional templates/constraints
+      </div>
+      <div class="node arrow">
+        <div class="title">Tokenization and feature construction</div>
+        Build per-token single features and per-token-pair features (<em>z</em>), then masks for padding, contacts, affinity target, bonds, etc.
+      </div>
+      <div class="node arrow">
+        <div class="title">Trunk + Pairformer stack</div>
+        Uses attention-style modules (s/z) with residue/atom pair context, relative-position encoding, and optional MSA/template channels.
+      </div>
+      <div class="node arrow">
+        <div class="title">Diffusion conditioner + AtomDiffusion module</div>
+        Samples 3D atom coordinates for the whole complex simultaneously.
+      </div>
+      <div class="node">
+        <div class="title">Heads</div>
+        1) Confidence head (pLDDT/PAE-like signals) 2) Affinity head(s) for
+        <code>affinity_pred_value</code> and <code>affinity_probability_binary</code>.
+      </div>
+      <p class="note">
+        In this implementation, protein and ligand are processed in the same forward pass. This is why it is called <strong>full-atom cofolding</strong> rather than docking a fixed receptor.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>How protein is represented</h2>
+      <p class="mini">From source behavior (tokenizer + feature pipeline) in this project setup.</p>
+      <div class="lane">
+        <div class="panel">
+          <h3>Protein token</h3>
+          <p>One token per standard residue (20 canonical amino acids + unknown token).</p>
+          <ul>
+            <li><strong>Identity:</strong> residue token from chain sequence (e.g. <code>ALA</code>, <code>LYS</code>).</li>
+            <li><strong>Geometry anchors:</strong> <code>CA</code> as center and <code>C</code> as disto atom for that residue.</li>
+            <li><strong>Frame:</strong> local N-CA-C frame for each residue used by geometric blocks.</li>
+            <li><strong>Masking:</strong> resolved and disto-present flags per residue.</li>
+            <li><strong>Connectivity:</strong> residue-neighbor graph is added for the pairwise embedding and pair masks.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Ligand token</h3>
+          <p>Ligand is usually non-polymer; each atom becomes one token.</p>
+          <ul>
+            <li><strong>Token granularity:</strong> one atom = one token.</li>
+            <li><strong>Identity token:</strong> ligand atoms in non-polymer chains use the protein UNK residue token namespace but retain atom identity via atom fields.</li>
+            <li><strong>Center/disto:</strong> both use the same atom coordinate for that token.</li>
+            <li><strong>Bonds:</strong> chemical bonds and explicit connections are added to token-bond graph.</li>
+            <li><strong>Frame:</strong> computed geometrically from nearest neighbors inside ligand because there is no N/CA/C template.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="legend">
+        Practical interpretation: in pairwise updates and downstream diffusion, protein residues are compact tokens while ligand is an atom-level graph. The model is therefore not treating a ligand as one residue-level node.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Token-level mapping used internally</h2>
+      <table>
+        <tr>
+          <th>Field</th>
+          <th>Purpose in model</th>
+        </tr>
+        <tr>
+          <td><code>sym_id</code>, <code>asym_id</code>, <code>entity_id</code></td>
+          <td>Group and chain-level identity used for relative positional logic and masks.</td>
+        </tr>
+        <tr>
+          <td><code>mol_type</code></td>
+          <td>Distinguishes protein/DNA/RNA/nonpolymer; affinity path uses this to define receptor-vs-ligand interactions.</td>
+        </tr>
+        <tr>
+          <td><code>token_pad_mask</code></td>
+          <td>Suppresses padded positions in s/z attention and outputs.</td>
+        </tr>
+        <tr>
+          <td><code>token_bonds</code> + <code>type_bonds</code> (optional)</td>
+          <td>Injects local chemical/chain topology into initial pair embedding.</td>
+        </tr>
+        <tr>
+          <td><code>affinity_token_mask</code>, <code>affinity_mw</code></td>
+          <td>Selects ligand for the affinity head and applies optional MW correction.</td>
+        </tr>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>How the affinity head reads the complex</h2>
+      <div class="lane">
+        <div class="panel">
+          <h3>Signal path</h3>
+          <pre>
+1) Trunk outputs pair representation z (N x N x d)
+2) Build receptor mask: mol_type == PROTEIN
+3) Build ligand mask: affinity_token_mask == true
+4) Keep only cross terms + ligand-ligand terms
+5) Pass masked pair features + predicted coordinates to AffinityModule
+6) Produce two outputs:
+   - affinity_pred_value (regression scale, IC50 proxy)
+   - affinity_logits_binary -> sigmoid -> affinity_probability_binary
+</pre>
+        </div>
+        <div class="panel">
+          <h3>Why two affinity outputs?</h3>
+          <p>They are separate supervisory tasks:</p>
+          <p><span class="pill">Value head</span> continuous potency comparison (e.g., relative ranking within active analogs).</p>
+          <p><span class="pill">Binary head</span> binder vs non-binder discrimination.</p>
+          <p>Inference logs both so you can decide which matches your question.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>For your benchmark: what to verify first</h2>
+      <ul>
+        <li>Run one TYK2 complex end-to-end and confirm both structure + affinity JSON fields are produced.</li>
+        <li>Inspect that ligand tokens are not accidentally absent (missing atomization or tokenization fail).</li>
+        <li>Check if affinity corresponds to the intended binder chain via <code>affinity</code> property in YAML.</li>
+        <li>Track stochasticity: repeat seed or sample count changes should alter structure spread, not just affinity noise.</li>
+      </ul>
+      <p class="warn">
+        This is not a physics/thermo free-energy calculation. Outputs are model scores at inference; they must be validated against controlled assay-consistent benchmarks before biological claims.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Graph view of the architecture and diffusion decoder</h2>
+      <div class="graph-wrap">
+        <svg class="graph" viewBox="0 0 980 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="diffTitle diffDesc">
+          <title id="diffTitle">Boltz-2 flow with atom-diffusion loop</title>
+          <desc id="diffDesc">Schematic showing Boltz-2 modules and the denoising loop.</desc>
+          <defs>
+            <marker id="arrowBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L8,3 L0,6" fill="none" stroke="#4f62a3" stroke-width="1.4"/>
+            </marker>
+            <marker id="arrowPurple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L8,3 L0,6" fill="none" stroke="#8d68cd" stroke-width="1.4"/>
+            </marker>
+          </defs>
+
+          <rect x="20" y="20" width="210" height="68" rx="9"/>
+          <text x="125" y="44" text-anchor="middle">Input</text>
+          <text x="125" y="62" text-anchor="middle" class="label">sequence + MSA + ligand</text>
+
+          <rect x="280" y="20" width="220" height="68" rx="9"/>
+          <text x="390" y="44" text-anchor="middle">Tokenize + Features</text>
+          <text x="390" y="62" text-anchor="middle" class="label">tokens, pair feats, masks, bonds</text>
+
+          <rect x="560" y="20" width="220" height="68" rx="9"/>
+          <text x="670" y="44" text-anchor="middle">Pairformer trunk</text>
+          <text x="670" y="62" text-anchor="middle" class="label">s/z updates</text>
+
+          <path d="M230 54 L280 54" class="line"/>
+          <path d="M500 54 L560 54" class="line"/>
+          <path d="M780 54 L980 54" stroke="none" />
+
+          <rect x="20" y="125" width="220" height="90" rx="9"/>
+          <text x="130" y="150" text-anchor="middle">Diffusion Conditioning</text>
+          <text x="130" y="168" text-anchor="middle" class="label">pairwise conditioner</text>
+          <text x="130" y="182" text-anchor="middle" class="label">atom encoder</text>
+          <text x="130" y="196" text-anchor="middle" class="label">precondition biases</text>
+
+          <rect x="280" y="125" width="220" height="90" rx="9" class="muted-box"/>
+          <text x="390" y="150" text-anchor="middle">AtomDiffusion (score model)</text>
+          <text x="390" y="168" text-anchor="middle" class="label">preconditioned denoiser</text>
+
+          <rect x="540" y="120" width="220" height="100" rx="9"/>
+          <text x="650" y="145" text-anchor="middle">Single conditioning</text>
+          <text x="650" y="164" text-anchor="middle" class="label">time/noise embed</text>
+          <text x="650" y="178" text-anchor="middle" class="label">seeded with s / s_inputs</text>
+
+          <rect x="540" y="250" width="220" height="100" rx="9"/>
+          <text x="650" y="276" text-anchor="middle">Atom Attention Encoder</text>
+          <text x="650" y="294" text-anchor="middle" class="label">r_noisy -> atom hidden states</text>
+          <text x="650" y="308" text-anchor="middle" class="label">sequence-local attention</text>
+
+          <rect x="540" y="380" width="220" height="36" rx="9"/>
+          <text x="650" y="402" text-anchor="middle">Token transformer</text>
+
+          <rect x="280" y="380" width="220" height="36" rx="9"/>
+          <text x="390" y="402" text-anchor="middle">Atom Attention Decoder</text>
+
+          <rect x="20" y="330" width="230" height="82" rx="9"/>
+          <text x="135" y="356" text-anchor="middle">Heads</text>
+          <text x="135" y="374" text-anchor="middle" class="label">Confidence</text>
+          <text x="135" y="388" text-anchor="middle" class="label">Affinity (value + binary)</text>
+
+          <path d="M230 159 L280 159" class="line"/>
+          <path d="M500 159 L540 159" class="line"/>
+          <path d="M230 170 L130 170" class="line"/>
+
+          <path d="M390 215 C390 250, 390 250, 650 250" class="line"/>
+          <path d="M650 215 L650 250" class="line"/>
+          <path d="M650 350 L650 380" class="line"/>
+          <path d="M760 398 L760 430" stroke="none" />
+          <path d="M650 398 L650 396" class="line"/>
+          <path d="M650 398 L390 398" class="line"/>
+
+          <path d="M130 170 C80 170, 80 300, 650 300 C700 300, 700 170, 650 170" class="loop"/>
+          <text x="500" y="250" text-anchor="middle" class="label">x_t -> denoise -> x_{t+1}</text>
+          <text x="500" y="268" text-anchor="middle" class="label">σ_max ... σ_min ... 0</text>
+
+          <path d="M130 215 C130 290, 130 290, 230 215" class="line"/>
+          <path d="M130 398 L130 330" class="line"/>
+          <path d="M130 330 L130 330" class="line"/>
+        </svg>
+      </div>
+      <p class="mini-note">Paper-style interpretation of the diffusion decoder:</p>
+      <ul>
+        <li><strong>Diffusion conditioning</strong> builds context from trunk features and atom neighborhoods, then injects it as biases.</li>
+        <li><strong>Diffusion loop</strong> iterates over sigma levels; each step denoises coordinates from noisy atoms, optionally applies guidance, then computes the next noisy/cleaned coordinates.</li>
+        <li>Within a step: encoder → token transformer → decoder, with preconditioning scalars <code>c_in</code>, <code>c_skip</code>, <code>c_out</code>, and <code>c_noise</code>.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Quick references</h2>
+      <p class="mini">
+        Official docs: <a href="https://github.com/jwohlwend/boltz/blob/main/docs/prediction.md">Boltz prediction spec</a> and
+        <a href="https://github.com/jwohlwend/boltz/blob/main/docs/training.md">training page</a> describe flags, inference options, and outputs.
+        Source-level references are in this repo snapshot under <code>/home/yusheng/source/boltz/src/boltz/model/models/boltz2.py</code> and <code>.../data/tokenize/boltz2.py</code>.
+      </p>
+    </section>
+
+    <footer>
+      Continue to the <a href="../affinity_models/index.html">affinity model and benchmark comparison</a>
+      · Back to MSA primer: <a href="../msa_simple/index.html">msa_simple</a>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,91 @@
+workflow_id: 2026-W34_fepplus4_three_model_reproduction
+scope: complete_model_acquisition_inference_analysis_and_report_workflow
+status: reconstructed_from_preserved_run_records_and_verified_local_installations
+
+entry_points:
+  - 01_setup_models.sh
+  - 02_download_assets.sh
+  - 03_prepare_inputs.sh
+  - 04_run_inference.sh
+  - 05_collect_outputs.sh
+  - 06_analyze_affinity.sh
+  - 07_analyze_poses.sh
+  - 08_build_report.sh
+  - 09_launch_notebook.sh
+
+safety:
+  default_mode: check_or_command_preview
+  mutation_flag: --execute
+  separate_external_consent_flags:
+    colabfold_msa_server: --allow-msa-server
+    rcsb_crystal_download: --allow-rcsb-download
+  existing_complete_runs: preserved_and_skipped
+
+models:
+  boltz2:
+    source: https://github.com/jwohlwend/boltz
+    revision: b1ebfc46ecf57f5414e0d1a6f9027bbb122c53bc
+    package_version: 2.2.1
+    protocol: boltz2_msa1024
+    seed: 42
+    checkpoint_sha256:
+      structure: 090e82ac8c92f5e943fa1b39e7410a44027bea7243c0bbb3caa67a77fc1428e1
+      affinity: dcc5cd3722b1c9eaa34267e4ae32f55cbbf1963f4c19319381ccfa30fdd2ca9e
+  nesso1:
+    source: https://github.com/recursionpharma/nesso
+    revision: f0156e9a22326448684bae09ee96f73415902dcd
+    package_version: 1.0.0
+    model_revision: 1896c84c7186c506c7efd79051480809d51098bf
+    model_sha256: 9928a8a824d147d665e76656804af1cd91c86731516d0b561f9fd1c91ee45622
+    seed: 42
+  flashbind:
+    source: https://github.com/AIDD-Lab/FlashBind
+    revision: f161268176237ab6ce5757031a8c1b93937e0d37
+    model_revision: fa6362c85b3350109af4634e3e2c364644338b3c
+    released_data_revision: 50b1511e080236d80f9b8ff1e4d0cd38bb2480b9
+    checkpoint_sha256:
+      value_1: ca87f84dedd4642da693a508b1119c802caa370e356dad31c47b8a708821e553
+      value_2: 59fa2686b0859a632862aec21ea69f2bebb1ab104e48606fe739c929368d488d
+    seed: 42
+
+benchmark:
+  manifest: data/manifests/fepplus4_87.json
+  manifest_sha256: 5f0fb23bb97ea84f3da153e050d5913b97da9bba091fb84cd556b9894fdac1e1
+  source: https://github.com/openforcefield/protein-ligand-benchmark
+  source_revision: da7c3372256446222e424368be38ef3d2b55a67b
+  compounds: 87
+  targets: {cdk2: 16, tyk2: 16, jnk1: 21, p38: 34}
+  pose_subset_manifest: data/manifests/fepplus4_crystal16.json
+
+canonical_python:
+  inputs:
+    - scripts/build_fepplus4_manifest.py
+    - scripts/generate_boltz_msas.py
+    - scripts/prepare_fepplus4_inputs.py
+  execution:
+    - scripts/run_with_provenance.py
+  parsing_and_metrics:
+    - scripts/collect_affinity_outputs.py
+    - scripts/collect_flashbind_outputs.py
+    - scripts/analyze_fepplus4.py
+    - scripts/fetch_fepplus4_crystal_references.py
+    - scripts/analyze_boltz2_crystal_pose.py
+    - scripts/analyze_flashbind_crystal_pose.py
+    - scripts/compare_pose_models.py
+    - src/affinity_benchmark/adapters/affinity_models.py
+    - src/affinity_benchmark/metrics/affinity_regression.py
+    - src/affinity_benchmark/metrics/pose.py
+
+interactive_notebook:
+  path: weeks/2026-W34/notebooks/fepplus4_nesso1_analysis.ipynb
+  role: executable_analysis_first_walkthrough_of_exp007_saved_outputs
+  launches_inference: false
+  launcher: weeks/2026-W34/code/09_launch_notebook.sh
+  current_scope: nesso1_affinity_analysis_with_native_outputs_and_run_provenance
+
+large_artifact_policy:
+  source_repositories: /home/yusheng/source
+  installed_environments: /home/yusheng/programs
+  checkpoints_datasets_msas: cache_or_runs_and_gitignored
+  raw_predictions: runs_and_gitignored
+  committed: scripts_configs_manifests_tests_compact_results_figures_and_pdf

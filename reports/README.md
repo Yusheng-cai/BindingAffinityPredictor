@@ -4,3 +4,6 @@ Store compact, reviewed experiment summaries here. A report should link its expe
 
 Do not copy entire raw output trees into this directory.
 
+Weekly presentation-ready packages live under `../weeks/`. Start with
+`../weeks/README.md` for the report, code, notebook, results, literature, and
+Overleaf workflow.

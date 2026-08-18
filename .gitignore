@@ -11,6 +11,7 @@ htmlcov/
 # Local environments and secrets
 .venv/
 venv/
+/external/
 .env
 .env.*
 !.env.example
@@ -43,6 +44,9 @@ data/processed/*
 runs/*
 !runs/README.md
 
+# Hydra and other generated command outputs
+/outputs/
+
 # Notebook execution state
 .ipynb_checkpoints/
 
@@ -50,3 +54,7 @@ runs/*
 build/
 dist/
 *.egg-info/
+
+# Locally obtained literature PDFs (citation metadata and notes are tracked)
+literature/papers/*
+!literature/papers/.gitkeep

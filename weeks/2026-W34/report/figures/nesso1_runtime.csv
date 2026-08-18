@@ -1,0 +1,5 @@
+target,compounds,wall_seconds,seconds_per_compound,peak_gpu_delta_mib,max_host_rss_kib
+cdk2,16,364.796,22.800,7847,4107332
+tyk2,16,102.304,6.394,6797,3962560
+jnk1,21,162.569,7.741,4838,4026480
+p38,34,251.637,7.401,6218,4020456

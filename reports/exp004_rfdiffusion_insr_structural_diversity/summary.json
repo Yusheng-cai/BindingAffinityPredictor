@@ -1,0 +1,65 @@
+{
+  "length": {
+    "minimum": 71,
+    "maximum": 98,
+    "mean": 82.2
+  },
+  "binderConfidence": {
+    "minimum": 0.9909,
+    "maximum": 0.9929,
+    "mean": 0.9915
+  },
+  "shapeRmsdAngstrom": {
+    "minimum": 4.6763,
+    "median": 13.3646,
+    "mean": 11.9233,
+    "maximum": 16.4472
+  },
+  "poseChamferAngstrom": {
+    "minimum": 2.6564,
+    "median": 5.0806,
+    "mean": 5.7278,
+    "maximum": 10.3972
+  },
+  "centerOfMassDistanceAngstrom": {
+    "minimum": 0.537,
+    "median": 6.3678,
+    "mean": 7.338,
+    "maximum": 14.1963
+  },
+  "contactJaccardSimilarity": {
+    "minimum": 0.3611,
+    "median": 0.5,
+    "mean": 0.5325,
+    "maximum": 0.7812
+  },
+  "closestShapePair": {
+    "seeds": [
+      42,
+      48
+    ],
+    "value": 4.6763
+  },
+  "mostDifferentShapePair": {
+    "seeds": [
+      42,
+      43
+    ],
+    "value": 16.4472
+  },
+  "closestPosePair": {
+    "seeds": [
+      49,
+      50
+    ],
+    "value": 2.6564
+  },
+  "mostDifferentPosePair": {
+    "seeds": [
+      43,
+      50
+    ],
+    "value": 10.3972
+  },
+  "designsWithBackbonePairsBelow2A": 0
+}

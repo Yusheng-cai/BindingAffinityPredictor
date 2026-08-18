@@ -1,0 +1,45 @@
+week: 2026-W33
+date_range: 2026-08-10_to_2026-08-16
+title: High-level introductions to the Boltz-2 and Nesso-1 architectures
+status: draft_local_compiled
+
+project_git_revision: 122da1b0c3d87fb616aa1f56a4f19ae588c4ae71
+working_tree_dirty_at_build: true
+
+overleaf:
+  configured: true
+  project: https://www.overleaf.com/project/6a82821f04642dd4fde7b288
+  git_remote: https://git.overleaf.com/6a82821f04642dd4fde7b288
+  branch: main
+  revision: 3b2ca13c3503aa2fef358fef8e960eef22a8268a
+  source_of_truth: overleaf
+  local_clone: /home/yusheng/source/binding-affinity-overleaf
+  last_sync: 2026-08-16
+
+editable_sections:
+  - weeks/2026-W33/report/sections/boltz2_architecture.tex
+  - weeks/2026-W33/report/sections/nesso_architecture.tex
+
+experiments: []
+
+citations:
+  - passaro2025boltz2
+  - shenoy2026nesso1
+
+figure_sources: []
+
+canonical_code: []
+
+commands:
+  - bash weeks/2026-W33/code/build_report.sh
+
+pdf:
+  path: weeks/2026-W33/report/report.pdf
+  pages: 5
+  latex_engine: pdflatex
+  sha256: 3e17a909e665b1a0d26175367ebba029415af872f259ac1419e39d2a5e989321
+
+bibliography_snapshot:
+  path: weeks/2026-W33/report/references.bib
+  canonical_source: literature/references.bib
+  sha256: d0704e364c0eca48139c67ac86404b25a37f082ea6e0c10714545b3bae566d74

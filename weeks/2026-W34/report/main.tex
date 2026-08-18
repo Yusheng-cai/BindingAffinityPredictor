@@ -1,0 +1,804 @@
+\documentclass[11pt]{article}
+\usepackage[margin=0.78in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage[table]{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[numbers]{natbib}
+\usepackage{microtype}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.16}
+
+\definecolor{accent}{HTML}{2F6F7E}
+\definecolor{cdk}{HTML}{0072B2}
+\definecolor{tyk}{HTML}{D55E00}
+\definecolor{jnk}{HTML}{009E73}
+\definecolor{pth}{HTML}{CC79A7}
+\definecolor{highlightbg}{HTML}{EAF4F6}
+\definecolor{nessobg}{HTML}{E8F5E9}
+\definecolor{boltzbg}{HTML}{E8F0FA}
+\definecolor{diffbg}{HTML}{FFF2CC}
+\hypersetup{colorlinks=true,linkcolor=accent,citecolor=accent,urlcolor=accent}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.48em}
+
+\title{\textbf{8\_23\_2026 Update}\\
+Boltz-2, Nesso-1, FlashBind, and an FEP+ four-kinase reproduction}
+\author{Yusheng Cai}
+\date{August 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Executive summary}
+
+This week, I focused on four linked questions:
+\begin{enumerate}
+  \item What does Boltz-2 do?
+  \item How does Nesso-1 change that workflow, and what does it improve or
+  sacrifice?
+  \item Where does FlashBind's dock-and-score workflow fit relative to these
+  two models?
+  \item Can I reproduce the reported public affinity benchmark using the
+  authors' released checkpoints?
+\end{enumerate}
+
+In brief, Boltz-2 jointly predicts an atom-resolved protein--ligand complex
+and learned affinity outputs from protein sequence, ligand chemistry (SMILES), and
+usually an MSA.
+
+Nesso-1 removes the costly atom-coordinate diffusion stage
+and the MSA requirement. It instead predicts affinity from jointly processed
+protein--ligand features and a predicted pocket. This makes Nesso much
+more practical for screening, at the cost of not producing the detailed
+heavy-atom pose supplied by Boltz-2.
+
+FlashBind makes a third architectural choice. Rather than jointly generating
+an atom-resolved complex with an expensive diffusion decoder, it first obtains
+a three-dimensional receptor, uses FABind+ to predict a pocket and dock the
+ligand, and then scores the resulting local protein--ligand geometry with an
+E(3)-equivariant graph neural network. It is therefore best understood as a
+two-stage \emph{dock then score} system for virtual screening. The receptor
+can be experimental or predicted, but three-dimensional receptor coordinates
+are required internally \citep{jiang2026flashbind}.
+
+For the empirical test, I reconstructed the public 87-compound,
+four-kinase benchmark and ran the released models on every compound.
+Nesso-1 achieved a compound-count-weighted mean within-target Pearson
+correlation of \textbf{$r=0.807$} (compound-bootstrap 95\% interval
+$0.731$--$0.873$), essentially reproducing the preprint value of $0.80$
+\citep{shenoy2026nesso1}. Boltz-2, using the MSA-1024 protocol described
+below, achieved \textbf{$r=0.627$} (interval
+$0.484$--$0.744$), close to its paper reference of $0.66$
+\citep{passaro2025boltz2}. FlashBind's two-checkpoint value ensemble achieved
+\textbf{$r=0.533$} (interval $0.382$--$0.669$), reproducing its paper value of
+$0.53$ \citep{jiang2026flashbind}. I obtained 87/87 affinity outputs from all
+three models.
+
+Separately, I compared the available predicted structures with 16 exact
+experimental protein--ligand cocrystals. Using the same protein-only alignment
+and symmetry-corrected ligand RMSD definition for both methods, the released
+FlashBind/FABind+ poses had a median RMSD of \textbf{0.634~\AA} and 16/16 were
+below 2~\AA. The Boltz-2 MSA-1024 poses had a median of
+\textbf{0.898~\AA} and 14/16 were below 2~\AA.
+
+\begin{center}
+\setlength{\fboxsep}{9pt}
+\fcolorbox{accent}{highlightbg}{%
+\parbox{0.91\textwidth}{
+\centering
+\textbf{\color{accent}\large Headline result: complete 87-compound benchmark}\\[0.55em]
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & \textbf{Weighted Pearson $r$} & \textbf{95\% interval} & \textbf{Paper reference} \\
+\midrule
+Nesso-1 & \textbf{0.807} & 0.731--0.873 & 0.80 \\
+Boltz-2 MSA-1024 & \textbf{0.627} & 0.484--0.744 & 0.66 \\
+FlashBind, released poses & \textbf{0.533} & 0.382--0.669 & 0.53 \\
+\bottomrule
+\end{tabular}\\[0.65em]
+\textbf{87/87 outputs for all three models}\quad$\bullet$\quad
+\textbf{Paired difference: $+0.180$ $[+0.058,+0.319]$}\\[0.35em]
+\small Largest target-level separation: p38 ($r=0.869$ Nesso versus
+$r=0.364$ Boltz). The Boltz result uses the documented 1,024-row trunk-MSA
+subsample; the FlashBind result uses released FABind+ poses.
+}}
+\end{center}
+
+\section{How I framed the questions and benchmark}
+
+I began by asking what information each model consumes, what it predicts, and
+why the Nesso architecture changes the computational cost. I then tried to
+recover the
+reported relationship between model scores and experimental ligand potencies
+within each protein target. In this report, ``reproduce the benchmark'' means
+that I recreated the public inputs, ran the released inference code, retained
+the native outputs, and applied a predeclared metric policy. I did not train
+either model on the benchmark.
+
+I used the older OpenFF Git commit \texttt{da7c337} because it contains the
+full 87-example benchmark used in both model papers: $16+16+21+34=87$ neutral
+protein--ligand examples \citep{hahn2022bindingbenchmarks}.
+
+Each target defines one separate medicinal-chemistry series: the protein is
+held fixed while
+the ligand is changed. The four targets are cyclin-dependent kinase 2 (CDK2),
+tyrosine kinase 2 (TYK2), c-Jun N-terminal kinase 1 (JNK1), and p38$\alpha$
+mitogen-activated protein kinase. All four are protein kinases, but they are
+different proteins with different ligand series and different biochemical
+assays.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{1.70in}r>{\raggedright\arraybackslash}p{2.25in}>{\raggedright\arraybackslash}p{0.72in}c@{}}
+\toprule
+Target / assay series & Ligands ($N$) & Protein construct input & Endpoint & \shortstack{Reference\\PDB} \\
+\midrule
+CDK2 (cyclin-dependent kinase 2) & 16 & CDK2, 303 aa; cyclin A2, 258 aa & IC50 & 1H1Q \\
+TYK2 (tyrosine kinase 2) & 16 & TYK2, 302 aa & Ki & 4GIH \\
+JNK1 (c-Jun N-terminal kinase 1) & 21 & JNK1, 370 aa; JIP1 peptide, 11 aa & IC50 & 2GMX \\
+p38$\alpha$ (MAPK14) & 34 & p38 kinase, 372 aa & IC50 & 3FLY \\
+\bottomrule
+\end{tabular}
+\caption{Frozen benchmark composition. One model example is one target
+construct paired with one ligand, so $N$ is the number of independently
+scored ligands in that target's series.}
+\end{table}
+
+The columns have the following precise meanings:
+
+\begin{description}
+  \item[Target protein / assay series.] The common protein construct against
+  which a chemically related set of ligands was experimentally tested. I
+  calculated each target's correlation separately rather than mixing
+  compounds from different targets.
+
+  \item[Ligands ($N$).] The number of distinct protein--ligand examples in that
+  series. For example, CDK2 has 16 ligands. Nesso therefore received 16 CDK2
+  inputs: each contained the same CDK2--cyclin A2 sequences but a different
+  ligand SMILES. The four values sum to $16+16+21+34=87$ model examples.
+
+  \item[Protein construct.] The exact amino-acid sequence or sequences given
+  to the model. ``303 aa; 258 aa'' means two chains, not one 561-residue
+  protein: a 303-residue CDK2 chain and its 258-residue cyclin A2 partner.
+  Similarly, the JNK1 input includes the 11-residue JIP1 peptide found in the
+  curated reference complex.
+
+  \item[Experimental endpoint.] The laboratory measurement used as the
+  benchmark's ground-truth label. IC50 is the concentration that produces
+  50\% inhibition under a particular assay protocol. Ki is an inhibition
+  constant inferred through an enzyme-kinetic model. Smaller IC50 or Ki means
+  stronger apparent inhibition. These endpoints are related but not
+  interchangeable, and neither should automatically be called a binding free
+  energy. Source values in nM or $\mu$M were converted to $\mu$M and then to
+  $\log_{10}(\mathrm{value}/\mu\mathrm{M})$ before comparison. CDK2, JNK1, and
+  p38 use IC50 labels; TYK2 uses Ki labels.
+
+  \item[Reference PDB.] The Protein Data Bank accession for the experimentally
+  solved complex used by the curated benchmark to identify the target and its
+  exact construct. For example, \texttt{1H1Q} identifies the reference
+  CDK2--cyclin A2 complex. In this calculation, the PDB coordinates and bound
+  ligand pose were \emph{not} given to Nesso or Boltz; only the deposited
+  protein sequence and the benchmark provenance were taken from this record.
+  FlashBind is different: its released-pose calculation uses the corresponding
+  fixed protein coordinates, but not the crystallographic ligand pose.
+\end{description}
+
+Thus, for the CDK2 row, the calculation asks a concrete ranking question:
+given the same CDK2--cyclin A2 protein construct and 16 different ligands, does
+the ordering of Nesso's 16 predicted affinity scores agree with the ordering
+of the 16 experimental IC50 measurements? Pearson, Spearman, and Kendall
+statistics answer that question for CDK2. The procedure is repeated separately
+for TYK2, JNK1, and p38 before the four target-level results are aggregated.
+
+I took the protein sequences from the deposited RCSB entities. I retained
+cyclin A2 for CDK2 and the JIP1 peptide for JNK1 because those partners are present in
+the curated benchmark complexes. Ligands were represented by canonical,
+stereochemically explicit SMILES; all have formal charge zero. Nesso and Boltz
+received no crystallographic pose, template, pocket annotation, hotspot, or
+experimental label. FlashBind received the authors' fixed protein structures
+and FABind+-predicted ligand poses; its label file was not used during
+inference.
+
+\section{Model description: Boltz-2, Nesso-1, and FlashBind}
+
+\subsection{Boltz-2: cofold and score}
+
+At the highest level, Boltz-2 is a biomolecular cofolding model with an
+additional affinity-prediction pathway. One example can contain protein
+sequence(s), ligand chemistry, an MSA, and optional templates or constraints.
+Its structure trunk integrates these inputs, and a stochastic diffusion
+decoder generates three-dimensional coordinates for the modeled heavy atoms.
+The released system returns sampled complex structures and confidence
+quantities; for protein--ligand inputs it can also return a binder probability
+and continuous affinity estimates \citep{passaro2025boltz2}. These learned
+affinity outputs are assay-calibrated model scores. They are not direct
+alchemical calculations of an equilibrium $\Delta G_\mathrm{bind}$.
+
+\subsection{Nesso-1: predict affinity without coordinate diffusion}
+
+Nesso-1 follows a different affinity workflow. It does not run the
+atom-coordinate diffusion decoder used by Boltz-2, and it supplies protein
+context through pretrained ESM-2 embeddings instead of an MSA.
+
+The Nesso paper reports more than a tenfold inference speed-up over Boltz-2,
+and more than twentyfold on some larger targets, while matching or exceeding
+Boltz-2 on its evaluated affinity benchmarks \citep{shenoy2026nesso1}. Nesso
+does not return the atom-resolved complex produced by Boltz-2, so the two
+models serve different structural needs. For this project, I compare their
+released affinity outputs on identical protein and ligand inputs. Neither
+affinity head is a molecular simulation or a direct calculation of
+$\Delta G_{\mathrm{bind}}$; both are learned from experimental potency and
+affinity labels.
+
+\subsection{FlashBind: dock then score}
+
+At the user-facing level, FlashBind can begin with a protein sequence and a
+ligand SMILES. Internally, however, the sequence must first be resolved to a
+three-dimensional receptor. The released preprocessing searches for an
+experimental or predicted structure and can fall back to a structure
+predictor when one is unavailable. FlashBind then applies the following
+procedure \citep{jiang2026flashbind}:
+
+\begin{enumerate}
+  \item \textbf{Resolve the receptor.} Use a PDB structure, a predicted
+  structure such as an AlphaFold model, or another generated receptor model.
+  A crystal structure is useful but not mandatory.
+  \item \textbf{Predict the pocket and pose.} FABind+ rapidly identifies a
+  candidate binding region and places the ligand in that region.
+  \item \textbf{Construct the local complex.} The pipeline crops the receptor
+  around the proposed ligand pose and represents the local protein--ligand
+  environment as a geometric graph.
+  \item \textbf{Score the geometry.} An E(3)-equivariant graph neural network
+  processes the local complex. Equivariance ensures that rotating or
+  translating the coordinates does not arbitrarily change the binding
+  prediction.
+  \item \textbf{Read out the prediction.} Separate heads can return a binary
+  activity probability or a continuous assay-derived affinity score. The
+  continuous score is not a thermodynamic calculation of
+  $\Delta G_{\mathrm{bind}}$.
+\end{enumerate}
+
+This modularity separates pose generation from affinity scoring, which makes
+large-library screening more practical but also creates a sequential error
+path:
+\[
+ \text{receptor conformation}
+ \longrightarrow \text{pocket selection}
+ \longrightarrow \text{docked pose}
+ \longrightarrow \text{binding score}.
+\]
+An incorrect receptor or docked pose can therefore limit the scorer even if
+the final neural network is otherwise well calibrated.
+
+
+\begin{center}
+\setlength{\fboxsep}{8pt}
+\fcolorbox{accent}{highlightbg}{\parbox{0.91\textwidth}{
+\centering
+\textbf{\color{accent}\large Model workflows at a glance}\\[0.6em]
+\textbf{Boltz-2:} sequence + ligand + MSA
+$\rightarrow$ joint trunk + atom diffusion
+$\rightarrow$ atom-resolved complex + affinity\\[0.5em]
+\textbf{Nesso-1:} sequence + ligand
+$\rightarrow$ ESM-2 + pair trunk + predicted pocket
+$\rightarrow$ affinity, without a final Cartesian complex\\[0.5em]
+\textbf{FlashBind:} 3D receptor + ligand
+$\rightarrow$ FABind+ pocket and pose
+$\rightarrow$ local EGNN score}}
+\end{center}
+
+\section{Reproducing the benchmark}
+
+\subsection{Nesso-1}
+
+I ran Nesso using the official source at Git revision
+\texttt{f0156e9}, released checkpoint tag \texttt{v1.0.0} (resolved Hugging
+Face revision \texttt{1896c84}), and ESM-2
+\texttt{facebook/esm2\_t33\_650M\_UR50D} at revision
+\texttt{08e4846}. I used seed 42, five recycling steps, bfloat16 mixed
+precision, the default two-stage 22 \AA{} protein-pocket crop with a
+256-token budget, and disabled optional CUDA kernels. I generated each
+unique protein-chain embedding once per target and reused it across the
+target's ligands. I retained the raw continuous affinity values, the two
+component estimates, binder probabilities, and entropy diagnostics before
+analysis.
+
+Nesso does not generate an all-atom protein--ligand complex. It combines
+sequence-derived protein features and ligand atom/bond features in a geometric
+trunk, predicts an interaction region, and reads out affinity. This is
+why it can screen faster than a full coordinate-diffusion model
+\citep{shenoy2026nesso1}.
+
+\subsection{Boltz-2 inference protocol}
+
+I used Boltz 2.2.1 source revision \texttt{b1ebfc4}, the released structure
+and affinity checkpoints, seed 42, three structure recycles, one 200-step
+structure sample, and five 200-step affinity samples. I generated one
+ColabFold/MMseqs2 MSA per unique protein chain and reused it across every
+ligand for that target. I capped each MSA at the frozen maximum of 8,192
+parsed rows. I did not use templates, experimental coordinates, or the
+optional molecular-weight correction.
+
+Normally, all retained MSA rows---up to that 8,192-row cap---can enter the
+model trunk. That full-depth calculation exceeded the memory of the local
+10~GiB GPU, so I enabled Boltz's documented \texttt{--subsample\_msa} option
+and used 1,024 randomly selected MSA rows in the trunk \citep{passaro2025boltz2}.
+This reduces memory use while preserving the larger parsed MSA as the sampling
+pool.
+
+I kept every other setting unchanged and applied this MSA-1024 protocol to all
+four targets. I obtained 87/87 structures and affinity predictions. This is a
+released-checkpoint reproduction with reconstructed preprocessing and a
+documented MSA-depth choice, not the authors' exact evaluation pipeline.
+
+\subsection{FlashBind released-pose scoring run}
+
+I used FlashBind source revision \texttt{f161268}, the two released value
+checkpoints at Hugging Face revision \texttt{fa6362c}, and the released FEP+4
+archive at revision \texttt{50b1511}. The archive contains exactly 87 IDs,
+four fixed receptor PDBs, one FABind+-predicted ligand pose per pair, ESM3
+protein representations, and TorchDrug ligand representations. I matched all
+87 molecules to my canonical manifest by target and InChIKey. Every
+experimental label matched to floating-point precision, and the four receptor
+PDB files were byte-identical to my local benchmark copies.
+
+To remain compatible with the local NVIDIA driver, I used an isolated
+PyTorch~2.5.1/CUDA~12.1 scoring environment rather than the upstream
+PyTorch~2.7.1/CUDA~12.6 specification. I retained the authors' inference code,
+checkpoint weights, input features, and numerical settings, but this dependency
+change means the calculation is not a bitwise environment reproduction.
+
+I first ran one CDK2 ligand through both checkpoints and required finite
+\texttt{pred\_value}, \texttt{pred\_value\_raw}, and molecular weight fields.
+After that check passed, I ran all 87 records on one GPU with the authors'
+20~\AA{} local distance threshold and averaged the two checkpoint outputs. I
+used the calibrated \texttt{pred\_value}, documented as
+$\log_{10}(\mathrm{IC50}/\mathrm{Ki}/\mathrm{Kd}\;\mathrm{in}\;\mu M)$, for
+the primary analysis while retaining the uncalibrated values. This experiment
+uses released FABind+ poses rather than rerunning FABind+; it therefore tests
+the released scorer and supplied preprocessing, not independent end-to-end
+docking reproducibility.
+
+\section{Metric policy}
+
+I kept the labels hidden during model execution and joined them only after all
+native outputs were locked by immutable sample ID. I calculated the primary
+statistic in two stages:
+\[
+ r_t = \operatorname{Pearson}\!\left(y_{t,i},\hat y_{t,i}\right),
+ \qquad
+ \bar r = \frac{\sum_t n_t r_t}{\sum_t n_t}.
+\]
+Thus, the comparison asks whether each model ranks compounds correctly
+\emph{within} each kinase series; it does not correlate unrelated assays
+across targets. Spearman $\rho$ and Kendall $\tau$ were secondary ranking
+metrics.
+
+For error metrics only, I mapped both experimental and predicted
+log$_{10}$ micromolar values to an energy-like scale at 298.15 K,
+\[
+ G_{\mathrm{eff}}=RT\ln\!\left(10^{-6}\,10^{\log_{10}(C/\mu\mathrm{M})}\right).
+\]
+This is a unit transformation of potency. It must not be interpreted as a
+thermodynamic standard binding free energy because IC50 depends on assay
+conditions and Ki is not generally interchangeable with IC50. I report both
+ordinary MAE and target-centered MAE; centering removes one constant offset
+per target and better isolates relative ranking/calibration within a series.
+
+I estimated uncertainty with 2,000 bootstrap replicates (seed 20260817). In
+each replicate, I resampled compounds with replacement separately inside each
+target and recomputed the compound-weighted statistic.
+
+\subsection{Experimental pose-recovery metric}
+
+An experimental structure does not come with an ``experimental RMSD.'' The
+experimental ligand coordinates are the reference, and I calculate RMSD
+between each predicted pose and that reference. I identified 16 exact
+FEP+4 ligand--target identities with deposited cocrystal structures and used
+the same reference and metric for FlashBind/FABind+ and Boltz-2.
+
+For each pair, I matched the kinase chains by sequence and defined the
+experimental pocket as residues having any heavy atom within 5~\AA{} of the
+crystal ligand. I then fitted predicted to experimental pocket using only
+matched protein C$\alpha$ atoms. I held that transform fixed while applying it
+to the predicted ligand and calculated
+\[
+  \mathrm{RMSD}_{\mathrm{pose}}
+  = \min_{\pi\in\mathcal{M}}
+  \sqrt{\frac{1}{N}\sum_{i=1}^{N}
+  \left\|R\mathbf{x}_i+\mathbf{t}-\mathbf{x}^{\mathrm{ref}}_{\pi(i)}\right\|^2},
+\]
+where $R$ and $\mathbf{t}$ come only from the protein fit and
+$\mathcal{M}$ contains complete bond-order- and chirality-compatible atom
+mappings. The minimum over $\mathcal{M}$ corrects for chemically equivalent
+atom permutations. I never fitted the predicted ligand directly to the
+crystal ligand. I use RMSD $<2$~\AA{} only as a conventional descriptive pose
+threshold, not as a hypothesis-test boundary.
+
+\section{Results}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Target & Pearson $r$ & Spearman $\rho$ & Kendall $\tau$ & Centered MAE \\
+&&&& (kcal/mol) \\
+\midrule
+CDK2 & 0.748 & 0.759 & 0.550 & 0.723 \\
+TYK2 & 0.917 & 0.921 & 0.767 & 0.749 \\
+JNK1 & 0.666 & 0.667 & 0.482 & 0.450 \\
+p38  & 0.869 & 0.894 & 0.723 & 0.425 \\
+\midrule
+\rowcolor{nessobg}
+Compound-weighted & \textbf{0.807} & \textbf{0.819} & \textbf{0.641} & \textbf{0.545} \\
+\bottomrule
+\end{tabular}
+\caption{Nesso-1 released-checkpoint reproduction. The paper reports a
+compound-weighted Pearson correlation of 0.80 on this benchmark.}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Target & Pearson $r$ & Spearman $\rho$ & Kendall $\tau$ & Centered MAE \\
+&&&& (kcal/mol) \\
+\midrule
+CDK2 & 0.831 & 0.865 & 0.667 & 0.540 \\
+TYK2 & 0.807 & 0.779 & 0.617 & 0.663 \\
+JNK1 & 0.758 & 0.805 & 0.616 & 0.442 \\
+p38  & 0.364 & 0.433 & 0.287 & 0.781 \\
+\midrule
+\rowcolor{boltzbg}
+Compound-weighted & \textbf{0.627} & \textbf{0.666} & \textbf{0.497} & \textbf{0.633} \\
+\bottomrule
+\end{tabular}
+\caption{Boltz-2 MSA-1024 released-checkpoint reproduction. The paper
+references are weighted Pearson $r=0.66$ and Kendall $\tau=0.48$; the present
+values are 0.627 and 0.497.}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Target & Pearson $r$ & Spearman $\rho$ & Kendall $\tau$ & Centered MAE \\
+&&&& (kcal/mol) \\
+\midrule
+CDK2 & 0.612 & 0.641 & 0.433 & 0.754 \\
+TYK2 & 0.134 & 0.147 & 0.083 & 1.021 \\
+JNK1 & 0.546 & 0.578 & 0.425 & 0.509 \\
+p38  & 0.677 & 0.591 & 0.413 & 0.611 \\
+\midrule
+\rowcolor{highlightbg}
+Compound-weighted & \textbf{0.533} & \textbf{0.515} & \textbf{0.359} & \textbf{0.688} \\
+\bottomrule
+\end{tabular}
+\caption{FlashBind two-checkpoint ensemble using the authors' released
+FABind+ poses. The reported references are weighted Pearson $r=0.53$ and
+Kendall $\tau=0.38$; the present values are 0.533 and 0.359.}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.75\textwidth,
+  height=0.49\textwidth,
+  xlabel={Experimental potency within-target $z$ score},
+  ylabel={Nesso-1 affinity within-target $z$ score},
+  xmin=-2.8,xmax=2.8,ymin=-2.8,ymax=2.8,
+  axis lines=left,
+  grid=major,
+  legend style={at={(0.02,0.98)},anchor=north west,draw=none,fill=white},
+]
+\addplot[black,dashed,domain=-2.8:2.8] {x};
+\addlegendentry{identity}
+\addplot[only marks,mark=*,cdk] table[x=observed_z,y=predicted_z,col sep=comma]
+  {figures/nesso1_cdk2.csv};
+\addlegendentry{CDK2}
+\addplot[only marks,mark=square*,tyk] table[x=observed_z,y=predicted_z,col sep=comma]
+  {figures/nesso1_tyk2.csv};
+\addlegendentry{TYK2}
+\addplot[only marks,mark=triangle*,jnk] table[x=observed_z,y=predicted_z,col sep=comma]
+  {figures/nesso1_jnk1.csv};
+\addlegendentry{JNK1}
+\addplot[only marks,mark=diamond*,pth] table[x=observed_z,y=predicted_z,col sep=comma]
+  {figures/nesso1_p38.csv};
+\addlegendentry{p38}
+\end{axis}
+\end{tikzpicture}
+\caption{Within-target standardized experimental and predicted potency. Lower
+values correspond to stronger binding on both axes. Standardization removes
+target-specific offsets and scale differences for visualization only; metrics
+were computed from the unstandardized values.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.75\textwidth,
+  height=0.49\textwidth,
+  xlabel={Experimental potency within-target $z$ score},
+  ylabel={Boltz-2 affinity within-target $z$ score},
+  xmin=-2.8,xmax=2.8,ymin=-2.8,ymax=2.8,
+  axis lines=left,
+  grid=major,
+  legend style={at={(0.02,0.98)},anchor=north west,draw=none,fill=white},
+]
+\addplot[black,dashed,domain=-2.8:2.8] {x};
+\addlegendentry{identity}
+\addplot[only marks,mark=*,cdk] table[x=observed_z,y=predicted_z,col sep=comma]
+  {figures/boltz2_msa1024_cdk2.csv};
+\addlegendentry{CDK2}
+\addplot[only marks,mark=square*,tyk] table[x=observed_z,y=predicted_z,col sep=comma]
+  {figures/boltz2_msa1024_tyk2.csv};
+\addlegendentry{TYK2}
+\addplot[only marks,mark=triangle*,jnk] table[x=observed_z,y=predicted_z,col sep=comma]
+  {figures/boltz2_msa1024_jnk1.csv};
+\addlegendentry{JNK1}
+\addplot[only marks,mark=diamond*,pth] table[x=observed_z,y=predicted_z,col sep=comma]
+  {figures/boltz2_msa1024_p38.csv};
+\addlegendentry{p38}
+\end{axis}
+\end{tikzpicture}
+\caption{Boltz-2 MSA-1024 standardized scores. The dispersed p38 series is
+the main target-level departure from Nesso-1 and from the other Boltz targets.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.75\textwidth,
+  height=0.49\textwidth,
+  xlabel={Experimental potency within-target $z$ score},
+  ylabel={FlashBind affinity within-target $z$ score},
+  xmin=-2.8,xmax=2.8,ymin=-2.8,ymax=2.8,
+  axis lines=left,
+  grid=major,
+  legend style={at={(0.02,0.98)},anchor=north west,draw=none,fill=white},
+]
+\addplot[black,dashed,domain=-2.8:2.8] {x};
+\addlegendentry{identity}
+\addplot[only marks,mark=*,cdk] table[x=observed_z,y=predicted_z,col sep=comma]
+  {figures/flashbind_cdk2.csv};
+\addlegendentry{CDK2}
+\addplot[only marks,mark=square*,tyk] table[x=observed_z,y=predicted_z,col sep=comma]
+  {figures/flashbind_tyk2.csv};
+\addlegendentry{TYK2}
+\addplot[only marks,mark=triangle*,jnk] table[x=observed_z,y=predicted_z,col sep=comma]
+  {figures/flashbind_jnk1.csv};
+\addlegendentry{JNK1}
+\addplot[only marks,mark=diamond*,pth] table[x=observed_z,y=predicted_z,col sep=comma]
+  {figures/flashbind_p38.csv};
+\addlegendentry{p38}
+\end{axis}
+\end{tikzpicture}
+\caption{FlashBind standardized scores from the released FABind+ poses. TYK2
+is the clear weak target, whereas the other three series retain positive
+within-target ranking relationships.}
+\end{figure}
+
+I obtained an aggregate Pearson result of $0.807$ for Nesso (95\% interval
+$0.731$--$0.873$), which agrees closely with the reported $0.80$. For Boltz,
+I obtained $0.627$ (interval $0.484$--$0.744$), which is 0.033 below the
+paper reference of $0.66$; its Kendall result of 0.497 is 0.017 above the
+paper reference of 0.48. Given reconstructed preprocessing, one random seed,
+and an explicit MSA-depth change, I regard this as a close released-model
+reproduction rather than numerical identity.
+
+For FlashBind I obtained weighted Pearson $r=0.533$ (95\% interval
+$0.382$--$0.669$), essentially identical to the reported $0.53$. The weighted
+Kendall value was $0.359$, 0.021 below the reported $0.38$. The close Pearson
+match is reassuring for software reproduction, but it is not independent
+validation: the authors supplied the FABind+ poses and representations used by
+their own scoring benchmark.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Statistic & Nesso-1 & \shortstack{Boltz-2\\MSA-1024} & FlashBind \\
+\midrule
+\rowcolor{highlightbg}
+Pearson $r$ & \textbf{0.807} & \textbf{0.627} & \textbf{0.533} \\
+Spearman $\rho$ & 0.819 & 0.666 & 0.515 \\
+Kendall $\tau$ & 0.641 & 0.497 & 0.359 \\
+Centered MAE (kcal/mol) & 0.545 & 0.633 & 0.688 \\
+\bottomrule
+\end{tabular}
+\caption{Full matched comparison across the 87-compound benchmark. Each entry
+is the compound-count-weighted mean of the corresponding within-target
+statistic.}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar,
+  width=0.78\textwidth,
+  height=0.46\textwidth,
+  bar width=15pt,
+  ymin=0,ymax=1.0,
+  ylabel={Compound-weighted Pearson $r$},
+  xmin=-0.55,xmax=2.55,
+  xtick={0,1,2},
+  xticklabels={Nesso-1,Boltz-2,FlashBind},
+  axis lines=left,
+  grid=major,
+  nodes near coords={\pgfmathprintnumber[fixed,precision=3,fixed zerofill]{\pgfplotspointmeta}},
+  nodes near coords style={font=\footnotesize},
+  legend style={at={(0.5,1.03)},anchor=south,legend columns=2,draw=none},
+]
+\addplot[fill=accent,draw=accent] coordinates
+  {(0,0.807) (1,0.627) (2,0.533)};
+\addlegendentry{This reproduction}
+\addplot[fill=gray!55,draw=gray!70] coordinates
+  {(0,0.800) (1,0.660) (2,0.530)};
+\addlegendentry{Paper reference}
+\end{axis}
+\end{tikzpicture}
+\caption{Weighted within-target Pearson correlations from this reproduction
+and the corresponding paper reference values. The reproduced values differ
+from the references by $+0.007$ for Nesso-1, $-0.033$ for Boltz-2, and
+$+0.003$ for FlashBind. Bars show point estimates; the bootstrap intervals
+are reported in the text and executive-summary table.}
+\end{figure}
+
+I found that the paired interval excludes zero for all three correlation
+statistics. It barely includes zero for centered MAE, so the evidence is
+stronger for a ranking difference than for an offset-corrected error
+difference. Target-level
+heterogeneity is scientifically important: Boltz is better on CDK2 and JNK1,
+Nesso is better on TYK2, and p38 supplies the largest Nesso advantage
+($r=0.869$ versus $0.364$). My experiment does not determine whether
+that p38 difference arises from model architecture, MSA subsampling,
+checkpoint stochasticity, or reconstructed input/preprocessing details.
+FlashBind shows a different pattern: p38 is its strongest target
+($r=0.677$), while TYK2 is much weaker ($r=0.134$). Because this run uses
+released docked poses, that TYK2 result cannot be diagnosed as a fresh docking
+failure without separately examining the archived poses.
+
+\subsection{Experimental pose recovery on the 16 structure-matched pairs}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabular}{lcrrr}
+\toprule
+Pose source & Receptor input & Median RMSD (\AA) & Mean RMSD (\AA) & $<2$~\AA \\
+\midrule
+\rowcolor{highlightbg}
+FlashBind/FABind+, released poses & Fixed experimental 3D & \textbf{0.634} & 0.651 & \textbf{16/16} \\
+\rowcolor{boltzbg}
+Boltz-2 MSA-1024, seed 42 & Sequence + MSA & \textbf{0.898} & 0.977 & \textbf{14/16} \\
+\bottomrule
+\end{tabular}
+\caption{Symmetry-corrected ligand heavy-atom RMSD after aligning only
+protein pocket C$\alpha$ atoms. Both rows use the same 16 exact cocrystal
+references and scoring code, but the receptor inputs are materially different.}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar,
+  width=0.82\textwidth,
+  height=0.48\textwidth,
+  bar width=11pt,
+  ymin=0,ymax=1.35,
+  ylabel={Median pocket-aligned ligand RMSD (\AA)},
+  xmin=-0.6,xmax=4.6,
+  xtick={0,1,2,3,4},
+  xticklabels={CDK2,TYK2,JNK1,p38,Overall},
+  axis lines=left,
+  grid=major,
+  nodes near coords,
+  nodes near coords style={font=\scriptsize},
+  legend style={at={(0.5,1.03)},anchor=south,legend columns=2,draw=none},
+]
+\addplot[fill=cdk,draw=cdk] coordinates
+  {(0,0.788) (1,0.238) (2,0.502) (3,1.111) (4,0.898)};
+\addlegendentry{Boltz-2 MSA-1024}
+\addplot[fill=tyk,draw=tyk] coordinates
+  {(0,0.442) (1,0.150) (2,0.609) (3,0.768) (4,0.634)};
+\addlegendentry{FlashBind/FABind+}
+\end{axis}
+\end{tikzpicture}
+\caption{Median symmetry-corrected ligand RMSD by target and over all 16
+structure-matched pairs. The target counts are CDK2 $n=6$, TYK2 $n=2$, JNK1
+$n=1$, and p38 $n=7$; the JNK1 bar is therefore a single pair rather than a
+stable target-level estimate. FlashBind has the lower overall median, but the
+per-pair comparison remains mixed (9 lower for FlashBind and 7 for Boltz-2).}
+\end{figure}
+
+The released FlashBind/FABind+ poses were below 2~\AA{} for all 16 pairs,
+whereas the Boltz-2 poses were below 2~\AA{} for 14. FlashBind had the lower
+RMSD on 9 pairs and Boltz-2 on 7. The median paired FlashBind-minus-Boltz
+difference was $-0.109$~\AA; its mean was $-0.326$~\AA, influenced by the two
+Boltz poses above 2~\AA. This pattern does not support a claim of uniform
+FlashBind superiority.
+
+I also audited the coordinate identities before scoring. Every released SDF
+matched its reference ligand in heavy-atom count and admitted a complete
+chemical graph mapping. The released p38 receptor has a formatting defect in
+which the chain identifier disappears after residue 168; I joined the two
+continuously numbered fragments in memory without changing coordinates and
+recorded the repair. The archive documents these ligands as FABind+ docking
+poses, but it does not contain the original docking commands, seeds, or
+per-pose logs. Thus I have evaluated the supplied poses, not independently
+reproduced their generation.
+
+\section{Interpretation and next decision}
+
+Using independently reconstructed inputs, I reproduced the Nesso-1 and Boltz-2
+paper headlines to within 0.007 and 0.033 Pearson units, respectively. Using
+the authors' released pose archive, I reproduced FlashBind to within 0.003
+Pearson units. I view these as useful but differently strong reproducibility
+results: FlashBind's input preprocessing is less independent. My paired
+comparison also supports
+higher average within-series ranking correlations for Nesso on these exact 87
+examples, but it does not establish universal superiority or show that the
+model learned transferable physics. The benchmark is small, public, and
+congeneric; paper-level train/test chemical overlap may matter, and the Boltz
+run uses a documented 1,024-row trunk-MSA subsample.
+
+The 16-pair structure analysis adds a complementary result: both methods often
+recover the known pose on this selected public subset, and the released
+FlashBind/FABind+ archive has the lower aggregate RMSD. However, FlashBind was
+given fixed experimental receptor structures while Boltz-2 had to generate
+the receptor--ligand complex. I therefore interpret the pose result as a
+successful archive and metric validation, not a fair end-to-end ranking of
+the two architectures.
+
+For FlashBind, the clean next escalation is an end-to-end test: rerun FABind+
+from the same four receptor structures and 87 ligand SMILES, then compare both
+the new poses and their affinity scores with this released-pose baseline. That
+would separate scorer reproducibility from docking reproducibility. For Nesso
+and Boltz, additional seeds and targeted investigation of p38 remain useful
+before attributing target-level differences to architecture.
+
+\section*{Reproducibility record}
+
+The tracked manifest SHA-256 is
+\par\smallskip\small
+\texttt{5f0fb23bb97ea84f3da153e050d5913b97da9bba091fb84cd556b9894fdac1e1}.
+\normalsize\par
+The Nesso checkpoint SHA-256 is
+\par\smallskip\small
+\texttt{9928a8a824d147d665e76656804af1cd91c86731516d0b561f9fd1c91ee45622}.
+\normalsize\par
+The Boltz structure and affinity checkpoint SHA-256 values are
+\begin{quote}\scriptsize
+Structure:
+\texttt{090e82ac8c92f5e943fa1b39e7410a44027bea7243c0bbb3caa67a77fc1428e1}\\
+Affinity:
+\texttt{dcc5cd3722b1c9eaa34267e4ae32f55cbbf1963f4c19319381ccfa30fdd2ca9e}.
+\end{quote}
+The two FlashBind value-checkpoint SHA-256 values are
+\begin{quote}\scriptsize
+Value 1:
+\texttt{ca87f84dedd4642da693a508b1119c802caa370e356dad31c47b8a708821e553}\\
+Value 2:
+\texttt{59fa2686b0859a632862aec21ea69f2bebb1ab104e48606fe739c929368d488d}.
+\end{quote}
+All commands, environments, timestamps, hardware samples, return codes, raw
+outputs, and parsing status are stored beneath the ignored experiment run
+tree. Compact metrics and this report are tracked in Git.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A visual, literature-grounded guide to reversibility, initial-condition dependence, hidden slow coordinates, and water sampling in protein-ligand alchemical free-energy calculations." />
+  <title>When can we trust an FEP calculation?</title>
+  <style>
+    :root {
+      --paper: #f4f0e7;
+      --paper-deep: #e7e0d2;
+      --card: #fffdf8;
+      --ink: #14231e;
+      --muted: #5d6963;
+      --line: #cec8ba;
+      --forest: #164d3a;
+      --green: #2f8060;
+      --mint: #dcebe1;
+      --rust: #bf5533;
+      --rust-soft: #f4ddd2;
+      --blue: #315e7c;
+      --blue-soft: #dce8ef;
+      --gold: #a36d14;
+      --gold-soft: #f4e7b9;
+      --plum: #665071;
+      --plum-soft: #e9e0ed;
+      --shadow: 0 18px 48px rgba(20, 35, 30, 0.09);
+      --radius: 20px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 4% 7%, rgba(191, 85, 51, 0.13), transparent 25rem),
+        radial-gradient(circle at 94% 12%, rgba(47, 128, 96, 0.14), transparent 28rem),
+        var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.62;
+    }
+    a { color: var(--blue); text-underline-offset: 0.16em; }
+    a:hover { color: var(--rust); }
+    code, .mono { font-family: var(--mono); }
+    sub, sup { line-height: 0; }
+
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(206, 200, 186, 0.8);
+      background: rgba(244, 240, 231, 0.9);
+      backdrop-filter: blur(14px);
+    }
+    .nav-inner {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand { color: var(--ink); text-decoration: none; font-weight: 820; letter-spacing: -0.025em; }
+    .nav-links { display: flex; flex-wrap: wrap; gap: 0.95rem; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.86rem; }
+
+    main, footer { max-width: 1160px; margin: 0 auto; padding: 0 1.25rem; }
+    section { scroll-margin-top: 5rem; }
+    .hero {
+      min-height: 76vh;
+      padding: 6.5rem 0 4rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(270px, 0.6fr);
+      gap: 3rem;
+      align-items: end;
+    }
+    .eyebrow {
+      margin: 0 0 0.9rem;
+      color: var(--rust);
+      font-size: 0.75rem;
+      font-weight: 850;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 { line-height: 1.08; letter-spacing: -0.035em; }
+    h1 { margin: 0; max-width: 870px; font-size: clamp(3rem, 7.5vw, 6.5rem); font-weight: 860; }
+    h2 { margin: 0; font-size: clamp(2rem, 4.2vw, 3.65rem); }
+    h3 { margin: 0; font-size: 1.28rem; }
+    .dek { max-width: 780px; margin: 1.5rem 0 0; color: var(--muted); font-size: 1.12rem; }
+    .hero-note { border-top: 3px solid var(--ink); padding-top: 1rem; color: var(--muted); font-size: 0.91rem; }
+    .hero-note strong { color: var(--ink); }
+    .stamp { display: block; margin-top: 1.2rem; font: 0.75rem var(--mono); }
+
+    .thesis {
+      margin-bottom: 5rem;
+      padding: 1.45rem 1.65rem;
+      border: 1px solid var(--line);
+      border-left: 7px solid var(--rust);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      font-size: clamp(1.16rem, 2vw, 1.48rem);
+    }
+    .thesis p { margin: 0; }
+    .section-head {
+      margin: 6rem 0 2rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(250px, 0.64fr);
+      gap: 2rem;
+      align-items: end;
+    }
+    .section-head p { margin: 0; color: var(--muted); }
+
+    .equation {
+      overflow-x: auto;
+      padding: 1.15rem 1.3rem;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      color: var(--forest);
+      background: var(--card);
+      font: 700 clamp(1rem, 2.2vw, 1.35rem) var(--mono);
+      text-align: center;
+      white-space: nowrap;
+    }
+    .equation + .equation { margin-top: 0.75rem; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .card {
+      padding: 1.3rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: 0 9px 28px rgba(20, 35, 30, 0.045);
+    }
+    .card p:last-child { margin-bottom: 0; }
+    .card .label { color: var(--rust); font: 800 0.7rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+    .card h3 { margin-top: 0.35rem; }
+    .muted { color: var(--muted); }
+
+    .state-space {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1rem;
+      align-items: stretch;
+    }
+    .landscape {
+      min-height: 390px;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      overflow: hidden;
+    }
+    .landscape svg { display: block; width: 100%; height: auto; }
+    .landscape text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; fill: var(--ink); }
+    .landscape .small { font-size: 12px; fill: var(--muted); }
+    .landscape .axis { stroke: #7e8983; stroke-width: 1.3; }
+    .landscape .barrier { fill: none; stroke: var(--forest); stroke-width: 4; }
+    .landscape .lambda { stroke: var(--rust); stroke-width: 3; stroke-dasharray: 8 7; }
+    .landscape .walker-a { fill: var(--rust); }
+    .landscape .walker-b { fill: var(--blue); }
+    .landscape .shade { fill: rgba(47, 128, 96, 0.1); }
+
+    .insight-list { display: grid; gap: 0.75rem; }
+    .insight {
+      padding: 1rem;
+      border-left: 4px solid var(--green);
+      border-radius: 0 12px 12px 0;
+      background: var(--mint);
+    }
+    .insight.warn { border-color: var(--rust); background: var(--rust-soft); }
+    .insight strong { display: block; margin-bottom: 0.2rem; }
+
+    .cycle {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1rem;
+      align-items: stretch;
+    }
+    .leg {
+      padding: 1.35rem;
+      border-radius: var(--radius);
+      color: white;
+      background: var(--forest);
+    }
+    .leg.solvent { background: var(--blue); }
+    .leg p { color: rgba(255,255,255,0.76); }
+    .morph {
+      margin: 1rem 0;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0.65rem;
+      align-items: center;
+      font: 760 0.9rem var(--mono);
+    }
+    .morph .line { height: 2px; background: rgba(255,255,255,0.52); position: relative; }
+    .morph .line::after { content: ""; position: absolute; right: 0; top: -4px; border-left: 8px solid white; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+    .minus { display: grid; place-items: center; color: var(--rust); font: 900 2.4rem var(--mono); }
+    .result-equation { margin-top: 1rem; padding: 1rem; border-radius: 13px; background: var(--gold-soft); text-align: center; font: 760 1rem var(--mono); }
+
+    .lambda-ladder {
+      padding: 1.2rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+    }
+    .rungs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.55rem; }
+    .rung {
+      position: relative;
+      min-height: 105px;
+      padding: 0.75rem 0.35rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: linear-gradient(180deg, var(--mint), white);
+      text-align: center;
+    }
+    .rung:first-child { background: linear-gradient(180deg, var(--rust-soft), white); }
+    .rung:last-child { background: linear-gradient(180deg, var(--blue-soft), white); }
+    .rung:not(:last-child)::after { content: "⇄"; position: absolute; z-index: 2; right: -0.72rem; top: 37%; color: var(--rust); font-weight: 900; }
+    .rung b { display: block; font: 760 0.8rem var(--mono); }
+    .rung span { display: block; margin-top: 0.45rem; color: var(--muted); font-size: 0.75rem; }
+    .under-ladder { margin: 1rem 0 0; color: var(--muted); text-align: center; }
+
+    .demo {
+      display: grid;
+      grid-template-columns: 0.85fr 1.15fr;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: calc(var(--radius) + 3px);
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+    .demo-controls { padding: 1.4rem; background: var(--ink); color: white; }
+    .demo-controls p { color: rgba(255,255,255,0.72); }
+    .buttons { display: grid; gap: 0.55rem; margin-top: 1rem; }
+    .buttons button {
+      width: 100%;
+      padding: 0.75rem 0.85rem;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 10px;
+      color: white;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      font: 720 0.88rem var(--mono);
+    }
+    .buttons button:hover, .buttons button[aria-pressed="true"] { border-color: #f0a484; background: var(--rust); }
+    .demo-output { padding: 1.4rem; }
+    .demo-output .big { display: block; margin: 0.4rem 0 0.8rem; color: var(--forest); font-size: clamp(2.4rem, 6vw, 4.9rem); font-weight: 860; line-height: 1; letter-spacing: -0.06em; }
+    .demo-track { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.7rem; margin: 1.2rem 0; }
+    .basin { padding: 0.8rem; border-radius: 11px; background: var(--paper); text-align: center; font-size: 0.83rem; }
+    .barrier-pill { color: var(--rust); font: 800 0.74rem var(--mono); text-align: center; }
+    .demo-verdict { padding: 0.9rem; border-radius: 11px; background: var(--mint); }
+    .demo-verdict.bad { background: var(--rust-soft); }
+
+    .water-story { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: center; }
+    .pocket {
+      min-height: 270px;
+      padding: 1.15rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+    }
+    .pocket-drawing { position: relative; height: 145px; margin: 0.8rem 0; border-radius: 70px 70px 22px 22px; background: var(--forest); overflow: hidden; }
+    .cavity { position: absolute; inset: 30px 28px 0; border-radius: 45px 45px 0 0; background: var(--paper); }
+    .ligand { position: absolute; left: 50%; bottom: 13px; width: 74px; height: 48px; transform: translateX(-50%); border-radius: 18px; background: var(--rust); }
+    .ligand.large { width: 120px; height: 72px; }
+    .water { position: absolute; top: 51px; right: 48px; width: 27px; height: 27px; border-radius: 50%; color: white; background: var(--blue); text-align: center; font: 750 0.68rem/27px var(--mono); }
+    .water-arrow { color: var(--blue); font: 900 2rem var(--mono); text-align: center; }
+    .water-arrow small { display: block; max-width: 140px; color: var(--muted); font: 0.72rem/1.4 var(--mono); }
+
+    .failure-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .failure-card { padding: 1.15rem; border-top: 5px solid var(--rust); border-radius: 12px var(--radius) var(--radius); background: var(--card); box-shadow: 0 8px 24px rgba(20,35,30,.05); }
+    .failure-card:nth-child(2n) { border-color: var(--blue); }
+    .failure-card:nth-child(3n) { border-color: var(--green); }
+    .failure-card p { margin-bottom: 0; color: var(--muted); font-size: 0.9rem; }
+
+    .diagnostics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem; counter-reset: check; }
+    .check {
+      position: relative;
+      padding: 1rem 1rem 1rem 3.6rem;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
+    }
+    .check::before {
+      counter-increment: check;
+      content: counter(check, decimal-leading-zero);
+      position: absolute;
+      left: 0.9rem;
+      top: 1rem;
+      color: var(--rust);
+      font: 850 0.78rem var(--mono);
+    }
+    .check strong { display: block; }
+    .check span { color: var(--muted); font-size: 0.88rem; }
+    .warning-box {
+      margin-top: 1rem;
+      padding: 1.15rem 1.3rem;
+      border: 1px solid #d8a18e;
+      border-radius: var(--radius);
+      background: var(--rust-soft);
+    }
+    .warning-box p { margin: 0; }
+
+    .protocol {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--card);
+    }
+    .protocol-step { padding: 1.25rem; border-bottom: 1px solid var(--line); }
+    .protocol-step:nth-child(odd) { border-right: 1px solid var(--line); }
+    .protocol-step:nth-last-child(-n+2) { border-bottom: 0; }
+    .protocol-step .who { color: var(--rust); font: 780 0.73rem var(--mono); }
+    .protocol-step p { margin-bottom: 0; color: var(--muted); }
+
+    .reading-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
+    .paper {
+      display: grid;
+      grid-template-columns: 3.6rem 1fr;
+      gap: 0.9rem;
+      padding: 1.05rem;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
+    }
+    .year { color: var(--rust); font: 850 0.84rem var(--mono); }
+    .paper strong { display: block; line-height: 1.3; }
+    .paper p { margin: 0.42rem 0 0; color: var(--muted); font-size: 0.84rem; }
+    .paper .tag { display: inline-block; margin-top: 0.55rem; padding: 0.18rem 0.48rem; border-radius: 999px; color: var(--forest); background: var(--mint); font: 720 0.67rem var(--mono); }
+
+    footer { margin-top: 6rem; padding-top: 1.5rem; padding-bottom: 3rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.86rem; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.7rem; }
+
+    @media (max-width: 850px) {
+      .hero, .section-head, .state-space, .demo { grid-template-columns: 1fr; }
+      .hero { min-height: 0; padding-top: 4rem; }
+      .two-col, .failure-grid, .reading-list { grid-template-columns: 1fr; }
+      .cycle, .water-story { grid-template-columns: 1fr; }
+      .minus { transform: rotate(90deg); }
+      .water-arrow { transform: rotate(90deg); }
+      .rungs { grid-template-columns: 1fr; }
+      .rung { min-height: auto; }
+      .rung:not(:last-child)::after { content: "⇅"; right: 50%; top: auto; bottom: -1.05rem; transform: translateX(50%); }
+    }
+    @media (max-width: 620px) {
+      .nav-links { display: none; }
+      .diagnostics, .protocol { grid-template-columns: 1fr; }
+      .protocol-step, .protocol-step:nth-child(odd), .protocol-step:nth-last-child(-n+2) { border-right: 0; border-bottom: 1px solid var(--line); }
+      .protocol-step:last-child { border-bottom: 0; }
+      .paper { grid-template-columns: 1fr; }
+      .demo-track { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body id="top">
+  <nav class="site-nav" aria-label="Page navigation">
+    <div class="nav-inner">
+      <a class="brand" href="#top">FEP reversibility guide</a>
+      <div class="nav-links">
+        <a href="#problem">The problem</a>
+        <a href="#procedure">How FEP works</a>
+        <a href="#water">Water</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#literature">Literature</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Alchemical free energy · visual field guide</p>
+        <h1>When can we trust an FEP calculation?</h1>
+        <p class="dek">A free energy is a state function. A finite simulation remembers where it started. The gap between those statements is the central convergence problem in protein–ligand FEP.</p>
+      </div>
+      <aside class="hero-note">
+        <strong>The question to ask</strong><br />Did the calculation sample the equilibrium ensemble—or only the metastable basin supplied by its initial protein, ligand pose, and water network?
+        <span class="stamp">LITERATURE SNAPSHOT · 2026-08-07</span>
+      </aside>
+    </header>
+
+    <aside class="thesis">
+      <p><strong>Core conclusion:</strong> FEP is formally rigorous only when each alchemical state is sampled from equilibrium. Good λ overlap, many replica round trips, and a small MBAR error do not prove that slow coordinates orthogonal to λ have equilibrated.</p>
+    </aside>
+
+    <section id="problem">
+      <div class="section-head">
+        <div><p class="eyebrow">01 · The actual problem</p><h2>One λ coordinate, many hidden coordinates</h2></div>
+        <p>The integration variable λ changes the Hamiltonian. It is not automatically a useful reaction coordinate for a pocket-opening motion, a ligand torsion, or a buried-water exchange.</p>
+      </div>
+
+      <div class="equation" aria-label="partition function at lambda">Z<sub>λ</sub> = ∫ d𝐱 exp[−βU<sub>λ</sub>(𝐱)] = Σ<sub>s</sub> Z<sub>λ,s</sub></div>
+      <div class="equation" aria-label="free energy at lambda">G<sub>λ</sub> = −k<sub>B</sub>T ln(Σ<sub>s</sub> Z<sub>λ,s</sub>)</div>
+      <p class="muted">Here 𝐱 contains the protein, ligand, solvent and ions. The index <em>s</em> labels metastable substates: wet/dry pockets, alternative poses, side-chain rotamers, loop conformations, and so on.</p>
+
+      <div class="state-space">
+        <div class="landscape" role="img" aria-label="Conceptual free-energy surface with lambda horizontally and a hidden slow coordinate vertically">
+          <svg viewBox="0 0 650 390" aria-hidden="true">
+            <defs>
+              <marker id="arrow-rust" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#bf5533" /></marker>
+            </defs>
+            <rect class="shade" x="64" y="38" width="520" height="294" rx="14" />
+            <line class="axis" x1="65" y1="333" x2="594" y2="333" />
+            <line class="axis" x1="65" y1="333" x2="65" y2="35" />
+            <text x="300" y="373">alchemical coordinate λ</text>
+            <text transform="translate(20 257) rotate(-90)">hidden physical coordinate q</text>
+            <text class="small" x="61" y="353">A · λ=0</text>
+            <text class="small" x="550" y="353">B · λ=1</text>
+            <path class="barrier" d="M75 124 C160 292, 230 292, 309 128 C390 292, 475 292, 582 119" />
+            <path class="barrier" d="M75 250 C160 87, 230 87, 309 247 C390 87, 475 87, 582 245" opacity=".55" />
+            <line class="lambda" x1="90" y1="263" x2="560" y2="263" marker-end="url(#arrow-rust)" />
+            <circle class="walker-a" cx="113" cy="263" r="10" />
+            <circle class="walker-b" cx="548" cy="126" r="10" />
+            <text class="small" x="84" y="289">A-start path</text>
+            <text class="small" x="503" y="105">B-start basin</text>
+            <text class="small" x="255" y="105">barrier in q</text>
+            <text class="small" x="230" y="285">λ can mix while q remains trapped</text>
+          </svg>
+        </div>
+        <div class="insight-list">
+          <div class="insight"><strong>In the infinite-sampling limit</strong>Every metastable basin contributes with its Boltzmann weight. The result is independent of the starting coordinates.</div>
+          <div class="insight warn"><strong>In a finite trajectory</strong>If a run never leaves basin <em>s</em>, it estimates the restricted quantity <span class="mono">−kT ln Z<sub>λ,s</sub></span>, not the complete free energy.</div>
+          <div class="insight"><strong>The practical consequence</strong>An A-initialized and B-initialized calculation can follow different restricted ensembles and disagree by several kcal/mol.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="procedure">
+      <div class="section-head">
+        <div><p class="eyebrow">02 · The FEP procedure</p><h2>Alchemy avoids binding—but not equilibrium</h2></div>
+        <p>Relative binding free energy does not simulate ligand binding or unbinding. It mutates A into B in two environments and closes a thermodynamic cycle.</p>
+      </div>
+
+      <div class="cycle">
+        <article class="leg">
+          <h3>Protein-complex leg</h3>
+          <p>Protein, ligand, explicit water and ions are simulated while ligand A is transformed into ligand B.</p>
+          <div class="morph"><span>A bound</span><span class="line"></span><span>B bound</span></div>
+          <strong>ΔG<sub>complex</sub><sup>A→B</sup></strong>
+        </article>
+        <div class="minus" aria-hidden="true">−</div>
+        <article class="leg solvent">
+          <h3>Solvent leg</h3>
+          <p>The same chemical transformation is performed for the free ligand in explicit solvent.</p>
+          <div class="morph"><span>A solvated</span><span class="line"></span><span>B solvated</span></div>
+          <strong>ΔG<sub>solvent</sub><sup>A→B</sup></strong>
+        </article>
+      </div>
+      <div class="result-equation">ΔΔG<sub>bind</sub><sup>A→B</sup> = ΔG<sub>complex</sub><sup>A→B</sup> − ΔG<sub>solvent</sub><sup>A→B</sup></div>
+
+      <div class="section-head" style="margin-top:4rem">
+        <div><p class="eyebrow">Equilibrium multistate sampling</p><h2 style="font-size:clamp(1.8rem,3vw,2.7rem)">What OpenFE samples</h2></div>
+        <p>Each box is a different Hamiltonian. HREX attempts configuration swaps; MBAR combines the equilibrium samples from all λ states.</p>
+      </div>
+      <div class="lambda-ladder">
+        <div class="rungs" aria-label="Lambda replica ladder">
+          <div class="rung"><b>λ = 0.00</b><span>physical A</span></div>
+          <div class="rung"><b>λ = 0.17</b><span>A-like hybrid</span></div>
+          <div class="rung"><b>λ = 0.33</b><span>intermediate</span></div>
+          <div class="rung"><b>λ = 0.50</b><span>soft-core region</span></div>
+          <div class="rung"><b>λ = 0.67</b><span>intermediate</span></div>
+          <div class="rung"><b>λ = 0.83</b><span>B-like hybrid</span></div>
+          <div class="rung"><b>λ = 1.00</b><span>physical B</span></div>
+        </div>
+        <p class="under-ladder"><strong>Important:</strong> a replica moving from λ=0 to λ=1 is evidence of alchemical mixing—not proof that every protein, ligand and solvent coordinate mixed.</p>
+      </div>
+    </section>
+
+    <section id="direction">
+      <div class="section-head">
+        <div><p class="eyebrow">03 · Direction and initial conditions</p><h2>What should “reversible” look like?</h2></div>
+        <p>If both simulations sample the same equilibrium ensembles, they must give the same value for <span class="mono">G<sub>B</sub>−G<sub>A</sub></span>. Select a scenario below.</p>
+      </div>
+
+      <div class="demo">
+        <div class="demo-controls">
+          <h3>Starting-state thought experiment</h3>
+          <p>All values are illustrative. Both analyses report the same sign convention: <span class="mono">G<sub>B</sub>−G<sub>A</sub></span>.</p>
+          <div class="buttons">
+            <button type="button" data-state="a" aria-pressed="true">A-start · trapped wet basin</button>
+            <button type="button" data-state="b" aria-pressed="false">B-start · trapped dry basin</button>
+            <button type="button" data-state="eq" aria-pressed="false">Equilibrated · both basins sampled</button>
+          </div>
+        </div>
+        <div class="demo-output" aria-live="polite">
+          <span class="mono muted">estimated G<sub>B</sub>−G<sub>A</sub></span>
+          <strong class="big" id="demo-value">+3.1 kcal/mol</strong>
+          <div class="demo-track">
+            <div class="basin" id="left-basin"><strong>Wet basin</strong><br />sampled</div>
+            <div class="barrier-pill">high barrier<br />in water occupancy</div>
+            <div class="basin" id="right-basin"><strong>Dry basin</strong><br />not visited</div>
+          </div>
+          <div class="demo-verdict bad" id="demo-verdict"><strong>Initial-condition memory.</strong> This is a restricted free energy, even if the λ overlap matrix looks excellent.</div>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-top:1rem">
+        <article class="card">
+          <span class="label">Algebraic reversal</span>
+          <h3>Not a convergence test</h3>
+          <p>Taking one MBAR result and exchanging the endpoint labels necessarily changes only its sign. No new configurations were generated.</p>
+        </article>
+        <article class="card">
+          <span class="label">Independent endpoint initialization</span>
+          <h3>A meaningful stress test</h3>
+          <p>Prepare independent A-like and B-like ensembles, analyze both as <span class="mono">G<sub>B</sub>−G<sub>A</sub></span>, and compare their physical-coordinate distributions as well as their scalar free energies.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="water">
+      <div class="section-head">
+        <div><p class="eyebrow">04 · Buried water example</p><h2>The water has to leave—or arrive</h2></div>
+        <p>A local hydration state can be effectively frozen on the simulation timescale, even though the complete simulation box contains explicit water.</p>
+      </div>
+
+      <div class="water-story">
+        <article class="pocket">
+          <h3>Ligand A · smaller</h3>
+          <div class="pocket-drawing" aria-label="Small ligand and a water molecule in a protein pocket">
+            <div class="cavity"></div><div class="ligand"></div><div class="water">H₂O</div>
+          </div>
+          <p class="muted">A stable or metastable buried water occupies the space beside A.</p>
+        </article>
+        <div class="water-arrow" aria-hidden="true">⇄<small>slow exchange through a narrow or gated pathway</small></div>
+        <article class="pocket">
+          <h3>Ligand B · larger</h3>
+          <div class="pocket-drawing" aria-label="Large ligand displacing water from a protein pocket">
+            <div class="cavity"></div><div class="ligand large"></div>
+          </div>
+          <p class="muted">B displaces the water. In reverse, the newly opened cavity must become correctly hydrated.</p>
+        </article>
+      </div>
+
+      <div class="failure-grid" style="margin-top:1rem">
+        <article class="failure-card"><h3>A → B failure</h3><p>The ligand grows, but the trapped water cannot escape. The complex leg accumulates an artificial steric or hydration penalty.</p></article>
+        <article class="failure-card"><h3>B → A failure</h3><p>The ligand shrinks, but the buried cavity remains dry because ordinary MD cannot insert water across the kinetic barrier.</p></article>
+        <article class="failure-card"><h3>Specialized remedies</h3><p>Grand-canonical Monte Carlo inserts/deletes waters; NCMC/BLUES proposes large water moves; occupancy biases can be used when the relevant site is known.</p></article>
+      </div>
+    </section>
+
+    <section id="mitigation">
+      <div class="section-head">
+        <div><p class="eyebrow">05 · What methods can—and cannot—fix</p><h2>No universal enhanced sampler</h2></div>
+        <p>Different methods target different barriers. The method must actually couple to the slow coordinate that controls equilibration.</p>
+      </div>
+      <div class="failure-grid">
+        <article class="failure-card"><h3>HREX along λ</h3><p>Improves communication among alchemical states and often helps local relaxation. It cannot guarantee motion along a coordinate weakly coupled to λ.</p></article>
+        <article class="failure-card"><h3>FEP/REST or REST2</h3><p>Scales a selected “hot” ligand/pocket region to accelerate local reorganization. Distant protein motions and water-number changes may remain slow.</p></article>
+        <article class="failure-card"><h3>Explicit CV biasing</h3><p>Umbrella sampling, metadynamics or ABF can accelerate a known torsion, pocket opening or occupancy coordinate—but may miss another orthogonal barrier.</p></article>
+        <article class="failure-card"><h3>GCMC / NCMC water moves</h3><p>Directly targets difficult water occupancy and rearrangement. It still requires a properly defined region, chemical potential and sufficient sampling.</p></article>
+        <article class="failure-card"><h3>Multiple-state enumeration</h3><p>Run distinct poses, protonation states or conformers and combine their partition functions. This is rigorous if the relevant states have actually been enumerated.</p></article>
+        <article class="failure-card"><h3>Longer ordinary MD</h3><p>Useful when the slow timescale is reachable. Simply extending one trapped trajectory does not provide controlled uncertainty or prove a transition will occur.</p></article>
+      </div>
+    </section>
+
+    <section id="diagnostics">
+      <div class="section-head">
+        <div><p class="eyebrow">06 · Evidence hierarchy</p><h2>What we should inspect before trusting ΔΔG</h2></div>
+        <p>No single diagnostic is sufficient. The most convincing case combines alchemical, structural, hydration, replication and network evidence.</p>
+      </div>
+
+      <div class="diagnostics">
+        <div class="check"><strong>Independent initial ensembles</strong><span>A-bound and B-bound structures; distinct poses, water networks, solvations and velocities where relevant.</span></div>
+        <div class="check"><strong>Between-replica variance</strong><span>Use independent repeats; do not rely only on an internal MBAR uncertainty from one trajectory ensemble.</span></div>
+        <div class="check"><strong>MBAR overlap connectivity</strong><span>Every endpoint must be connected through overlapping adjacent λ distributions. This checks λ—not all of configuration space.</span></div>
+        <div class="check"><strong>Replica mixing and round trips</strong><span>Configurations should traverse alchemical space repeatedly without isolated λ cliques.</span></div>
+        <div class="check"><strong>Physical-coordinate distributions</strong><span>Compare ligand torsions and poses, pocket rotamers, loop coordinates and other mechanistically relevant observables.</span></div>
+        <div class="check"><strong>Water occupancy and networks</strong><span>Compare P(N<sub>water</sub>), residence, bridging-water geometry and wet/dry transitions across initializations.</span></div>
+        <div class="check"><strong>Time-block stability</strong><span>Repeat the estimate on trajectory fractions, while remembering that a permanently trapped trajectory can look stable.</span></div>
+        <div class="check"><strong>Thermodynamic-cycle closure</strong><span>For A→B→C→A, the signed sum should be zero. A large residual detects inconsistency; a small one can arise from cancellation.</span></div>
+        <div class="check"><strong>Alternative paths or mappings</strong><span>Where feasible, test whether different valid alchemical constructions agree within uncertainty.</span></div>
+        <div class="check"><strong>Prospective experiment</strong><span>Internal convergence tests sampling under one force field; experimental comparison also tests model and setup error.</span></div>
+      </div>
+      <aside class="warning-box"><p><strong>Asymmetric logic:</strong> large endpoint dependence or cycle error is evidence of failure. Small endpoint dependence or cycle error is not proof of correctness—both calculations may share the same unsampled basin, force-field error, protonation mistake or topology artifact.</p></aside>
+    </section>
+
+    <section id="our-protocol">
+      <div class="section-head">
+        <div><p class="eyebrow">07 · Proposed project standard</p><h2>A practical reversibility experiment</h2></div>
+        <p>For a challenging ligand pair, report every result with the common sign convention <span class="mono">G<sub>B</sub>−G<sub>A</sub></span>.</p>
+      </div>
+      <div class="protocol">
+        <article class="protocol-step"><span class="who">ENSEMBLE A</span><h3>A-like initialization</h3><p>Begin from an A-bound structure and an A-appropriate hydration/pose state. Prepare at least three genuinely independent replicas.</p></article>
+        <article class="protocol-step"><span class="who">ENSEMBLE B</span><h3>B-like initialization</h3><p>Begin from a B-bound structure and a B-appropriate hydration/pose state. Match force field and thermodynamic settings.</p></article>
+        <article class="protocol-step"><span class="who">ALCHEMICAL CHECKS</span><h3>λ overlap and exchange</h3><p>Inspect MBAR overlap, exchange probabilities, replica trajectories, round trips and time-dependent estimates for every leg and repeat.</p></article>
+        <article class="protocol-step"><span class="who">PHYSICAL CHECKS</span><h3>Compare ensemble distributions</h3><p>Measure pose, torsion, protein and hydration distributions—not only final ΔG values. Quantify distribution overlap where useful.</p></article>
+        <article class="protocol-step"><span class="who">REDUNDANCY</span><h3>Build cycles</h3><p>Add a third ligand or alternative transformation so thermodynamic closure supplies an independent internal-consistency constraint.</p></article>
+        <article class="protocol-step"><span class="who">ESCALATION</span><h3>Target the observed barrier</h3><p>If ensembles disagree, identify the coordinate retaining memory and choose a matching remedy: REST, metadynamics, GCMC/NCMC, enumeration, or explicit conformational free energy.</p></article>
+      </div>
+    </section>
+
+    <section id="literature">
+      <div class="section-head">
+        <div><p class="eyebrow">08 · Annotated reading map</p><h2>The literature behind the argument</h2></div>
+        <p>Start with the two reviews, then use the targeted studies according to the failure mode observed in a particular system.</p>
+      </div>
+
+      <div class="reading-list">
+        <article class="paper"><span class="year">2015</span><div><strong><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4420631/">Guidelines for the analysis of free energy calculations</a></strong><p>Klimovich, Shirts &amp; Mobley. Phase-space overlap, equilibration, correlated samples, uncertainty and convergence analysis.</p><span class="tag">START HERE · ANALYSIS</span></div></article>
+        <article class="paper"><span class="year">2020</span><div><strong><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8388617/">Best Practices for Alchemical Free Energy Calculations</a></strong><p>Mey et al. Comprehensive protocol guidance; recommends independent triplicates and warns that estimator error excludes unsampled phase space.</p><span class="tag">START HERE · REVIEW</span></div></article>
+        <article class="paper"><span class="year">2007</span><div><strong><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC2562444/">The Confine-and-Release Method</a></strong><p>Mobley, Chodera &amp; Dill. Demonstrates several-kcal/mol dependence on initial protein conformation and explicitly calculates reorganization free energy.</p><span class="tag">PROTEIN REORGANIZATION</span></div></article>
+        <article class="paper"><span class="year">2012</span><div><strong><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3277581/">On achieving high accuracy and reliability in relative binding affinities</a></strong><p>Wang, Berne &amp; Friesner. Introduces FEP/REST for difficult protein and ligand rearrangements; discusses the locality assumption for slow coordinates.</p><span class="tag">FEP/REST</span></div></article>
+        <article class="paper"><span class="year">2018</span><div><strong><a href="https://pubs.acs.org/doi/10.1021/acs.jctc.7b01143">Uncertainty Quantification in Alchemical Free Energy Methods</a></strong><p>Wan et al. Shows why ensembles of independent simulations are needed and why one-off trajectory errors can be misleading.</p><span class="tag">REPLICATION</span></div></article>
+        <article class="paper"><span class="year">2019</span><div><strong><a href="https://doi.org/10.1021/acs.jcim.8b00826">Displacement of Binding-Site Water Molecules</a></strong><p>Wahl &amp; Smieško. Different initial hydration states produced large hysteresis; GCMC presampling reduced the inconsistency.</p><span class="tag">BURIED WATER</span></div></article>
+        <article class="paper"><span class="year">2021</span><div><strong><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7904576/">Enhancing Water Sampling with NCMC</a></strong><p>Gill et al. Develops BLUES water-hopping moves for buried sites where ordinary MD exchanges water slowly.</p><span class="tag">WATER NCMC</span></div></article>
+        <article class="paper"><span class="year">2021</span><div><strong><a href="https://pubs.acs.org/doi/10.1021/acs.jctc.0c00972">Sensitivity to Initial Protein Crystal Structure</a></strong><p>A study of over 1,000 calculations and 220 μs of sampling found practically significant crystal-structure dependence at short timescales.</p><span class="tag">INITIAL STRUCTURE</span></div></article>
+        <article class="paper"><span class="year">2022</span><div><strong><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9316500/">Does λ-Hopping Enhance Sampling?</a></strong><p>Examines when Hamiltonian replica exchange helps conformational sampling and why some physical barriers respond poorly to λ hopping.</p><span class="tag">HREX LIMITS</span></div></article>
+        <article class="paper"><span class="year">2024</span><div><strong><a href="https://doi.org/10.1021/acs.jctc.3c01250">What to Make of Zero</a></strong><p>Khuttan &amp; Gallicchio. Uses self-RBFE, whose exact value is zero, to expose finite-sampling noise from ligand reorganization.</p><span class="tag">SELF-RBFE</span></div></article>
+        <article class="paper"><span class="year">2024</span><div><strong><a href="https://pubs.acs.org/doi/10.1021/acs.jctc.3c01249">λ-ABF</a></strong><p>Lagardère et al. Continuous λ dynamics and multiple walkers improve alchemical and orthogonal relaxation without eliminating unknown physical barriers.</p><span class="tag">λ-DYNAMICS</span></div></article>
+        <article class="paper"><span class="year">Docs</span><div><strong><a href="https://docs.openfree.energy/en/v1.5.0/guide/protocols/relativehybridtopology.html">OpenFE Relative Hybrid Topology Protocol</a></strong><p>Defines the current hybrid topology, HREX workflow, MBAR estimator, repeat settings, overlap matrix and convergence outputs.</p><span class="tag">IMPLEMENTATION</span></div></article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <strong>BindingAffinityPredictor learning site</strong><br />Educational summary of equilibrium and sampling concepts; every numerical result still depends on the specified molecular model, preparation and protocol.
+    <div class="footer-links">
+      <a href="../affinity_models/index.html">Affinity model field guide</a>
+      <a href="../model-notes/boltz2_architecture.html">Boltz-2 architecture</a>
+      <a href="../literature.md">Project literature map</a>
+    </div>
+  </footer>
+
+  <script>
+    const scenarios = {
+      a: {
+        value: "+3.1 kcal/mol",
+        left: "<strong>Wet basin</strong><br />sampled",
+        right: "<strong>Dry basin</strong><br />not visited",
+        verdict: "<strong>Initial-condition memory.</strong> This is a restricted free energy, even if the λ overlap matrix looks excellent.",
+        bad: true
+      },
+      b: {
+        value: "+1.4 kcal/mol",
+        left: "<strong>Wet basin</strong><br />not visited",
+        right: "<strong>Dry basin</strong><br />sampled",
+        verdict: "<strong>Direction-dependent estimate.</strong> The disagreement with the A-start run identifies incomplete physical sampling.",
+        bad: true
+      },
+      eq: {
+        value: "+2.2 kcal/mol",
+        left: "<strong>Wet basin</strong><br />sampled repeatedly",
+        right: "<strong>Dry basin</strong><br />sampled repeatedly",
+        verdict: "<strong>Initial-condition independence.</strong> Independent A-start and B-start ensembles converge to the same equilibrium estimate within uncertainty.",
+        bad: false
+      }
+    };
+
+    const buttons = document.querySelectorAll("[data-state]");
+    const value = document.getElementById("demo-value");
+    const left = document.getElementById("left-basin");
+    const right = document.getElementById("right-basin");
+    const verdict = document.getElementById("demo-verdict");
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const scenario = scenarios[button.dataset.state];
+        buttons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+        value.textContent = scenario.value;
+        left.innerHTML = scenario.left;
+        right.innerHTML = scenario.right;
+        verdict.innerHTML = scenario.verdict;
+        verdict.classList.toggle("bad", scenario.bad);
+      });
+    });
+  </script>
+</body>
+</html>

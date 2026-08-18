@@ -1,0 +1,122 @@
+id: exp007_fepplus4_boltz2_nesso1
+title: Released-model reproduction of Boltz-2 and Nesso-1 on the FEP+ four-kinase benchmark
+status: complete
+question: Can the released Boltz-2 and Nesso-1 models reproduce their reported within-target affinity ranking on the same 87 neutral compounds?
+hypothesis: Nesso-1 will have higher compound-weighted target Pearson correlation and lower amortized runtime than Boltz-2, but confidence intervals and per-target results will reveal substantial heterogeneity.
+
+manifest: data/manifests/fepplus4_87.json
+benchmark_config: configs/benchmarks/fepplus4_87.yaml
+model_configs:
+  - configs/models/boltz2.yaml
+  - configs/models/nesso1.yaml
+
+stages:
+  - name: tyk2_pilot
+    targets: [tyk2]
+    compounds: 16
+    purpose: validate_identical_inputs_output_parsing_and_metric_direction_before_full_expansion
+  - name: full_reproduction
+    targets: [cdk2, tyk2, jnk1, p38]
+    compounds: 87
+    starts_only_after: tyk2_pilot_engineering_validation
+
+boltz2:
+  seed: 42
+  structure_recycling_steps: 3
+  structure_diffusion_samples: 1
+  structure_sampling_steps: 200
+  affinity_recycling_steps_resolved_internally: 5
+  affinity_diffusion_samples: 5
+  affinity_sampling_steps: 200
+  no_kernels: true
+  affinity_mw_correction: false
+  msa: one_ColabFold_MMseqs2_result_per_unique_protein_chain_reused_across_ligands
+  msa_pairing_strategy: greedy
+
+nesso1:
+  seed: 42
+  recycling_steps: 5
+  precision: bf16-mixed
+  refine_protein_inference: true
+  no_kernels: true
+  esm_embeddings: one_per_unique_protein_chain_reused_across_ligands
+
+analysis:
+  blind_labels_during_inference: true
+  raw_native_outputs_preserved: true
+  continuous_affinity_field: affinity_pred_value
+  binder_probability_analyzed_separately: true
+  bootstrap_iterations: 2000
+  bootstrap_seed: 20260817
+
+stability_followup:
+  status: predefined_but_not_part_of_primary_87_run
+  selection_rule: weakest_median_and_strongest_experimental_ligand_per_target
+  additional_seeds: [7, 314]
+  purpose: estimate_seed_sensitivity_without_multiplying_the_entire_primary_compute_budget
+
+stopping_rule: Complete the TYK2 pilot; if all 16 inputs yield finite native scores, expand without changing settings to the other 71 compounds. Record and report all failures without silently removing compounds.
+
+observed_status_2026_08_17:
+  nesso1:
+    complete_samples: 87
+    failed_samples: 0
+    weighted_pearson_r: 0.8066367799037691
+    bootstrap_95_percent: [0.7307551044271378, 0.873063829674746]
+    paper_reference: 0.80
+  boltz2_primary_tyk2_pilot:
+    complete_samples: 0
+    failed_structure_samples: 16
+    failure: CUDA_out_of_memory_with_unsampled_8192_sequence_MSA_on_10_GiB_RTX_3080
+    affinity_status: not_run_successfully_because_pre_affinity_intermediates_were_missing
+    interpretation: hardware_feasibility_failure_not_accuracy_result
+  boltz2_msa1024_variant:
+    status: full_87_compound_benchmark_complete
+    protocol_id: boltz2_msa1024
+    approved_on: 2026-08-17
+    change: explicitly_enable_stochastic_MSA_subsampling_to_1024_sequences_in_the_model_trunk
+    max_msa_seqs_parsed: 8192
+    subsample_msa: true
+    num_subsampled_msa: 1024
+    seed: 42
+    safety_gate: run_one_TYK2_ligand_then_expand_to_all_16_only_if_structure_and_affinity_outputs_are_finite
+    rule: retain_primary_failure_and_report_variant_separately
+    complete_samples: 16
+    failed_samples: 0
+    tyk2_pearson_r: 0.8074042575380007
+    tyk2_spearman_rho: 0.7794117647058825
+    tyk2_kendall_tau: 0.6166666666666666
+    tyk2_centered_mae_kcal_mol: 0.6631320112589212
+    pearson_bootstrap_95_percent: [0.5422002605978024, 0.9244036760742242]
+    wall_time_seconds: 1388.2651122809912
+    peak_total_gpu_memory_mib: 8608
+    interpretation: TYK2_was_the_predeclared_feasibility_gate_before_full_expansion
+    full_benchmark_expansion:
+      status: complete
+      approved_on: 2026-08-17
+      targets: [cdk2, jnk1, p38]
+      compounds_remaining: 71
+      compounds_complete_total: 87
+      failed_samples: 0
+      weighted_pearson_r: 0.6265053034868275
+      weighted_spearman_rho: 0.6657707139628216
+      weighted_kendall_tau: 0.49661227065111047
+      weighted_centered_mae_kcal_mol: 0.6333230083035903
+      pearson_bootstrap_95_percent: [0.48446118183888365, 0.7443029633184106]
+      paper_reference_weighted_pearson_r: 0.66
+      paper_reference_weighted_kendall_tau: 0.48
+      per_target_pearson_r:
+        cdk2: 0.8307943665193109
+        tyk2: 0.8074042575380007
+        jnk1: 0.7581291266027452
+        p38: 0.3639432870523339
+      target_run_records:
+        - runs/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024/seed42/cdk2/run.json
+        - runs/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024/seed42/tyk2/run.json
+        - runs/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024/seed42/jnk1/run.json
+        - runs/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024/seed42/p38/run.json
+      total_target_run_wall_time_seconds: 5921.837828800984
+      maximum_peak_total_gpu_memory_mib: 9988
+      paired_nesso1_minus_boltz2_pearson_r: 0.1801314764169416
+      paired_pearson_bootstrap_95_percent: [0.057977105722302226, 0.31892590965723017]
+      metrics: reports/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024_vs_nesso1_metrics.json

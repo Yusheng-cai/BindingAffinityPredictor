@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "manifest_id": "fepplus4_crystal16_exact_rcsb_20260817",
+  "created_on": "2026-08-17",
+  "parent_manifest": "data/manifests/fepplus4_87.json",
+  "identity_policy": "Exact ligand full InChIKey and corresponding kinase UniProt match in RCSB PDB",
+  "reference_coordinates_used_as_model_input": false,
+  "samples": [
+    {"sample_id": "cdk2_1h1q", "target_id": "cdk2", "pdb_id": "1H1Q", "ccd_id": "2A6"},
+    {"sample_id": "cdk2_1h1r", "target_id": "cdk2", "pdb_id": "1H1R", "ccd_id": "6CP"},
+    {"sample_id": "cdk2_1h1s", "target_id": "cdk2", "pdb_id": "1H1S", "ccd_id": "4SP"},
+    {"sample_id": "cdk2_1oi9", "target_id": "cdk2", "pdb_id": "1OI9", "ccd_id": "N20"},
+    {"sample_id": "cdk2_1oiu", "target_id": "cdk2", "pdb_id": "1OIU", "ccd_id": "N76"},
+    {"sample_id": "cdk2_1oiy", "target_id": "cdk2", "pdb_id": "1OIY", "ccd_id": "N41"},
+    {"sample_id": "tyk2_ejm_46", "target_id": "tyk2", "pdb_id": "4GIH", "ccd_id": "0X5"},
+    {"sample_id": "tyk2_jmc_23", "target_id": "tyk2", "pdb_id": "4GJ2", "ccd_id": "0XH"},
+    {"sample_id": "jnk1_17124-1", "target_id": "jnk1", "pdb_id": "2GMX", "ccd_id": "877"},
+    {"sample_id": "p38_p38a_3fln", "target_id": "p38", "pdb_id": "3FLN", "ccd_id": "3FN"},
+    {"sample_id": "p38_p38a_3flq", "target_id": "p38", "pdb_id": "3FLQ", "ccd_id": "891"},
+    {"sample_id": "p38_p38a_3flw", "target_id": "p38", "pdb_id": "3FLW", "ccd_id": "FLW"},
+    {"sample_id": "p38_p38a_3fly", "target_id": "p38", "pdb_id": "3FLY", "ccd_id": "FLY"},
+    {"sample_id": "p38_p38a_3flz", "target_id": "p38", "pdb_id": "3FLZ", "ccd_id": "FLZ"},
+    {"sample_id": "p38_p38a_3fmh", "target_id": "p38", "pdb_id": "3FMH", "ccd_id": "533"},
+    {"sample_id": "p38_p38a_3fmk", "target_id": "p38", "pdb_id": "3FMK", "ccd_id": "FMK"}
+  ]
+}

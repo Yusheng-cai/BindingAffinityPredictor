@@ -1,0 +1,3 @@
+pose_source,matched_pairs,receptor_input,median_rmsd_A,mean_rmsd_A,count_below_2A
+Boltz-2 MSA-1024 seed 42,16,sequence plus MSA,0.898,0.977,14
+FlashBind released FABind+ poses,16,fixed experimental 3D receptor,0.634,0.651,16

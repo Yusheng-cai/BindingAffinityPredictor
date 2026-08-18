@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "manifest_id": "exp002_gal3_9d63_galactose",
+  "created_on": "2026-08-07",
+  "purpose": "One-complex Boltz-2 cofolding, pose, and pipeline-observability test",
+  "source_dataset": {
+    "name": "RCSB Protein Data Bank",
+    "entry_id": "9D63",
+    "entry_url": "https://www.rcsb.org/structure/9D63",
+    "entry_api_url": "https://data.rcsb.org/rest/v1/core/entry/9D63",
+    "protein_entity_api_url": "https://data.rcsb.org/rest/v1/core/polymer_entity/9D63/1",
+    "ligand_api_url": "https://data.rcsb.org/rest/v1/core/chemcomp/GAL",
+    "metadata_retrieved_on": "2026-08-07"
+  },
+  "samples": [
+    {
+      "sample_id": "human_gal3_crd_9d63_gal",
+      "target_id": "human_galectin3_crd_9d63_construct",
+      "ligand_id": "beta_d_galactopyranose_gal",
+      "assay_id": null,
+      "protein": {
+        "name": "Human galectin-3 carbohydrate-recognition domain",
+        "organism": "Homo sapiens",
+        "uniprot_id": "P17931",
+        "sequence": "MPLIVPYNLPLPGGVVPRMLITILGTVKPNANRIALDFQRGNDVAFHFNPRFNENNRRVIVCNTKLDNNWGREERQSVFPFESGKPFKIQVLVEPDHFKVAVNDAHLLQYNHRVKKLNEISKLGISGDIDLTSASYTMI",
+        "sequence_length": 139,
+        "sequence_source": "https://data.rcsb.org/rest/v1/core/polymer_entity/9D63/1",
+        "construct_notes": "Exact canonical sequence for deposited polymer entity 1; RCSB reports no mutation and complete modeling of all 139 deposited residues."
+      },
+      "ligand": {
+        "name": "beta-D-galactopyranose",
+        "ccd_id": "GAL",
+        "input_smiles": "C([C@@H]1[C@@H]([C@@H]([C@H]([C@@H](O1)O)O)O)O)O",
+        "inchi": "InChI=1S/C6H12O6/c7-1-2-3(8)4(9)5(10)6(11)12-2/h2-11H,1H2/t2-,3+,4+,5-,6-/m1/s1",
+        "inchi_key": "WQZGKKKJIJFFOK-FPRJBGLDSA-N",
+        "formula": "C6H12O6",
+        "molecular_weight_da": 180.156,
+        "formal_charge": 0,
+        "stereochemistry": "beta-D-galactopyranose, preserved explicitly in the RCSB CCD stereochemical SMILES",
+        "representation_notes": "SMILES_stereo copied from RCSB CCD GAL. The anomer and stereocenters must not be replaced by an unspecified galactose representation."
+      },
+      "measurement": null,
+      "structure_reference": {
+        "pdb_id": "9D63",
+        "ligand_ccd_id": "GAL",
+        "method": "X-ray diffraction",
+        "resolution_angstrom": 1.15,
+        "initial_release_date": "2026-03-18",
+        "rcsb_url": "https://www.rcsb.org/structure/9D63",
+        "pdb_doi": "10.2210/pdb9D63/pdb",
+        "use_as_model_input": false,
+        "use_for_scoring_after_prediction": true,
+        "coordinate_download_timing": "after Boltz prediction completes"
+      },
+      "split": "post_release_structural_smoke_test",
+      "included": true,
+      "limitations": [
+        "No matched quantitative affinity measurement is available, so affinity accuracy cannot be evaluated.",
+        "The crystal confirms binding but does not define Boltz-2's binary-head training label for this sample.",
+        "One complex cannot estimate ranking, calibration, or generalization.",
+        "A post-model PDB release lowers direct coordinate-leakage risk but does not prove complete independence from all related structures or sequences.",
+        "The deposited entry also contains carbohydrate and crystallization components that are excluded from the model input; only one beta-D-galactose molecule is modeled."
+      ]
+    }
+  ]
+}

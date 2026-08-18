@@ -1,0 +1,64 @@
+id: exp009_flashbind_fepplus4_released_poses
+title: Released FlashBind scorer on FEP+4 using released FABind+ poses
+status: complete
+question: Can the released two-checkpoint FlashBind value ensemble reproduce its reported within-target ranking on the same 87 neutral FEP+4 compounds?
+hypothesis: The released-pose reproduction will approach the paper's compound-weighted Pearson R of 0.53 because identities, labels, receptors, poses, and representations come from the authors' evaluation archive.
+
+manifest: data/manifests/fepplus4_87.json
+benchmark_config: configs/benchmarks/fepplus4_87.yaml
+model_config: configs/models/flashbind.yaml
+
+input_policy:
+  source: released_preprocessed_fep4_archive
+  protein_structures: four_fixed_receptor_PDBs
+  ligand_poses: released_FABind_plus_SDF_coordinates
+  protein_representations: released_ESM3_features
+  ligand_representations: released_TorchDrug_features
+  rerun_FABind_plus: false
+  use_released_labels_for_metrics: false
+
+inference:
+  task: value
+  checkpoint_ensemble: [value_1.ckpt, value_2.ckpt]
+  ensemble_rule: arithmetic_mean_per_native_field
+  distance_threshold_angstrom: 20.0
+  devices: 1
+  accelerator: gpu
+  num_workers: 0
+  seed: 42
+
+analysis:
+  continuous_affinity_field: pred_value
+  preserve_fields: [pred_value, pred_value_raw, mw]
+  primary_metric: compound_count_weighted_mean_of_per_target_Pearson_r
+  secondary_metrics: [per_target_Pearson_r, per_target_Spearman_rho, compound_weighted_Kendall_tau, pairwise_MAE_kcal_per_mol, centered_MAE_kcal_per_mol]
+  bootstrap_iterations: 2000
+  bootstrap_seed: 20260817
+  paper_reference:
+    weighted_pearson_r: 0.53
+    weighted_kendall_tau: 0.38
+
+stages:
+  - name: one_record_smoke
+    record: cdk2_lig-17
+    stopping_rule: both checkpoints and ensemble must emit finite pred_value, pred_value_raw, and mw
+  - name: full_87
+    starts_only_after: one_record_smoke_success
+    stopping_rule: preserve and report every failure; do not silently remove records
+
+interpretation_limits:
+  - tests_released_scoring_pipeline_not_fresh_docking
+  - mixed_assay_labels_are_not_binding_free_energies
+  - public_in_distribution_retrospective_benchmark
+
+observed_status_2026_08_17:
+  complete_samples: 87
+  failed_samples: 0
+  weighted_pearson_r: 0.5332735491494067
+  pearson_bootstrap_95_percent: [0.382109688501529, 0.6693451190214997]
+  weighted_spearman_rho: 0.515467996757012
+  weighted_kendall_tau: 0.3588227796031925
+  weighted_centered_mae_kcal_mol: 0.6878617636210578
+  paper_reference_weighted_pearson_r: 0.53
+  paper_reference_weighted_kendall_tau: 0.38
+  metrics: reports/exp009_flashbind_fepplus4_released_poses/flashbind_metrics.json

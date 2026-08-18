@@ -1,0 +1,126 @@
+{
+  "sources": [
+    {
+      "path": "data/manifests/fepplus4_87.json",
+      "sha256": "5f0fb23bb97ea84f3da153e050d5913b97da9bba091fb84cd556b9894fdac1e1"
+    },
+    {
+      "path": "runs/exp007_fepplus4_boltz2_nesso1/nesso1/seed42/predictions.csv",
+      "sha256": "ba9a436e37bdce5213faa8eb3be77a9b096516c139d3bc05a786a9886e1d4c77"
+    },
+    {
+      "path": "runs/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024/seed42/predictions.csv",
+      "sha256": "f449777a679003fa56c8d347eafb166d395490ad69ee72507f5d1d539a790d29"
+    },
+    {
+      "path": "runs/exp009_flashbind_fepplus4_released_poses/flashbind_released_poses/seed42/full87/predictions.csv",
+      "sha256": "cce5aa300a74ac585641b84fc8a3bb5b86927609039c100858f16d4e747da411"
+    },
+    {
+      "path": "reports/exp007_fepplus4_boltz2_nesso1/nesso1_metrics.json",
+      "sha256": "093ef46de9973252d5592034b0b35e7cb5515fd6f85f669a9e94ac96c679c8e3"
+    },
+    {
+      "path": "reports/exp007_fepplus4_boltz2_nesso1/boltz2_msa1024_vs_nesso1_metrics.json",
+      "sha256": "4b6ca053f1deb8b2d255f57e31f473a6f7876790ffb12515744cffa64e941abd"
+    },
+    {
+      "path": "reports/exp009_flashbind_fepplus4_released_poses/flashbind_metrics.json",
+      "sha256": "f60f14de65423f2e080a740baad24181be79e32b6e89372a2082bb3322ed2188"
+    },
+    {
+      "path": "reports/exp010_flashbind_crystal_pose/paired_pose_rmsd.csv",
+      "sha256": "13cee7e0794bdd12837f5b2ee6a9d4e1e40cbc6d48f6adbdc56b667a94816c06"
+    },
+    {
+      "path": "literature/references.bib",
+      "sha256": "d0704e364c0eca48139c67ac86404b25a37f082ea6e0c10714545b3bae566d74"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "weeks/2026-W34/report/figures/nesso1_standardized_scatter.csv",
+      "sha256": "a52e7a6c68089e2c4e8a91f97b5910f0e99ef97e01aab4360498260016efb2fd"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/nesso1_cdk2.csv",
+      "sha256": "97c60e6fe0c5f6be22d915e2e8d40649202bc2fb9454d387e5a9c3ad7cd94655"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/nesso1_tyk2.csv",
+      "sha256": "6ffbc0a9174b72ad51da824dbfcc248903af00c275903aebd9f39a38821a6fc8"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/nesso1_jnk1.csv",
+      "sha256": "0c77fea7935488467ecb1850856b7e17c1adf13ae5957b764c2c063cc29b7f21"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/nesso1_p38.csv",
+      "sha256": "25014486bc2b266cc54fe19eea8f9c20627834924c49e8557556b6ae3fc1124f"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/boltz2_msa1024_standardized_scatter.csv",
+      "sha256": "aae0c64cf06328285ed3c8c3f8c8c88decffab8a346a891091c26085638497bc"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/boltz2_msa1024_cdk2.csv",
+      "sha256": "6fca1d8721b20827a78bd13195a1ce1e5a148321c14444972e35f3ec4f2f8c1f"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/boltz2_msa1024_tyk2.csv",
+      "sha256": "f02b39bd4ceaf6d51ca48e7360bf9cd7f94366bee4865ca85a46647f6a35644e"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/boltz2_msa1024_jnk1.csv",
+      "sha256": "3175001d9ce68c3876034d4b3c0e815282c5c1a78ba9419ed2eebc8fa4ecab37"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/boltz2_msa1024_p38.csv",
+      "sha256": "83a03c013d30d4bd461c82b514df1fe137187ca03ec607f63fd7249e6e54dacc"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/flashbind_standardized_scatter.csv",
+      "sha256": "8e981b90e072adce7a4b147398bf8fcffc1afcb464bfea5542da5975d3d9e52f"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/flashbind_cdk2.csv",
+      "sha256": "f46b4f24595535dc2d03672966aec138012bfa9aacd6f57e5cfbef83afb6163f"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/flashbind_tyk2.csv",
+      "sha256": "ce49b257ec0e7870d3bb66e6c0b1635357220ac1aa834358e86228081907cfc6"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/flashbind_jnk1.csv",
+      "sha256": "b9dadee93510933b3539d3159b24cdba9d46294d99d4bf3ab991748e4da40105"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/flashbind_p38.csv",
+      "sha256": "905ccadd487eba8041f560b555866d388be227fffed637e7f2dc72463593445c"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/pose_rmsd_cdk2.csv",
+      "sha256": "5fe9f7e6b92bee3ba92364ac014119d060dcbca48a5deed6792bd31edd70a843"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/pose_rmsd_tyk2.csv",
+      "sha256": "e0bf8e80f7d08c68a9425037b80feb59cc6fc33389aea0eb6428ba7d4c1e81d7"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/pose_rmsd_jnk1.csv",
+      "sha256": "881a6f89e091fce5ab2f2dc106e9db983c1c40929d678cb6ed8d97e0b8ff108b"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/pose_rmsd_p38.csv",
+      "sha256": "57afb3eb6bd42f889efd2a1b843c48fb8273f7639eb3d01c69b690cea9ef068f"
+    },
+    {
+      "path": "weeks/2026-W34/report/figures/nesso1_runtime.csv",
+      "sha256": "667f3435d29323ea3bb8c92aab642b2742b01cc81ecfd93cdf686d214326cdf2"
+    },
+    {
+      "path": "weeks/2026-W34/report/references.bib",
+      "sha256": "d0704e364c0eca48139c67ac86404b25a37f082ea6e0c10714545b3bae566d74"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+name: rfdiffusion
+role: conditional_protein_backbone_generator
+source_url: https://github.com/RosettaCommons/RFdiffusion
+source_revision: 86507b6538f51fce57b5a72477165f03999ed7ae
+package_version: 1.1.0
+
+checkpoint:
+  filename: Complex_base_ckpt.pt
+  source_url: http://files.ipd.uw.edu/pub/RFdiffusion/e29311f6f1af907f9ef9f44b8328b/Complex_base_ckpt.pt
+  sha256: 76e4e260aefee3b582bd76b77ab95d2592e64f00c51bf344968ab9239f3250bc
+
+environment:
+  path: external/envs/rfdiffusion
+  python: 3.9
+  pytorch: 1.9.1
+  pytorch_build: py3.9_cuda11.1_cudnn8.0.5_0
+  cuda_runtime: 11.1
+  dgl: 0.9.1post1
+  se3_transformer: 1.0.0
+
+interpretation:
+  native_output: protein_backbone_coordinates
+  generated_sequence_is_placeholder_glycine: true
+  predicts_binding_affinity: false
+  diffusion_timestep_is_physical_time: false

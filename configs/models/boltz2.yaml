@@ -1,5 +1,5 @@
 id: boltz2_2_2_1
-status: installed_checkpoints_verified_not_run
+status: installed_checkpoints_verified_tyk2_pilot_failed_hardware_feasibility
 observed_on: 2026-08-06
 
 implementation:
@@ -105,3 +105,7 @@ verification_notes:
   - Optional cuEquivariance kernels are disabled because their currently resolved CUDA libraries conflict with the driver-compatible PyTorch CUDA 12.1 stack. Core PyTorch GPU inference remains enabled.
   - The host exports a Python 3.9 AmberTools PYTHONPATH; all Boltz commands must unset PYTHONPATH to prevent cross-environment contamination.
   - Do not change use_potentials or affinity_mw_correction after seeing results; create a new protocol variant instead.
+  - The primary TYK2 pilot with an unsampled 8192-sequence MSA exhausted the local 10 GiB GPU in all 16 structure batches; the affinity pass then lacked required pre_affinity intermediates. This is a hardware-feasibility failure, not an accuracy result.
+  - A byte-identical affinity checkpoint copy was staged at /home/yusheng/programs/boltz-2.2.1/checkpoints/boltz2_aff.ckpt to avoid mechanical-disk cold-load latency; its SHA256 remains dcc5cd3722b1c9eaa34267e4ae32f55cbbf1963f4c19319381ccfa30fdd2ca9e.
+  - A byte-identical structure checkpoint copy was staged at /home/yusheng/programs/boltz-2.2.1/checkpoints/boltz2_conf.ckpt before the full MSA-1024 expansion; its SHA256 remains 090e82ac8c92f5e943fa1b39e7410a44027bea7243c0bbb3caa67a77fc1428e1.
+  - Explicit 1024-sequence MSA subsampling was approved on 2026-08-17 as the separately named boltz2_msa1024 feasibility protocol; the original 8192-sequence failure remains preserved.

@@ -1,0 +1,71 @@
+id: fepplus4_87_da7c337
+status: protocol_frozen_inputs_pending_generation
+manifest: data/manifests/fepplus4_87.json
+
+purpose:
+  - reproduce_the_shared_boltz2_nesso1_four_kinase_affinity_benchmark
+  - compare_accuracy_runtime_failure_rate_and_model_uncertainty_on_identical_inputs
+
+source:
+  repository: https://github.com/openforcefield/protein-ligand-benchmark
+  revision: da7c3372256446222e424368be38ef3d2b55a67b
+  license: CC-BY-4.0
+  targets:
+    cdk2: {pdb_id: 1H1Q, compounds: 16}
+    tyk2: {pdb_id: 4GIH, compounds: 16}
+    jnk1: {pdb_id: 2GMX, compounds: 21}
+    p38: {pdb_id: 3FLY, compounds: 34}
+  total_compounds: 87
+  ligand_charge_filter: formal_charge_equals_zero
+  revision_note: The older Git commit is used because it contains the full 87-example benchmark reported in both papers.
+
+construct_policy:
+  sequence_source: RCSB_deposited_entity_FASTA
+  include_all_benchmark_complex_protein_and_peptide_entities: true
+  cdk2_partner: cyclin_A2
+  jnk1_partner: JIP1_peptide
+  experimental_coordinates_as_model_input: false
+  pocket_or_contact_conditioning: false
+  templates: none
+
+measurement_policy:
+  accepted_types: [ki, ic50]
+  canonical_unit: uM
+  preserve_source_type: true
+  qualifier: exact
+  aggregation_unit: target
+  warning: TYK2 labels are Ki while the released model outputs are documented on an approximate mixed-assay IC50 scale.
+
+primary_metric:
+  name: compound_count_weighted_mean_of_per_target_Pearson_r
+  direction: higher_is_better
+  paper_reference:
+    boltz2: 0.66
+    nesso1: 0.80
+
+secondary_metrics:
+  - per_target_Pearson_r
+  - per_target_Spearman_rho
+  - compound_count_weighted_Kendall_tau
+  - pairwise_MAE_kcal_per_mol
+  - centered_MAE_kcal_per_mol
+  - noncentered_MAE_kcal_per_mol
+  - failure_rate
+  - wall_time_and_peak_GPU_memory
+
+uncertainty:
+  method: compound_bootstrap_within_each_target
+  iterations: 2000
+  seed: 20260817
+  interval: percentile_95_percent
+
+interpretation:
+  primary_claim_scope: within_series_ranking_on_largely_in_distribution_public_chemistry
+  forbidden_claims:
+    - universal_binding_affinity_accuracy
+    - equilibrium_free_energy_prediction
+    - strict_out_of_distribution_generalization
+    - assay_interchangeability
+  reproduction_label: released_model_reproduction_with_reconstructed_preprocessing
+  exact_bitwise_reproduction: false
+  reason: Boltz-2 has not released the paper evaluation code or exact processed inputs.

@@ -1,0 +1,139 @@
+{
+  "experimental_reference": {
+    "pdb_id": "4OGA",
+    "method": "X-ray diffraction",
+    "resolution_angstrom": 3.5,
+    "l1_chain_and_residues": "E6-E155",
+    "insulin_chains": [
+      "A",
+      "B"
+    ],
+    "alpha_ct_chain_and_modeled_residues": "F705-F719",
+    "l1_alignment_rmsd_angstrom": 0.4234,
+    "pdb_sha256": "98f5dd550455403046e2e683e674c8bcd3efec227bddb2a312af0c97a2faa7a8",
+    "insulin_modeled_CA_count": 42,
+    "alpha_ct_modeled_CA_count": 15,
+    "experimental_insulin_contact_residues_local_numbering": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      32,
+      33,
+      34,
+      35,
+      60,
+      92
+    ],
+    "experimental_alphaCT_contact_residues_local_numbering": [
+      7,
+      29,
+      31,
+      32,
+      59,
+      83,
+      84,
+      91,
+      92,
+      113,
+      115
+    ],
+    "contact_definition": "L1 C-alpha within 10 A of a component C-alpha"
+  },
+  "metric_interpretation": {
+    "coverage": "Fraction of experimental component C-alpha sites within 8 A of a generated binder C-alpha.",
+    "jaccard": "Overlap between generated-binder and experimental-component L1 contact-residue sets.",
+    "affinity": "None of these geometry descriptors estimates binding affinity or functional activity."
+  },
+  "arms": {
+    "guided": {
+      "minimum_CA_distance_to_experimental_insulin_A": {
+        "minimum": 0.6816,
+        "median": 1.3993,
+        "mean": 1.4783,
+        "maximum": 2.8962
+      },
+      "minimum_CA_distance_to_experimental_alphaCT_A": {
+        "minimum": 0.3173,
+        "median": 0.8202,
+        "mean": 0.9546,
+        "maximum": 1.7318
+      },
+      "experimental_insulin_CA_coverage_within_8A": {
+        "minimum": 0.3095,
+        "median": 0.5833,
+        "mean": 0.5952,
+        "maximum": 1.0
+      },
+      "experimental_alphaCT_CA_coverage_within_8A": {
+        "minimum": 0.7333,
+        "median": 0.8,
+        "mean": 0.8,
+        "maximum": 1.0
+      },
+      "binder_contact_jaccard_with_experimental_insulin": {
+        "minimum": 0.0976,
+        "median": 0.2238,
+        "mean": 0.2096,
+        "maximum": 0.3448
+      },
+      "binder_contact_jaccard_with_experimental_alphaCT": {
+        "minimum": 0.303,
+        "median": 0.3357,
+        "mean": 0.3445,
+        "maximum": 0.3929
+      },
+      "binder_contact_jaccard_with_experimental_combined": {
+        "minimum": 0.2927,
+        "median": 0.4281,
+        "mean": 0.4295,
+        "maximum": 0.6207
+      }
+    },
+    "unguided": {
+      "minimum_CA_distance_to_experimental_insulin_A": {
+        "minimum": 0.9901,
+        "median": 2.2681,
+        "mean": 5.1301,
+        "maximum": 28.1776
+      },
+      "minimum_CA_distance_to_experimental_alphaCT_A": {
+        "minimum": 0.7109,
+        "median": 4.8188,
+        "mean": 7.8174,
+        "maximum": 28.0696
+      },
+      "experimental_insulin_CA_coverage_within_8A": {
+        "minimum": 0.0,
+        "median": 0.4524,
+        "mean": 0.4333,
+        "maximum": 0.9524
+      },
+      "experimental_alphaCT_CA_coverage_within_8A": {
+        "minimum": 0.0,
+        "median": 0.4,
+        "mean": 0.3867,
+        "maximum": 0.8
+      },
+      "binder_contact_jaccard_with_experimental_insulin": {
+        "minimum": 0.0,
+        "median": 0.152,
+        "mean": 0.2,
+        "maximum": 0.4737
+      },
+      "binder_contact_jaccard_with_experimental_alphaCT": {
+        "minimum": 0.0,
+        "median": 0.1703,
+        "mean": 0.1685,
+        "maximum": 0.381
+      },
+      "binder_contact_jaccard_with_experimental_combined": {
+        "minimum": 0.0,
+        "median": 0.2492,
+        "mean": 0.2706,
+        "maximum": 0.6087
+      }
+    }
+  }
+}

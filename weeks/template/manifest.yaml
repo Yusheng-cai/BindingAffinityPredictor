@@ -1,0 +1,25 @@
+week: YYYY-Www
+status: draft
+project_git_revision: null
+working_tree_dirty_at_build: null
+overleaf:
+  configured: false
+  project: null
+  revision: null
+experiments: []
+citations: []
+figure_sources: []
+commands: []
+workflow_code:
+  path: code
+  manifest: code/workflow_manifest.yaml
+  scientific_commands_reconstructed_from_run_records: false
+pdf:
+  path: report/report.pdf
+  pages: null
+  latex_engine: pdflatex
+  sha256: null
+bibliography_snapshot:
+  path: report/references.bib
+  canonical_source: literature/references.bib
+  sha256: null

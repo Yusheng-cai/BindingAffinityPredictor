@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="An interactive, scientifically careful walkthrough of the RFdiffusion and ProteinMPNN protein-binder design pipeline." />
+  <title>From noise to a protein binder | RFdiffusion tutorial</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to the tutorial</a>
+
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Binder design tutorial home">
+      <span class="brand-mark" aria-hidden="true">R</span>
+      <span><strong>Binder design lab</strong><small>RFdiffusion → ProteinMPNN</small></span>
+    </a>
+    <nav aria-label="Page sections">
+      <a href="#big-picture">Overview</a>
+      <a href="#real-run">Real run</a>
+      <a href="#diversity">Diversity</a>
+      <a href="#animation">Concepts</a>
+      <a href="#code">Code</a>
+      <a href="#validation">Validation</a>
+      <a href="proteinmpnn_guidance.html">Score guidance</a>
+      <a href="evaluation.html">Evidence report</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-copy">
+        <p class="eyebrow">A slow, visual walkthrough</p>
+        <h1>How do we design a new protein binder from a target structure?</h1>
+        <p class="lede">We reproduced a one-design version of the official RFdiffusion insulin-receptor example. The goal is not yet to discover a drug. It is to understand every object, model transition, output, and scientific claim in a modern binder-design pipeline.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#real-run">Play the real trajectory</a>
+          <a class="button secondary" href="#code">Read the command first</a>
+          <a class="button secondary" href="proteinmpnn_guidance.html">Where should a binding score enter?</a>
+          <a class="button secondary" href="evaluation.html">How many designs might work?</a>
+        </div>
+      </div>
+      <div class="hero-figure" aria-label="Pipeline summary">
+        <div class="molecule target-mini"><span></span><span></span><span></span><i></i><i></i><i></i></div>
+        <div class="flow-arrow">→</div>
+        <div class="noise-cloud" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="flow-arrow">→</div>
+        <div class="molecule binder-mini"><span></span><span></span><span></span></div>
+        <p><strong>fixed target</strong><strong>generated backbone</strong><strong>designed sequence</strong></p>
+      </div>
+    </section>
+
+    <section class="boundary" aria-labelledby="boundary-title">
+      <div class="boundary-icon" aria-hidden="true">≠</div>
+      <div>
+        <h2 id="boundary-title">First scientific boundary</h2>
+        <p>This workflow proposes a structure and sequence. It does <strong>not</strong> directly calculate a binding free energy, an equilibrium dissociation constant, or experimental success. Structure confidence and binding affinity are different quantities.</p>
+      </div>
+    </section>
+
+    <section class="section real-run-section" id="real-run">
+      <div class="section-heading real-heading">
+        <div>
+          <p class="eyebrow">01 · Real output · seed 42</p>
+          <h2>One backbone was actually generated</h2>
+          <p>This viewer is driven by the Cα coordinates RFdiffusion wrote on this machine—not an invented morph. Drag to rotate, scroll to zoom, and scrub from noise level 50 to the final step.</p>
+        </div>
+        <span class="run-badge"><i></i> completed locally</span>
+      </div>
+
+      <div class="run-stats" aria-label="Run summary">
+        <article><strong id="statBinderLength">90</strong><span>binder residues sampled</span></article>
+        <article><strong>50</strong><span>reverse-diffusion steps</span></article>
+        <article><strong id="statRuntime">66.01 s</strong><span>model-reported runtime</span></article>
+        <article><strong>4</strong><span>ProteinMPNN sequences</span></article>
+      </div>
+
+      <div class="real-run-shell">
+        <div class="real-toolbar">
+          <button class="button primary" id="realPlayButton" type="button">▶ Play real trajectory</button>
+          <button class="button ghost" id="cameraResetButton" type="button">Reset camera</button>
+          <fieldset class="trajectory-toggle">
+            <legend>Trajectory shown</legend>
+            <label><input type="radio" name="trajectory" value="xtMinus1" checked /> X<sub>t−1</sub> sampled state</label>
+            <label><input type="radio" name="trajectory" value="pX0" /> pX<sub>0</sub> clean estimate</label>
+          </fieldset>
+        </div>
+        <div class="real-view-grid">
+          <figure class="real-viewer">
+            <canvas id="realTrajectoryCanvas" width="900" height="600" role="img" aria-label="Rotatable C-alpha trace of the actual RFdiffusion insulin-receptor binder trajectory"></canvas>
+            <div class="viewer-overlay">
+              <span><i class="target-dot"></i> target A1–A150</span>
+              <span><i class="binder-dot"></i> generated chain B</span>
+              <span><i class="hotspot-dot"></i> A59, A83, A91</span>
+            </div>
+            <figcaption>Actual binder Cα coordinates; final target Cα trace is held as the visual reference. Dashed contacts appear near the final state. This is a generative path, not molecular dynamics.</figcaption>
+          </figure>
+          <aside class="real-readout">
+            <p class="stage-kicker">Actual RFdiffusion state</p>
+            <div class="timestep-readout"><span>noise level</span><strong id="realTimestep">t = 50</strong></div>
+            <label for="realTrajectorySlider">Step <output id="realStepOutput">1 / 50</output></label>
+            <input id="realTrajectorySlider" type="range" min="0" max="49" value="0" />
+            <div class="confidence-number">
+              <span>Binder confidence</span>
+              <strong id="realConfidence">0.094</strong>
+              <small>RFdiffusion's pLDDT-like internal output, 0–1</small>
+            </div>
+            <svg class="confidence-chart" id="confidenceChart" viewBox="0 0 420 130" role="img" aria-label="Binder confidence over the 50 denoising steps"></svg>
+            <p id="trajectoryExplanation"><strong>X<sub>t−1</sub></strong> is the sampled state passed into the next reverse step. Early frames are deliberately noisy.</p>
+          </aside>
+        </div>
+      </div>
+
+      <div class="atom-view-card" id="atom-view">
+        <div class="atom-view-heading">
+          <div>
+            <p class="eyebrow">Actual sequence on the actual backbone</p>
+            <h3>See amino-acid identities and backbone atoms</h3>
+            <p>The selected ProteinMPNN sequence is mapped residue-for-residue onto RFdiffusion's final N–Cα–C–O coordinates. Click a sequence tile or atom to inspect it.</p>
+          </div>
+          <div class="coordinate-status"><span>Backbone coordinates</span><strong>present</strong><span>Side-chain coordinates</span><strong class="pending-text">not yet packed</strong></div>
+        </div>
+        <div class="atom-view-grid">
+          <figure class="atom-viewer">
+            <canvas id="atomCanvas" width="900" height="600" role="img" aria-label="ProteinMPNN amino-acid sequence mapped onto the actual RFdiffusion backbone with atoms colored by element"></canvas>
+            <div class="atom-legend" aria-label="Standard element colors">
+              <span><i class="atom-n"></i> nitrogen</span>
+              <span><i class="atom-c"></i> carbon</span>
+              <span><i class="atom-o"></i> oxygen</span>
+              <span class="unmodeled"><i></i> side-chain atoms unavailable</span>
+            </div>
+            <figcaption>Element colors follow the conventional CPK scheme: N blue, C gray and O red. Hydrogen atoms were not written. The letters are ProteinMPNN identities assigned to each Cα position.</figcaption>
+          </figure>
+          <aside class="residue-inspector">
+            <p class="stage-kicker">Selected binder residue</p>
+            <div class="residue-identity"><strong id="residueLetter">V</strong><div><span id="residueName">VAL · valine</span><small id="residuePosition">chain B · residue 1 of 90</small></div></div>
+            <dl>
+              <div><dt>Side-chain class</dt><dd id="residueClass">hydrophobic</dd></div>
+              <div><dt>Coordinates displayed</dt><dd>N, Cα, C, O</dd></div>
+              <div><dt>Identity source</dt><dd>ProteinMPNN sample 1</dd></div>
+            </dl>
+            <label for="residueSlider">Residue position <output id="residueSliderOutput">1</output></label>
+            <input id="residueSlider" type="range" min="1" max="90" value="1" />
+            <label class="label-toggle"><input id="showResidueLabels" type="checkbox" /> label every binder Cα</label>
+            <button class="button ghost" id="atomCameraReset" type="button">Reset camera</button>
+            <p class="micro-note">The amino-acid identity is real model output. Its side-chain conformation is unknown until a packing or all-atom prediction step is performed.</p>
+          </aside>
+        </div>
+        <div class="sequence-map" id="residueSequenceMap" aria-label="All 90 assigned binder residues"></div>
+        <div class="residue-color-key">
+          <span><i class="hydrophobic-key"></i> hydrophobic</span>
+          <span><i class="polar-key"></i> polar</span>
+          <span><i class="acidic-key"></i> acidic</span>
+          <span><i class="basic-key"></i> basic</span>
+          <span><i class="special-key"></i> glycine / proline / cysteine</span>
+        </div>
+      </div>
+
+      <div class="actual-sequences">
+        <div class="sequence-result">
+          <p class="eyebrow">ProteinMPNN handoff</p>
+          <h3>Lowest-score candidate under the prespecified rule</h3>
+          <code id="selectedRealSequence">Loading real sequence…</code>
+          <p>ProteinMPNN designed chain B only. “Lowest score” here means highest compatibility under this sequence model among four samples; it does not mean strongest binding.</p>
+        </div>
+        <div class="sequence-table-wrap">
+          <table>
+            <caption>All generated candidates</caption>
+            <thead><tr><th>Sample</th><th>Designed-chain score ↓</th><th>Global score</th><th>Selected</th></tr></thead>
+            <tbody id="mpnnCandidateRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="run-audit">
+        <article class="audit-pass"><span>✓</span><div><strong>Generation audited</strong><p>Target 150 residues; binder 90; both trajectory files contain 50 states.</p></div></article>
+        <article class="audit-pass"><span>✓</span><div><strong>Sequence design audited</strong><p>Four sequences; target fixed; chain B designed with seed 42 and temperature 0.1.</p></div></article>
+        <article class="audit-pending"><span>○</span><div><strong>Independent prediction pending</strong><p>No sequence-based complex prediction has yet tested whether a candidate returns to this backbone.</p></div></article>
+        <article class="audit-pending"><span>○</span><div><strong>Experiment not performed</strong><p>No evidence yet for binding, affinity, specificity, folding, expression or solubility.</p></div></article>
+      </div>
+    </section>
+
+    <section class="section diversity-section" id="diversity">
+      <div class="section-heading diversity-heading">
+        <div>
+          <p class="eyebrow">02 · Stochastic sampling · seeds 42–51</p>
+          <h2>One target, ten different backbones</h2>
+          <p>The target, hotspot labels, checkpoint and denoising settings were held fixed. Only the deterministic random seed changed. All structures below are actual final RFdiffusion outputs aligned through their 150 target Cα atoms.</p>
+        </div>
+        <span class="run-badge"><i></i> 10 / 10 complete</span>
+      </div>
+
+      <div class="diversity-summary">
+        <article><strong>71–98</strong><span>sampled residues</span><small>mean 82.2</small></article>
+        <article><strong>13.36 Å</strong><span>median intrinsic trace RMSD</span><small>global pose removed</small></article>
+        <article><strong>5.08 Å</strong><span>median pose Chamfer distance</span><small>target aligned</small></article>
+        <article><strong>0.50</strong><span>median contact Jaccard</span><small>1 means identical sets</small></article>
+      </div>
+
+      <div class="diversity-lab">
+        <div class="diversity-toolbar">
+          <div id="diversitySeedButtons" class="seed-buttons" aria-label="Select RFdiffusion seed"></div>
+          <label class="overlay-toggle"><input id="showAllDesigns" type="checkbox" checked /> overlay all ten</label>
+          <button class="button ghost" id="diversityCameraReset" type="button">Reset camera</button>
+        </div>
+        <div class="diversity-view-grid">
+          <figure class="diversity-viewer">
+            <canvas id="diversityCanvas" width="900" height="600" role="img" aria-label="Target-aligned overlay of ten actual RFdiffusion binder backbones"></canvas>
+            <figcaption>Blue: the common target. Purple: selected binder. Faint colored traces: the other seeds. Drag to rotate and scroll to zoom.</figcaption>
+          </figure>
+          <aside class="design-readout">
+            <p class="stage-kicker">Selected final backbone</p>
+            <h3>Seed <span id="selectedDiversitySeed">42</span></h3>
+            <dl>
+              <div><dt>Length</dt><dd id="selectedLength">90 residues</dd></div>
+              <div><dt>Cα radius of gyration</dt><dd id="selectedRg">13.90 Å</dd></div>
+              <div><dt>Target contact residues</dt><dd id="selectedContacts">28</dd></div>
+              <div><dt>Final model confidence</dt><dd id="selectedDiversityConfidence">0.9919</dd></div>
+              <div><dt>Closest Cα to A59 / A83 / A91</dt><dd id="selectedHotspots">6.97 / 7.77 / 7.56 Å</dd></div>
+              <div><dt>Backbone pairs &lt;2 Å</dt><dd id="selectedClashes">0</dd></div>
+            </dl>
+            <p class="micro-note">“Contact” means a target residue has any binder Cα within 10 Å. “Confidence” is RFdiffusion's internal pLDDT-like output—not affinity.</p>
+          </aside>
+        </div>
+      </div>
+
+      <div class="metric-explainer">
+        <article>
+          <p class="eyebrow">Intrinsic shape</p>
+          <h3>What changes if pose is removed?</h3>
+          <p>Unequal-length Cα traces are resampled to 64 equally spaced arc-length points and independently Kabsch-aligned. Their RMSD describes curve-shape difference. It is deliberately <strong>not called TM-score</strong>.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Target-relative pose</p>
+          <h3>What changes around the target?</h3>
+          <p>After aligning all 150 target Cα atoms, symmetric nearest-neighbor distance compares binder point clouds. This retains changes in binder location, orientation and shape while tolerating unequal lengths.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Interface footprint</p>
+          <h3>Are the same target residues contacted?</h3>
+          <p>Jaccard similarity compares target-residue contact sets. A value of 1 means identical sets; 0 means no overlap. The observed median is 0.50, despite the same three hotspot labels.</p>
+        </article>
+      </div>
+
+      <div class="matrix-panel">
+        <div class="matrix-copy">
+          <p class="eyebrow">All 45 pairs</p>
+          <h3>Pairwise diversity matrix</h3>
+          <label for="diversityMetric">Metric</label>
+          <select id="diversityMetric">
+            <option value="intrinsicTraceRmsdAngstrom">Intrinsic trace RMSD (Å)</option>
+            <option value="poseChamferDistanceAngstrom">Target-aligned pose Chamfer (Å)</option>
+            <option value="centerOfMassDistanceAngstrom">Binder center displacement (Å)</option>
+            <option value="contactJaccardSimilarity">Target-contact Jaccard</option>
+          </select>
+          <p id="matrixDefinition">64-point resampled trace RMSD after independent structural superposition.</p>
+          <div class="matrix-scale"><span>more similar</span><i></i><span>more different</span></div>
+          <p class="pair-highlight" id="pairHighlight">Select a matrix cell to inspect one pair.</p>
+        </div>
+        <div class="matrix-wrap"><svg id="diversityMatrix" viewBox="0 0 430 410" role="img" aria-label="Pairwise structural-diversity heat map for seeds 42 through 51"></svg></div>
+      </div>
+
+      <div class="ensemble-table-wrap">
+        <table>
+          <caption>Per-design geometry—no ranking implied</caption>
+          <thead><tr><th>Seed</th><th>Length</th><th>R<sub>g</sub> (Å)</th><th>Target contacts</th><th>A59 min (Å)</th><th>A83 min (Å)</th><th>A91 min (Å)</th><th>Confidence</th><th>&lt;2 Å pairs</th></tr></thead>
+          <tbody id="diversityRows"></tbody>
+        </table>
+      </div>
+
+      <div class="precision-note diversity-note"><strong>What this ensemble establishes:</strong> RFdiffusion samples materially different backbone geometries and interface poses from the same conditioning. <strong>What it does not establish:</strong> that ten samples exhaust the distribution, that the geometries fold, or that any design binds. Seeds 43–51 have not undergone ProteinMPNN or independent sequence-based structure prediction.</div>
+    </section>
+
+    <section class="section" id="big-picture">
+      <div class="section-heading">
+        <p class="eyebrow">03 · The whole experiment</p>
+        <h2>Five questions, answered by different stages</h2>
+        <p>No single neural network performs the entire experiment. Each stage has a narrower job.</p>
+      </div>
+      <div class="pipeline-grid">
+        <article class="pipeline-card target-card">
+          <span class="step-number">1</span>
+          <h3>Specify the target</h3>
+          <p>Provide atomic coordinates for residues A1–A150 of the insulin receptor and mark three surface hotspots.</p>
+          <dl><dt>Input</dt><dd>PDB coordinates</dd><dt>Question</dt><dd>Where should binding occur?</dd></dl>
+        </article>
+        <article class="pipeline-card diffusion-card">
+          <span class="step-number">2</span>
+          <h3>Generate a backbone</h3>
+          <p>RFdiffusion constructs a new 70–100 residue chain while conditioning on the fixed target and hotspots.</p>
+          <dl><dt>Output</dt><dd>Backbone geometry</dd><dt>Not yet</dt><dd>A final sequence</dd></dl>
+        </article>
+        <article class="pipeline-card mpnn-card">
+          <span class="step-number">3</span>
+          <h3>Design its sequence</h3>
+          <p>ProteinMPNN assigns amino-acid identities compatible with the generated backbone and target interface.</p>
+          <dl><dt>Output</dt><dd>Candidate sequences</dd><dt>Condition</dt><dd>Local 3D environment</dd></dl>
+        </article>
+        <article class="pipeline-card predict-card">
+          <span class="step-number">4</span>
+          <h3>Predict it again</h3>
+          <p>A structure predictor asks whether the designed sequence returns to the intended fold and interface.</p>
+          <dl><dt>Output</dt><dd>Predicted complex</dd><dt>Question</dt><dd>Is the design self-consistent?</dd></dl>
+        </article>
+        <article class="pipeline-card filter-card">
+          <span class="step-number">5</span>
+          <h3>Filter, then test</h3>
+          <p>Reject clashes, uncertain interfaces and poor folds. Experimental binding remains the decisive test.</p>
+          <dl><dt>Computational</dt><dd>Prioritization</dd><dt>Ground truth</dt><dd>BLI, SPR or another assay</dd></dl>
+        </article>
+      </div>
+    </section>
+
+    <section class="section animation-section" id="animation">
+      <div class="section-heading">
+        <p class="eyebrow">04 · Conceptual laboratory</p>
+        <h2>Now isolate each representation</h2>
+        <p>Select a stage or play the sequence. The drawing is pedagogical: it illustrates the state variables and conditioning, not an actual RFdiffusion trajectory.</p>
+      </div>
+
+      <div class="lab-shell">
+        <div class="lab-controls">
+          <div class="stage-tabs" role="tablist" aria-label="Pipeline stage">
+            <button role="tab" data-stage="0" aria-selected="true"><span>1</span>Target</button>
+            <button role="tab" data-stage="1" aria-selected="false"><span>2</span>Noise</button>
+            <button role="tab" data-stage="2" aria-selected="false"><span>3</span>Denoise</button>
+            <button role="tab" data-stage="3" aria-selected="false"><span>4</span>Sequence</button>
+            <button role="tab" data-stage="4" aria-selected="false"><span>5</span>Validate</button>
+            <button role="tab" data-stage="5" aria-selected="false"><span>6</span>Filter</button>
+          </div>
+          <div class="play-controls">
+            <button class="button primary" id="playButton" type="button">▶ Play all</button>
+            <button class="button ghost" id="resetButton" type="button">Reset</button>
+            <label for="diffusionSlider">Reverse-diffusion progress <output id="sliderOutput">0%</output></label>
+            <input id="diffusionSlider" type="range" min="0" max="100" value="0" />
+          </div>
+        </div>
+
+        <div class="lab-main">
+          <figure class="molecular-stage" id="molecularStage">
+            <svg viewBox="0 0 800 500" role="img" aria-labelledby="vizTitle vizDesc">
+              <title id="vizTitle">Animated protein-binder design pipeline</title>
+              <desc id="vizDesc">A fixed blue target with three orange hotspots and a generated purple binder that changes from noisy residue frames into an organized backbone and sequence.</desc>
+              <defs>
+                <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="6" result="blur" />
+                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+                <linearGradient id="targetGradient" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#55b9df" /><stop offset="1" stop-color="#2456a6" />
+                </linearGradient>
+                <linearGradient id="binderGradient" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#d59cff" /><stop offset="1" stop-color="#7650d8" />
+                </linearGradient>
+              </defs>
+
+              <g id="targetGroup">
+                <path class="target-ribbon" d="M103 128 C80 183 147 201 112 251 C78 302 134 368 216 345 C270 330 257 275 313 247 C356 225 342 150 291 135 C246 122 231 70 173 88 C139 99 123 108 103 128Z" />
+                <path class="target-detail" d="M127 146 C185 173 119 211 152 249 C188 289 133 320 178 341 M188 105 C173 159 249 152 221 204 C194 252 282 270 233 326 M274 145 C239 185 322 211 278 248" />
+                <g class="hotspot" transform="translate(282 174)"><circle r="15" /><circle class="pulse" r="25" /><text y="-25">A59</text></g>
+                <g class="hotspot" transform="translate(301 229)"><circle r="15" /><circle class="pulse delay-1" r="25" /><text x="22" y="4">A83</text></g>
+                <g class="hotspot" transform="translate(268 281)"><circle r="15" /><circle class="pulse delay-2" r="25" /><text x="20" y="19">A91</text></g>
+              </g>
+
+              <g id="binderLines"></g>
+              <g id="binderPoints"></g>
+              <path id="predictedOverlay" d="M397 155 C429 128 472 138 468 171 C463 205 407 190 417 226 C428 265 485 242 479 281 C474 320 415 299 428 341 C437 372 491 354 505 324" />
+              <g id="interfaceContacts">
+                <line x1="282" y1="174" x2="403" y2="179" />
+                <line x1="301" y1="229" x2="417" y2="228" />
+                <line x1="268" y1="281" x2="412" y2="282" />
+              </g>
+
+              <g class="orientation-key" transform="translate(630 64)">
+                <line x1="0" y1="0" x2="32" y2="0" class="axis-x" /><line x1="0" y1="0" x2="0" y2="-32" class="axis-y" /><line x1="0" y1="0" x2="19" y2="19" class="axis-z" />
+                <text x="39" y="5">translation + rotation</text>
+              </g>
+              <text class="target-label" x="92" y="415">FIXED TARGET · chain A</text>
+              <text class="binder-label" x="421" y="415">GENERATED BINDER · new chain</text>
+              <text id="timeLabel" class="time-label" x="615" y="455">t = T · noise</text>
+            </svg>
+            <figcaption><span class="legend target-legend"></span> fixed target <span class="legend hotspot-legend"></span> hotspot guidance <span class="legend binder-legend"></span> generated residues <span class="legend prediction-legend"></span> validation prediction</figcaption>
+          </figure>
+
+          <aside class="stage-explanation" aria-live="polite">
+            <p class="stage-kicker" id="stageKicker">Stage 1 · Input specification</p>
+            <h3 id="stageTitle">The target structure stays fixed</h3>
+            <p id="stageSummary">RFdiffusion receives the coordinates of insulin-receptor residues A1–A150. Residues A59, A83 and A91 indicate the desired surface region.</p>
+            <div class="state-box">
+              <h4>What the model has</h4>
+              <p id="modelHas">Target residue identities, backbone coordinates and hotspot labels.</p>
+              <h4>What it does not have</h4>
+              <p id="modelLacks">A binder backbone, binder sequence, affinity or experimental measurement.</p>
+            </div>
+            <p class="takeaway"><strong>Key idea:</strong> <span id="stageTakeaway">A hotspot is spatial guidance—not a force field and not a known energetic hot spot.</span></p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section split-section" id="training-inference">
+      <div class="section-heading">
+        <p class="eyebrow">05 · A common conceptual trap</p>
+        <h2>Training and generation run in opposite directions</h2>
+      </div>
+      <div class="two-lanes">
+        <article>
+          <div class="lane-label training-label">During training</div>
+          <h3>Known structures are deliberately corrupted</h3>
+          <div class="lane-flow"><span>native complex</span><b>→ add noise at t</b><span>noisy frames</span><b>→ learn denoising</b><span>clean estimate</span></div>
+          <p>The model sees examples derived from experimentally determined protein structures. Residue coordinate frames are perturbed at different noise levels, and the network learns how protein-like geometry can be recovered while using structural context.</p>
+        </article>
+        <article>
+          <div class="lane-label inference-label">During our run</div>
+          <h3>A new binder begins from noise</h3>
+          <div class="lane-flow reverse"><span>random frames</span><b>→ repeated denoising</b><span>coherent chain</span><b>→ output</b><span>new backbone</span></div>
+          <p>The target coordinates remain conditioned and fixed. Only the requested binder chain is generated. The network repeatedly estimates a cleaner structure and advances from noise level <em>t</em> toward zero.</p>
+        </article>
+      </div>
+      <div class="precision-note"><strong>More precise than “moving atoms downhill”:</strong> RFdiffusion operates on residue frames containing translations and rotations, using an SE(3)-equivariant structure network. The animation does not represent molecular dynamics, an energy minimization trajectory, or physical time.</div>
+    </section>
+
+    <section class="section" id="code">
+      <div class="section-heading">
+        <p class="eyebrow">06 · The actual RFdiffusion command</p>
+        <h2>Read it one argument at a time</h2>
+        <p>This is the one-design local run, based on the official insulin-receptor example and reformatted across lines. Select any line for its interpretation.</p>
+      </div>
+      <div class="code-lab">
+        <pre class="code-block" aria-label="RFdiffusion command"><code><button class="code-line active" data-code="runner"><span>01</span>../scripts/run_inference.py \</button>
+<button class="code-line" data-code="prefix"><span>02</span>  inference.output_prefix=example_outputs/design_ppi \</button>
+<button class="code-line" data-code="pdb"><span>03</span>  inference.input_pdb=input_pdbs/insulin_target.pdb \</button>
+<button class="code-line" data-code="contig"><span>04</span>  'contigmap.contigs=[A1-150/0 70-100]' \</button>
+<button class="code-line" data-code="hotspots"><span>05</span>  'ppi.hotspot_res=[A59,A83,A91]' \</button>
+<button class="code-line" data-code="number"><span>06</span>  inference.num_designs=1 \</button>
+<button class="code-line" data-code="seed"><span>07</span>  inference.design_startnum=42 \</button>
+<button class="code-line" data-code="deterministic"><span>08</span>  inference.deterministic=True \</button>
+<button class="code-line" data-code="trajectory"><span>09</span>  inference.write_trajectory=True \</button>
+<button class="code-line" data-code="ca"><span>10</span>  denoiser.noise_scale_ca=0 \</button>
+<button class="code-line" data-code="frame"><span>11</span>  denoiser.noise_scale_frame=0</button></code></pre>
+        <aside class="code-explanation" aria-live="polite">
+          <p class="code-kind" id="codeKind">PROGRAM</p>
+          <h3 id="codeTitle">Start RFdiffusion inference</h3>
+          <p id="codeBody">This Python entry point resolves the configuration, selects a compatible checkpoint and runs reverse diffusion. It generates structures; it does not train the network.</p>
+          <div class="code-example" id="codeExample"><strong>Operational meaning</strong><span>One command launches the backbone-generation stage.</span></div>
+        </aside>
+      </div>
+
+      <div class="contig-decoder">
+        <h3>Decode the compact contig expression</h3>
+        <div class="contig-parts">
+          <div class="contig-part fixed"><code>A1-150</code><span>Keep target chain A residues 1 through 150.</span></div>
+          <div class="contig-part break"><code>/0</code><span>Insert a chain break: binder and target are not covalently fused.</span></div>
+          <div class="contig-part generated"><code>70-100</code><span>Sample a binder length in this range and generate those residues.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section model-section" id="models">
+      <div class="section-heading">
+        <p class="eyebrow">07 · What each model computes</p>
+        <h2>Backbone generation is not sequence design</h2>
+      </div>
+      <div class="model-comparison">
+        <article>
+          <div class="model-icon diffusion-icon" aria-hidden="true">∿</div>
+          <h3>RFdiffusion</h3>
+          <p class="model-role">Structure generator</p>
+          <ul>
+            <li><strong>Conditions on:</strong> target coordinates, contigs and hotspot labels.</li>
+            <li><strong>Generates:</strong> backbone positions and orientations for a new chain.</li>
+            <li><strong>Output convention:</strong> generated residues are written as glycine placeholders.</li>
+            <li><strong>Does not report:</strong> a physical binding free energy.</li>
+          </ul>
+        </article>
+        <div class="handoff" aria-label="Structure is passed to ProteinMPNN"><span>backbone coordinates</span>→</div>
+        <article>
+          <div class="model-icon mpnn-icon" aria-hidden="true">ACDE</div>
+          <h3>ProteinMPNN</h3>
+          <p class="model-role">Inverse-folding sequence model</p>
+          <ul>
+            <li><strong>Conditions on:</strong> the fixed backbone and neighboring residues in three dimensions.</li>
+            <li><strong>Represents:</strong> residues as a geometric graph with spatial neighbor edges.</li>
+            <li><strong>Generates:</strong> amino-acid probabilities and sampled sequences.</li>
+            <li><strong>Decoding:</strong> follows sampled orders, not necessarily N-terminus to C-terminus.</li>
+          </ul>
+        </article>
+      </div>
+      <div class="sequence-demo">
+        <div><span>RFdiffusion placeholder</span><code>GGGGGGGGGGGGGGGGGG</code></div>
+        <div class="sequence-arrow">↓ ProteinMPNN conditions on 3D geometry</div>
+        <div><span>actual sample 1, first 18 residues</span><code class="colored-sequence">VEKAIKEAKKAIEEAKKA</code></div>
+        <p>This is the beginning of the selected 90-residue candidate from the real run above. ProteinMPNN sampled multiple sequences because sequence design is probabilistic and many sequences can support similar structures.</p>
+      </div>
+    </section>
+
+    <section class="section" id="validation">
+      <div class="section-heading">
+        <p class="eyebrow">08 · Validation and evidence</p>
+        <h2>What can we conclude from a predicted complex?</h2>
+      </div>
+      <div class="evidence-ladder">
+        <article><span>1</span><div><h3>Generation completed</h3><p>The code ran and produced a PDB. This proves only technical execution.</p></div></article>
+        <article><span>2</span><div><h3>Geometry passes basic checks</h3><p>The binder is compact, contacts the requested region and has no severe clashes.</p></div></article>
+        <article><span>3</span><div><h3>Sequence predicts back to the design</h3><p>A structure predictor recovers a similar binder fold and interface with low uncertainty.</p></div></article>
+        <article><span>4</span><div><h3>Orthogonal computational support</h3><p>Multiple seeds or predictors agree, and explicit interface calculations show no obvious physical defects.</p></div></article>
+        <article class="experimental-rung"><span>5</span><div><h3>Experimental binding</h3><p>Purified protein binds the target in a concentration-dependent assay. This is the first direct evidence of binding.</p></div></article>
+      </div>
+
+      <div class="metrics-table-wrap">
+        <table>
+          <caption>Recommended first-pass measurements</caption>
+          <thead><tr><th>Measurement</th><th>Question answered</th><th>What it cannot prove</th></tr></thead>
+          <tbody>
+            <tr><td>Hotspot contacts</td><td>Did the backbone reach the requested surface?</td><td>That those contacts are energetically favorable</td></tr>
+            <tr><td>Binder RMSD</td><td>Does prediction recover the designed binder fold?</td><td>Experimental folding or binding</td></tr>
+            <tr><td>Interface PAE</td><td>Is the relative chain placement confident?</td><td>A calibrated dissociation constant</td></tr>
+            <tr><td>Buried surface area</td><td>Is there a substantial physical interface?</td><td>Correct solvation thermodynamics</td></tr>
+            <tr><td>Clashes / polar satisfaction</td><td>Are there obvious atomic defects?</td><td>That slower rearrangements will not occur</td></tr>
+            <tr><td>BLI or SPR titration</td><td>Does purified binder associate, and with what apparent K<sub>d</sub>?</td><td>Cellular function or universal specificity</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="warning-grid">
+        <article><h3>Do not call the RFdiffusion trajectory dynamics</h3><p>Its timesteps are generative noise levels, not femtoseconds or a thermodynamic path.</p></article>
+        <article><h3>Do not interpret Boltz-2 affinity here</h3><p>Boltz-2 can be explored as a protein-complex structure cross-check, but its small-molecule affinity output is not a protein–protein K<sub>d</sub>.</p></article>
+        <article><h3>Do not select after seeing only one seed</h3><p>Generation and prediction are stochastic. Record seeds, settings, failures and all prespecified filters.</p></article>
+      </div>
+    </section>
+
+    <section class="section outputs-section" id="outputs">
+      <div class="section-heading">
+        <p class="eyebrow">09 · What was saved</p>
+        <h2>A reproducible small experiment</h2>
+      </div>
+      <div class="file-tree" role="img" aria-label="Proposed experiment directory tree">
+        <code>experiment/</code>
+        <code>├── README.md                 <span># question, hypothesis, stopping rule</span></code>
+        <code>├── config/</code>
+        <code>│   ├── rfdiffusion.yaml      <span># target, contig, hotspots, seeds</span></code>
+        <code>│   └── proteinmpnn.yaml      <span># sampling temperature, sequences/backbone</span></code>
+        <code>├── inputs/</code>
+        <code>│   └── insulin_target.pdb    <span># exact structure and provenance</span></code>
+        <code>└── runs/                     <span># generated, normally not committed</span></code>
+        <code>    ├── backbones/</code>
+        <code>    ├── sequences/</code>
+        <code>    ├── predictions/</code>
+        <code>    ├── metrics.csv</code>
+        <code>    └── run.json              <span># revisions, checkpoint, seed, hardware</span></code>
+      </div>
+      <p class="repro-note">RFdiffusion and ProteinMPNN source revisions, checkpoint hashes, environment details, seed, protocol and raw outputs are now pinned locally. Raw predictions remain git-ignored; this page contains a compact derived Cα trajectory and score summary.</p>
+    </section>
+
+    <section class="section glossary-section" id="glossary">
+      <div class="section-heading">
+        <p class="eyebrow">10 · Compact glossary</p>
+        <h2>Terms worth keeping separate</h2>
+      </div>
+      <div class="glossary-grid">
+        <details><summary>Backbone</summary><p>The repeating N–Cα–C atoms defining the main path of a protein chain. Side-chain identities are not determined by a backbone alone.</p></details>
+        <details><summary>Residue frame</summary><p>A local coordinate system describing a residue's position and orientation. RFdiffusion perturbs and denoises translations and rotations.</p></details>
+        <details><summary>SE(3) equivariance</summary><p>If an input complex is globally rotated or translated, the model's geometric output transforms consistently rather than changing its physical prediction.</p></details>
+        <details><summary>Hotspot</summary><p>In RFdiffusion, a labeled target residue used to direct the generated interface. It need not be a residue with experimentally measured energetic importance.</p></details>
+        <details><summary>Contig</summary><p>A compact specification of which residues are fixed, generated, connected or separated into different chains.</p></details>
+        <details><summary>Inverse folding</summary><p>Predicting amino-acid sequences compatible with a supplied three-dimensional protein backbone—the task performed by ProteinMPNN.</p></details>
+        <details><summary>pAE / PAE</summary><p>Predicted aligned error: uncertainty in relative residue positions after alignment. Interface PAE focuses on uncertainty between chains.</p></details>
+        <details><summary>K<sub>d</sub></summary><p>The equilibrium dissociation constant. A smaller K<sub>d</sub> generally indicates tighter binding under the stated experimental conditions.</p></details>
+      </div>
+    </section>
+
+    <section class="section sources-section" id="sources">
+      <div class="section-heading">
+        <p class="eyebrow">Primary sources</p>
+        <h2>Where the claims and code come from</h2>
+      </div>
+      <ol>
+        <li>Watson et al. <a href="https://doi.org/10.1038/s41586-023-06415-8">De novo design of protein structure and function with RFdiffusion</a>. <em>Nature</em> (2023).</li>
+        <li>Dauparas et al. <a href="https://doi.org/10.1126/science.add2187">Robust deep learning–based protein sequence design using ProteinMPNN</a>. <em>Science</em> (2022).</li>
+        <li>Jumper et al. <a href="https://doi.org/10.1038/s41586-021-03819-2">Highly accurate protein structure prediction with AlphaFold</a>. <em>Nature</em> (2021).</li>
+        <li>RosettaCommons. <a href="https://github.com/RosettaCommons/RFdiffusion/blob/main/README.md">RFdiffusion documentation</a> and <a href="https://github.com/RosettaCommons/RFdiffusion/blob/main/examples/design_ppi.sh">official insulin-receptor binder example</a>.</li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Built as a local, dependency-free teaching document. The first viewer uses real output; the conceptual laboratory remains explicitly schematic.</p>
+    <a href="#top">Back to top ↑</a>
+  </footer>
+
+  <script src="real-run-data.js"></script>
+  <script src="diversity-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

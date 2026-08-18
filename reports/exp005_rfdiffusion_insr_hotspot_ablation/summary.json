@@ -1,0 +1,67 @@
+{
+  "paired_seeds": [
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51
+  ],
+  "pairs_with_guided_minimum_hotspot_distance_smaller": 9,
+  "pairs_total": 10,
+  "guided_min_hotspot_CA_distance_A": {
+    "minimum": 5.0145,
+    "median": 6.3835,
+    "mean": 6.2447,
+    "maximum": 6.9713
+  },
+  "unguided_min_hotspot_CA_distance_A": {
+    "minimum": 6.26,
+    "median": 9.7155,
+    "mean": 10.9212,
+    "maximum": 19.9292
+  },
+  "guided_center_to_hotspot_centroid_A": {
+    "minimum": 11.2704,
+    "median": 14.926,
+    "mean": 15.0028,
+    "maximum": 20.3665
+  },
+  "unguided_center_to_hotspot_centroid_A": {
+    "minimum": 11.0488,
+    "median": 17.4138,
+    "mean": 18.046,
+    "maximum": 28.3783
+  },
+  "matched_contact_jaccard": {
+    "minimum": 0.0,
+    "median": 0.2447,
+    "mean": 0.249,
+    "maximum": 0.5714
+  },
+  "matched_pose_chamfer_A": {
+    "minimum": 4.5592,
+    "median": 9.4588,
+    "mean": 13.8569,
+    "maximum": 32.0986
+  },
+  "matched_center_displacement_A": {
+    "minimum": 3.1144,
+    "median": 16.3174,
+    "mean": 18.1925,
+    "maximum": 41.5236
+  },
+  "matched_intrinsic_trace_rmsd_A": {
+    "minimum": 3.4759,
+    "median": 14.2542,
+    "mean": 13.8018,
+    "maximum": 28.9828
+  },
+  "guided_designs_with_backbone_pairs_below_2A": 0,
+  "unguided_designs_with_backbone_pairs_below_2A": 0,
+  "interpretation": "Geometry-only hotspot-conditioning ablation; no sequence, affinity, or experimental validation."
+}

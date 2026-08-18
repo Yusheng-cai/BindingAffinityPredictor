@@ -1,0 +1,88 @@
+schema_version: 1
+source_note: Initial records were transcribed from docs/literature.md; downloaded primary-source PDFs are recorded with exact versions and SHA-256 checksums.
+
+records:
+  - key: passaro2025boltz2
+    topics: [Boltz-2, affinity_prediction, cofolding]
+    source_type: preprint
+    peer_reviewed: false
+    persistent_id: doi:10.1101/2025.06.14.659707
+    version: v1
+    posted: 2025-06-18
+    source_url: https://www.biorxiv.org/content/10.1101/2025.06.14.659707v1.full.pdf
+    review_status: annotated_in_legacy_map
+    local_note: null
+    local_pdf: literature/papers/boltz2_passaro_2025_v1.pdf
+    local_pdf_pages: 55
+    local_pdf_sha256: ff1bb85b4e8b3f49a76588ee47d6065648b89d8f92996f5ccf7dac94240d9d27
+    downloaded: 2026-08-16
+    access_status: CC-BY-4.0
+
+  - key: shenoy2026nesso1
+    topics: [Nesso-1, affinity_prediction, coarse_grained_cofolding]
+    source_type: preprint
+    peer_reviewed: false
+    persistent_id: doi:10.64898/2026.08.01.742196
+    version: v1
+    posted: 2026-08-03
+    source_url: https://www.biorxiv.org/content/10.64898/2026.08.01.742196v1.full.pdf
+    review_status: downloaded_not_reviewed
+    local_note: null
+    local_pdf: literature/papers/nesso1_shenoy_2026_v1.pdf
+    local_pdf_pages: 20
+    local_pdf_sha256: 6f364e73ebdc37c06010220f51f9afa05f287a5c8568fb801240df27f2bb7c94
+    downloaded: 2026-08-16
+    access_status: CC-BY-4.0
+
+  - key: jiang2026flashbind
+    topics: [FlashBind, FlashAffinity, affinity_prediction, virtual_screening, docking]
+    source_type: preprint
+    peer_reviewed: false
+    persistent_id: doi:10.64898/2025.12.22.695983
+    version: v2
+    posted: 2026-04-08
+    source_url: https://www.biorxiv.org/content/10.64898/2025.12.22.695983v2.full.pdf
+    version_note: Version 1 was titled FlashAffinity; version 2 is retitled FlashBind and contains expanded prospective results.
+    review_status: downloaded_not_reviewed
+    local_note: null
+    local_pdf: literature/papers/flashbind_jiang_2026_v2.pdf
+    local_pdf_pages: 23
+    local_pdf_sha256: 08ab946f3367a9d4c74c2e2e2d35cfcf4d388134aa89bd5c46fce34c17d7f864
+    downloaded: 2026-08-16
+    access_status: all_rights_reserved
+
+  - key: abramson2024alphafold3
+    topics: [AlphaFold3, cofolding, diffusion]
+    source_type: journal_article
+    peer_reviewed: true
+    persistent_id: doi:10.1038/s41586-024-07487-w
+    review_status: annotated_in_legacy_map
+    local_note: null
+    local_pdf: null
+
+  - key: gainza2020masif
+    topics: [MaSIF, protein_surfaces, binding_sites]
+    source_type: journal_article
+    peer_reviewed: true
+    persistent_id: doi:10.1038/s41592-019-0666-6
+    review_status: annotated_in_legacy_map
+    local_note: null
+    local_pdf: null
+
+  - key: hahn2022bindingbenchmarks
+    topics: [benchmark_design, affinity, assay_consistency]
+    source_type: journal_article
+    peer_reviewed: true
+    persistent_id: doi:10.33011/livecoms.4.1.1497
+    review_status: annotated_in_legacy_map
+    local_note: null
+    local_pdf: null
+
+  - key: buttenschoen2024posebusters
+    topics: [pose_validation, docking, generalization]
+    source_type: journal_article
+    peer_reviewed: true
+    persistent_id: doi:10.1039/D3SC04185A
+    review_status: annotated_in_legacy_map
+    local_note: null
+    local_pdf: null

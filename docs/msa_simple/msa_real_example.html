@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MSA in a real file format</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --ink: #151a2a;
+      --muted: #57617a;
+      --accent: #2055d8;
+      --good: #e7f7ef;
+      --note: #fff4e5;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    body { padding: 2rem; }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      display: grid;
+      gap: 1rem;
+    }
+    .card {
+      background: var(--card);
+      padding: 1rem 1.2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(21, 26, 42, 0.08);
+    }
+    h1 { margin: 0 0 0.45rem; font-size: 1.8rem; }
+    h2 { margin: 1rem 0 0.45rem; font-size: 1.22rem; }
+    p { margin: 0.45rem 0; }
+    .mini { color: var(--muted); font-size: 0.95rem; }
+    .seq, pre {
+      font-family: var(--mono);
+      white-space: pre;
+      background: #f2f5ff;
+      border: 1px solid #dbe5ff;
+      padding: 0.8rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.94rem;
+    }
+    .conserved {
+      background: #dff3e3;
+      font-weight: 600;
+      padding: 0 2px;
+      border-radius: 4px;
+    }
+    .mixed {
+      background: #fff0d2;
+      padding: 0 2px;
+      border-radius: 4px;
+    }
+    .note {
+      background: var(--note);
+      border-left: 4px solid #db8f2a;
+      padding: 0.7rem 0.9rem;
+      border-radius: 8px;
+    }
+    .ok {
+      background: #e8f5ff;
+      border-left: 4px solid #1f65db;
+      padding: 0.7rem 0.9rem;
+      border-radius: 8px;
+    }
+    .step {
+      margin: 0.35rem 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .step .num {
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 999px;
+      background: #dae0f8;
+      color: #1b2c62;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+      font-weight: 700;
+    }
+    a { color: var(--accent); }
+    .smallbtn {
+      display: inline-block;
+      margin: 0.4rem 0.3rem 0 0;
+      padding: 0.4rem 0.75rem;
+      background: #eef2ff;
+      border: 1px solid #c8d4ff;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #1b2c62;
+    }
+    .label {
+      color: #2f3f70;
+      font-size: 0.9rem;
+      margin-top: 0.4rem;
+      display: inline-block;
+      background: #eef1f9;
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+      border: 1px solid #d9dfef;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card">
+      <h1>MSA in a real format</h1>
+      <p class="mini">Now using a FASTA/A3M-style view (same idea, more realistic for structure models).</p>
+      <p>Example input for one target protein and two homologs:</p>
+      <pre class="seq">&gt;target
+MKVAILVVLLYTIFKAFSDAE
+&gt;seq1
+MKVAILVVLLYTIFKAFSDAE
+&gt;seq2
+M--AILVVLLYTIYKA-NAE
+&gt;seq3
+MKVAILVVL IYTIFKAESAE</pre>
+      <p class="mini">In real MSA files, the software may hide lower-quality or near-duplicate rows, and sometimes use lowercase letters for masked positions. We keep this simple here.</p>
+    </section>
+
+    <section class="card">
+      <h2>Reading columns</h2>
+      <p>Make an alignment with exact index columns:</p>
+      <pre class="seq">1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17
+target MKVAILVVLLYTIFKAFSDAE
+seq1  MKVAILVVLLYTIFKAFSDAE
+seq2  M--AILVVLLYTIYKA-NAE
+seq3  MKVAILVVL IYTIFKAESAE</pre>
+      <p class="mini">Column-by-column meaning:</p>
+      <div class="seq">1-3: very conserved core positions
+4-6: mostly conserved
+7-12: mostly identical with one deletion in seq2
+13: seq2 has Y, target has K (variation), seq3 has E (more variation)
+14-17: seq2 gap, target has AFS D, seq3 has ESAE (variation)
+</div>
+    </section>
+
+    <section class="card">
+      <h2>Mini “conservation score” (toy)</h2>
+      <p class="mini">Use it as intuition, not as an absolute truth.</p>
+      <div class="step"><span class="num">1</span><span>For each column, count the non-gap residues.</span></div>
+      <div class="step"><span class="num">2</span><span>Find the most frequent residue frequency.</span></div>
+      <div class="step"><span class="num">3</span><span>High frequency (e.g., 95%) = highly conserved; low frequency = variable.</span></div>
+      <div class="step"><span class="num">4</span><span>Ignore occasional outliers and check whether conserved residues are near active-site/structural regions.</span></div>
+      <div class="ok">
+        This is why conserved columns are useful priors for structure and interface geometry in models like Boltz-2.
+      </div>
+      <p>Toy score line for columns 1-10 from the mini MSA:</p>
+      <pre class="seq">col:    1 2 3 4 5 6 7 8 9 10
+entropy: L H H H H L H H H H</pre>
+      <p class="mini">L = low entropy (conserved), H = high-ish entropy (variable).</p>
+    </section>
+
+    <section class="card">
+      <h2>How this connects to Boltz-2 run</h2>
+      <p class="mini">Boltz-2 does not read smiles from the MSA; it reads your protein sequence and the aligned homolog context around it.</p>
+      <div class="note">
+        On a real run with <code>--use_msa_server</code>, Boltz asks ColabFold/MMseqs2 for homologs, aligns them, and stores files like <code>uniref.a3m</code> and other MSA files locally, then converts them into model input features.
+      </div>
+      <p>What to look for in outputs:</p>
+      <ul>
+        <li>Is the output folder populated with <code>msa/</code> and processed feature files?</li>
+        <li>Did MSA generation succeed or get skipped because it existed from an earlier run?</li>
+        <li>Does the final structure keep conserved positions stable and plausible?</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <a href="index.html" class="smallbtn">← Back to simple intro</a>
+      <p class="mini">For your existing project flow, next we can add a tiny “MSA inspector” command snippet that prints alignment depth and top conserved positions from a generated .a3m.</p>
+    </section>
+  </div>
+</body>
+</html>

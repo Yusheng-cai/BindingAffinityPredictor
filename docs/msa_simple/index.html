@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MSA in 2 minutes</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --ink: #151a2a;
+      --muted: #57617a;
+      --accent: #2055d8;
+      --good: #e7f7ef;
+      --note: #fff4e5;
+      --bad: #ffe9e9;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    body {
+      line-height: 1.55;
+      padding: 2rem;
+    }
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      gap: 1rem;
+    }
+    .card {
+      background: var(--card);
+      padding: 1rem 1.2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(21, 26, 42, 0.08);
+    }
+    h1 { margin: 0 0 0.4rem; font-size: 1.8rem; }
+    h2 { margin: 1.1rem 0 0.5rem; font-size: 1.2rem; }
+    p, li { color: var(--ink); }
+    .mini {
+      color: var(--muted);
+      margin-top: 0;
+      font-size: 0.95rem;
+    }
+    .explain {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 0.8rem;
+    }
+    pre, code, .msa {
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      white-space: pre;
+    }
+    .seq {
+      background: #f2f5ff;
+      padding: 0.8rem;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    .conserved {
+      background: var(--good);
+      padding: 0.06rem 0.18rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .gap {
+      color: #9aa4bc;
+    }
+    .toggle {
+      margin-top: 0.6rem;
+      border: 1px solid #c9d2ee;
+      background: #eef2ff;
+      color: #15244f;
+      border-radius: 8px;
+      padding: 0.45rem 0.8rem;
+      cursor: pointer;
+    }
+    .note {
+      background: var(--note);
+      border-left: 4px solid #db8f2a;
+      padding: 0.7rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .warning {
+      background: var(--bad);
+      border-left: 4px solid #c13a45;
+      padding: 0.7rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      margin-top: 0.7rem;
+    }
+    .pill {
+      font-size: 0.82rem;
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      background: #eef3ff;
+      color: #1a2b61;
+      margin-right: 0.4rem;
+    }
+    .step {
+      margin: 0.35rem 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .step .num {
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 999px;
+      background: #dae0f8;
+      color: #1b2c62;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+      font-weight: 700;
+    }
+    footer {
+      font-size: 0.85rem;
+      color: #6a7387;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card">
+      <h1>What is an MSA?</h1>
+      <p class="mini">
+        <span class="pill">Simple version first</span>
+        MSA (Multiple Sequence Alignment) means lining up similar protein sequences so equivalent positions can be compared directly.
+      </p>
+      <p>Think of it like this: take three similar sentences and insert spaces so shared words stay in the same column.</p>
+      <div class="explain">
+        <div>
+          <h2>Unaligned (hard to compare)</h2>
+          <pre class="seq">Rosa likes apples
+Rosa really likes red apples
+Rosa likes pie</pre>
+        </div>
+        <div>
+          <h2>Aligned (easy to compare)</h2>
+          <pre class="seq">Rosa likes  apples
+Rosa really likes red apples
+Rosa likes -- pie--</pre>
+        </div>
+      </div>
+      <p>This lets us say where a letter/word is inserted, missing, or changed across related proteins.</p>
+    </section>
+
+    <section class="card">
+      <h2>Toy protein MSA example</h2>
+      <p class="mini">Toy amino-acid letters (not a real protein).</p>
+      <div class="explain">
+        <div>
+          <h2>Before alignment</h2>
+          <pre class="seq">&gt;protA
+MAFELKQ
+
+&gt;protB
+MAFKQ
+
+&gt;protC
+MAFELQ</pre>
+        </div>
+        <div>
+          <h2>After alignment</h2>
+          <pre class="seq">M A F E L K Q
+M A F - - K Q
+M A F E L - Q</pre>
+        </div>
+      </div>
+      <p>Gaps (<span class="gap">-</span>) are inserted so residues are put into comparable columns.</p>
+      <p>Conserved positions are highlighted:</p>
+      <pre class="seq">
+<span class="conserved">M</span> <span class="conserved">A</span> <span class="conserved">F</span> E L <span class="conserved">K</span> <span class="conserved">Q</span>
+<span class="conserved">M</span> <span class="conserved">A</span> <span class="conserved">F</span> - - <span class="conserved">K</span> <span class="conserved">Q</span>
+<span class="conserved">M</span> <span class="conserved">A</span> <span class="conserved">F</span> E L - <span class="conserved">Q</span>
+</pre>
+    </section>
+
+    <section class="card">
+      <h2>Why Boltz-2 cares about MSA</h2>
+      <p class="mini">Practical meaning for your project.</p>
+      <div class="step"><span class="num">1</span><span>For one protein family, MSA tells Boltz-2 which positions are evolutionarily conserved.</span></div>
+      <div class="step"><span class="num">2</span><span>Conserved positions often correspond to structural/functional constraints (fold and active-site residues).</span></div>
+      <div class="step"><span class="num">3</span><span>Boltz-2 can use this signal to improve structure likelihood and potentially ligand placement quality.</span></div>
+      <div class="warning">
+        A warning: MSA is only evolutionary signal from sequence databases. It does not encode ligand atoms or binding constants by itself.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Small practical check for our benchmark</h2>
+      <div class="note">
+        For your TYK2 smoke test, if you run with <code>--use_msa_server</code>, Boltz-2 fetches a protein MSA from ColabFold/MMseqs2 online and saves it locally before sampling structures. Without it, the model can still run (with less context).</div>
+      <p class="mini">This page is intentionally simple first. If you want, I can add a second page with:</p>
+      <ul>
+        <li>“single position mutation” example</li>
+        <li>how to read an MSA from a real FASTA file</li>
+        <li>how column variation impacts conservation score</li>
+      </ul>
+      <p><a href="../affinity_models/index.html">Compare current protein–ligand affinity models and benchmarks</a>.</p>
+      <p><a href="../model-notes/boltz2_architecture.html">Go to Boltz-2 model representation and architecture page</a>.</p>
+      <p><a href="msa_real_example.html">Go to second page: real-style MSA example</a>.</p>
+    </section>
+
+    <footer>
+      Tip: open by running <code>python3 -m http.server 8000</code> inside <code>docs/msa_simple</code>, then browse <code>http://localhost:8000</code>.
+    </footer>
+  </div>
+
+  <script>
+    document.querySelector('.warning')?.addEventListener('click', () => {});
+  </script>
+</body>
+</html>

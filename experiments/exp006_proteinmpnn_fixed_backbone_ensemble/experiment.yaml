@@ -1,0 +1,141 @@
+id: exp006_proteinmpnn_fixed_backbone_ensemble
+title: ProteinMPNN sequence ensemble on one fixed RFdiffusion backbone
+status: completed_identity_and_entropy_analysis
+question: Given one fixed RFdiffusion target-binder backbone, how diverse are the sequences ProteinMPNN considers compatible with it, and which positions are constrained by the receptor interface?
+hypothesis: ProteinMPNN will generate a non-identical sequence ensemble with position-dependent conservation while preserving the fixed 90-residue binder backbone.
+
+model: configs/models/proteinmpnn.yaml
+
+input:
+  pdb_path: runs/exp003_rfdiffusion_insr_binder_smoke/rfdiffusion/seed42/raw/design_ppi_42.pdb
+  sha256: 2e68ae2e859b660ea2cf158be121dad6622e34ae87991eed3b286cd64b567b44
+  provenance_experiment: exp003_rfdiffusion_insr_binder_smoke
+  receptor_chain: A
+  receptor_residues: 150
+  designed_binder_chain: B
+  binder_residues: 90
+  backbone_selected_by_downstream_score: false
+
+proteinmpnn:
+  source_revision: 8907e6671bfbfc92303b5f79c4b5e6ce47cdef57
+  model_name: v_48_020
+  checkpoint_sha256: c9cb4a671d79604111231f8dbfc7c590e06f1197453b7a6854ac6661a642f5bd
+  fixed_chains: [A]
+  designed_chains: [B]
+  sampling_temperature: 0.1
+  backbone_noise_angstrom: 0.0
+  batch_seeds: [6000, 6001, 6002, 6003, 6004, 6005, 6006, 6007, 6008, 6009]
+  sequences_per_batch: 10
+  total_sequences: 100
+  batch_size: 1
+  save_probabilities: true
+  save_scores: true
+
+execution:
+  device: cpu
+  reason: Avoid contention with an unrelated active GROMACS GPU simulation.
+  python_executable: /home/yusheng/anaconda3/bin/python
+  pytorch_version: 2.5.1
+  environment_note: Compatibility-tested existing NVMe environment; stochastic samples are not assumed bitwise identical to the earlier PyTorch 1.9.1 smoke test.
+  cuda_visible_devices: ""
+  omp_num_threads: 1
+  blas_num_threads: 1
+  low_process_priority: true
+  low_io_priority: true
+
+protocol_deviations_before_results:
+  - initial_attempt:
+      python_executable: external/envs/rfdiffusion/bin/python
+      pytorch_version: 1.9.1
+      status: interrupted_before_model_load_or_sequence_generation
+      elapsed_seconds: 326.627
+      reason: Severe HDD paging while loading 3.5 GB of CUDA-linked PyTorch libraries.
+  - approved_restart:
+      python_executable: /home/yusheng/anaconda3/bin/python
+      pytorch_version: 2.5.1
+      compatibility_test_exit_status: 0
+      compatibility_test_wall_seconds: 3.71
+
+outputs:
+  run_root: runs/exp006_proteinmpnn_fixed_backbone_ensemble/proteinmpnn/fixed_backbone_cpu
+  raw_batches: batch_seed<seed>/raw
+  aggregate_predictions: sequences.csv
+  run_metadata: run.json
+  environment_snapshot: environment.txt
+  gpu_snapshot: nvidia_smi_before.txt
+
+success_criteria:
+  - all_ten_batch_exit_statuses_zero
+  - exactly_ten_sampled_sequences_per_batch
+  - exactly_one_hundred_aggregate_samples
+  - every_binder_sequence_length_is_90
+  - native_probability_archives_retained
+  - native_score_archives_retained
+  - provenance_and_resource_use_recorded
+
+not_success_criteria:
+  - all_sequences_unique
+  - favorable_binding_affinity
+  - experimental_binding
+  - foldability
+  - specificity
+
+stopping_rule: Stop after generation and engineering audit; review the ensemble-analysis and candidate-selection policy before downstream all-atom prediction.
+
+observed_results:
+  completed_at: 2026-08-16
+  exit_statuses_zero: 10
+  batches: 10
+  samples: 100
+  unique_sequences: 100
+  binder_sequence_length: 90
+  wall_seconds: 162.899
+  peak_batch_resident_kib: 658016
+  designed_chain_score:
+    minimum: 0.7159
+    median: 0.81095
+    maximum: 0.9584
+  pairwise_sequence_identity:
+    minimum: 0.3777777778
+    median: 0.6666666667
+    maximum: 0.9
+  empirical_position_entropy_nats:
+    minimum: 0.0
+    median: 0.6484921745
+    maximum: 1.2730506164
+  invariant_positions_in_sample: 17
+  fraction_A_E_K: 0.7208
+  native_probability_archives: 10
+  native_score_archives: 10
+  aggregate_predictions_sha256: af50aea807f4da5b00735642e7f24535ca23b567e0820728a3f3f425aa306727
+  proteinmpnn_used_gpu: false
+
+sequence_analysis:
+  identity_definition: ungapped_position_wise_identity_on_the_shared_90_residue_backbone
+  clustering_distance: one_minus_identity
+  clustering_linkage: average
+  hard_cut_sensitivity:
+    identity_cut_0.50_clusters: 1
+    identity_cut_0.60_clusters: 2
+    identity_cut_0.70_clusters: 15
+    identity_cut_0.80_clusters: 71
+    identity_cut_0.90_clusters: 99
+  entropy_estimator: empirical_plugin_shannon_entropy_nats
+  finite_sample_bias_correction: false
+  most_variable_positions: [1, 46, 11, 56, 63, 81]
+  outputs:
+    pairwise_identity_csv:
+      path: reports/exp006_proteinmpnn_fixed_backbone_ensemble/pairwise_identity.csv
+      sha256: e89861e6f8c7d7f8cf9e292a5978c53472c747548e910b2466a4476d98218b6b
+    sequence_clusters_csv:
+      path: reports/exp006_proteinmpnn_fixed_backbone_ensemble/sequence_clusters.csv
+      sha256: beb3fae4fed5db4181ebec0a47bc3616e649b12573e50a6f31b419d65117181d
+    position_entropy_csv:
+      path: reports/exp006_proteinmpnn_fixed_backbone_ensemble/position_entropy.csv
+      sha256: e95a13786b6fa956dae32abfa326fc817d204775e4f5abc3290ee1082eda7fae
+    summary_json:
+      path: reports/exp006_proteinmpnn_fixed_backbone_ensemble/sequence_analysis_summary.json
+      sha256: 8539d3479c724e55221b1fe876748dd2b075da36740abbd3aeb495808dff1eaf
+    interactive_entropy_backbone:
+      path: reports/exp006_proteinmpnn_fixed_backbone_ensemble/entropy_backbone.html
+      sha256: 66dc5a91415911a8369f5a9ceaac555c66848ad3983a66e5a003308e1aa1058d

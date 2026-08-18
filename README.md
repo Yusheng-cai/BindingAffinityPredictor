@@ -26,24 +26,28 @@ The project begins with Boltz-2 and is designed to add Nesso-1, FlashBind/FlashA
 | `scripts/` | Thin command-line entry points and operational helpers | Tracked |
 | `runs/` | Raw predictions, logs, and run metadata | Ignored except documentation |
 | `reports/` | Compact reviewed summaries, tables, and figures | Tracked |
-| `notebooks/` | Exploratory analysis that calls reusable project code | Tracked |
+| `weeks/` | Self-contained weekly code, notebooks, compact results, and reports | Tracked |
+| `notebooks/` | Cross-project and educational notebooks | Tracked |
 | `tests/` | Unit and small integration tests | Tracked |
 
 External model repositories and installed programs are not vendored here. Their exact source revisions, checkpoints, and environment details will be recorded in model configurations.
 
 ## Current status
 
-The repository scaffold and the protocol for `exp001_boltz2_4gih_smoke` are in
-place. The local, dependency-free tests validate the frozen one-complex manifest
-and the affinity-unit conversions. The pinned Boltz source, isolated Python
-environment, chemical-component data, and both Boltz-2 checkpoints are installed
-and verified. No MSA, experimental coordinate file, or prediction has been
-generated yet.
+The 2026-W34 workflow contains a completed released-model reproduction on the
+87-compound FEP+ four-kinase benchmark for Nesso-1, Boltz-2 with an explicitly
+documented 1,024-sequence MSA subsample, and FlashBind using the authors'
+released FABind+ poses and representations. A 16-complex crystal subset also
+compares Boltz-2 and FlashBind ligand-pose RMSD.
 
-The first model run is intentionally one TYK2 complex and one seed. It is a
-pipeline and interpretation smoke test, not an affinity benchmark. If that run
-is technically successful, the next stages are repeated seeds and then the
-complete single-assay TYK2 congeneric series.
+Start at `weeks/2026-W34/code/README.md` for the complete pinned setup,
+download, input-preparation, inference, analysis, and report workflow. Large
+external artifacts remain in ignored cache and run directories; Git tracks the
+scientific protocols, source revisions, checksums, canonical code, compact
+results, and weekly report.
+
+For a presentation-first view, start at
+[`weeks/2026-W34/README.md`](weeks/2026-W34/README.md).
 
 ## Local checks (no downloads)
 

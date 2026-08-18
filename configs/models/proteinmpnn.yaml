@@ -1,0 +1,15 @@
+name: proteinmpnn
+role: structure_conditioned_protein_sequence_generator
+source_url: https://github.com/dauparas/ProteinMPNN
+source_revision: 8907e6671bfbfc92303b5f79c4b5e6ce47cdef57
+
+checkpoint:
+  model_name: v_48_020
+  filename: vanilla_model_weights/v_48_020.pt
+  sha256: c9cb4a671d79604111231f8dbfc7c590e06f1197453b7a6854ac6661a642f5bd
+
+interpretation:
+  native_output: amino_acid_probabilities_and_sampled_sequences
+  score: mean_negative_log_probability
+  lower_score_is_more_likely_under_model: true
+  score_is_binding_affinity: false

@@ -1,0 +1,74 @@
+id: flashbind_f161268
+status: installed_verified_and_fepplus4_87_run_complete
+observed_on: 2026-08-17
+
+implementation:
+  source_url: https://github.com/AIDD-Lab/FlashBind
+  source_revision: f161268176237ab6ce5757031a8c1b93937e0d37
+  clone_path: /home/yusheng/source/FlashBind
+  environment_path: /home/yusheng/programs/flashbind-f161268
+  environment_note: isolated CUDA-12.1 inference environment; see environments/flashbind-f161268/README.md
+
+checkpoints:
+  repository: https://huggingface.co/clorf6/FlashBind
+  repository_revision: fa6362c85b3350109af4634e3e2c364644338b3c
+  ensemble:
+    - file: value_1.ckpt
+      size_bytes: 71635751
+      sha256: ca87f84dedd4642da693a508b1119c802caa370e356dad31c47b8a708821e553
+    - file: value_2.ckpt
+      size_bytes: 71635751
+      sha256: 59fa2686b0859a632862aec21ea69f2bebb1ab104e48606fe739c929368d488d
+
+released_fep4_input:
+  repository: https://huggingface.co/datasets/clorf6/FlashBind
+  repository_revision: 50b1511e080236d80f9b8ff1e4d0cd38bb2480b9
+  archive: fep4.tar.zst
+  size_bytes: 5046181
+  sha256: c09047cb8c2e8212816b6bdbe1581f56a696b13773c8ec743da4d12b0c14678d
+  identity_check: 87_of_87_target_and_InChIKey_matches_to_data_manifests_fepplus4_87_json
+  label_check: 87_of_87_log10_uM_labels_match_with_max_absolute_difference_4_44e-16
+  receptor_check: four_of_four_PDB_files_byte_identical_to_data_raw_fepplus4_protein_pdb
+
+input:
+  mode: released_precomputed_FABind_plus_poses
+  protein_structure: one_fixed_PDB_per_target
+  ligand_structure: one_FABind_plus_docked_SDF_pose_per_pair
+  protein_representation: released_ESM3_LMDB
+  ligand_representation: released_TorchDrug_LMDB
+  pocket_indices: none
+
+inference:
+  task: value
+  devices: 1
+  accelerator: gpu
+  distance_threshold_angstrom: 20.0
+  ensemble: arithmetic_mean_of_two_released_value_checkpoints
+  seed: 42
+  deterministic_by_upstream_design: true
+
+native_outputs:
+  continuous_affinity:
+    field: pred_value
+    scale: log10_IC50_Ki_or_Kd_in_micromolar
+    direction: lower_is_stronger
+    calibration: upstream_molecular_weight_correction_applied
+  continuous_affinity_raw:
+    field: pred_value_raw
+    scale: upstream_uncalibrated_native_score
+    direction: lower_is_stronger
+  molecular_weight:
+    field: mw
+    unit: dalton
+
+interpretation:
+  - This configuration tests the released scorer on authors' precomputed FABind+ poses; it is not an independent redocking test.
+  - The labels mix IC50, Ki, and Kd semantics and are not equilibrium binding free energies.
+
+verification:
+  smoke_record: cdk2_lig-17
+  smoke_status: both_checkpoints_and_ensemble_finite
+  full_run_complete_samples: 87
+  full_run_failed_samples: 0
+  observed_weighted_pearson_r: 0.5332735491494067
+  paper_reference_weighted_pearson_r: 0.53
