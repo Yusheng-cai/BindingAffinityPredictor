@@ -86,3 +86,21 @@ records:
     review_status: annotated_in_legacy_map
     local_note: null
     local_pdf: null
+
+  - key: watson2023rfdiffusion
+    topics: [RFdiffusion, protein_design, diffusion, binder_design]
+    source_type: journal_article
+    peer_reviewed: true
+    persistent_id: doi:10.1038/s41586-023-06415-8
+    review_status: summarized_in_educational_notebook
+    local_note: null
+    local_pdf: null
+
+  - key: dauparas2022proteinmpnn
+    topics: [ProteinMPNN, protein_design, sequence_design, graph_neural_network]
+    source_type: journal_article
+    peer_reviewed: true
+    persistent_id: doi:10.1126/science.add2187
+    review_status: summarized_in_educational_notebook
+    local_note: null
+    local_pdf: null

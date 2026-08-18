@@ -1,0 +1,25 @@
+workflow_id: 2026-W35_architecture_and_binder_design
+status: draft_report_reusing_reviewed_outputs
+
+entry_points:
+  - build_report.sh
+
+scientific_scope:
+  affinity_architecture_example: TYK2--4GIH
+  binder_design_example: insulin-receptor target A1--A150
+  rfdiffusion_experiments: [exp003, exp004, exp005]
+  proteinmpnn_experiment: exp006
+  new_model_inference: false
+
+canonical_material:
+  - notebooks/real_rfdiffusion_proteinmpnn_insr.ipynb
+  - notebooks/mini_rfdiffusion_proteinmpnn.ipynb
+  - reports/exp003_rfdiffusion_insr_binder_smoke/README.md
+  - reports/exp004_rfdiffusion_insr_structural_diversity/README.md
+  - reports/exp005_rfdiffusion_insr_hotspot_ablation/README.md
+  - reports/exp006_proteinmpnn_fixed_backbone_ensemble/README.md
+
+evidence_boundary:
+  generated_backbones_are_binding_predictions: false
+  proteinmpnn_scores_are_affinities: false
+  experimental_validation_available: false

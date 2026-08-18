@@ -1,0 +1,47 @@
+week: 2026-W35
+date_range: 2026-08-24_to_2026-08-30
+title: Affinity-model architecture and the RFdiffusion--ProteinMPNN binder-design workflow
+status: draft_local_compiled
+
+project_git_revision: 36f70c9da1701990ac90ffdc809b7f29e135fd35
+working_tree_dirty_at_build: true
+
+overleaf:
+  configured: false
+  project: null
+  revision: null
+
+experiments:
+  - experiments/exp003_rfdiffusion_insr_binder_smoke/experiment.yaml
+  - experiments/exp004_rfdiffusion_insr_structural_diversity/experiment.yaml
+  - experiments/exp005_rfdiffusion_insr_hotspot_ablation/experiment.yaml
+  - experiments/exp006_proteinmpnn_fixed_backbone_ensemble/experiment.yaml
+
+citations:
+  - watson2023rfdiffusion
+  - dauparas2022proteinmpnn
+  - passaro2025boltz2
+  - shenoy2026nesso1
+  - jiang2026flashbind
+
+interactive_notebooks:
+  - notebooks/real_rfdiffusion_proteinmpnn_insr.ipynb
+  - notebooks/mini_rfdiffusion_proteinmpnn.ipynb
+
+commands:
+  - bash weeks/2026-W35/code/build_report.sh
+
+workflow_code:
+  path: weeks/2026-W35/code
+  manifest: weeks/2026-W35/code/workflow_manifest.yaml
+
+pdf:
+  path: weeks/2026-W35/report/report.pdf
+  pages: 4
+  latex_engine: pdflatex
+  sha256: d358a7727928c4d45818b43b0c092e03cf00f8cee88efd0b0b505fa44575cefa
+
+bibliography_snapshot:
+  path: weeks/2026-W35/report/references.bib
+  canonical_source: literature/references.bib
+  sha256: f2f1b9a2aebc5263f73ad5b46bbf4ff8cb04092e691e01f21ab84fdf04f96bff

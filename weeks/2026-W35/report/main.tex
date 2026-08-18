@@ -1,0 +1,219 @@
+\documentclass[11pt]{article}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+
+\definecolor{accent}{HTML}{2E7180}
+\definecolor{light}{HTML}{EAF3F5}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\title{Week 35 Draft: Affinity-Model Architecture and\\
+RFdiffusion--ProteinMPNN Binder Design}
+\author{Yusheng Cai}
+\date{August 24--30, 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Executive summary}
+
+This report will address two connected but scientifically distinct workflows.
+The first is \textbf{affinity prediction}: Boltz-2, Nesso-1, and FlashBind map
+protein--small-molecule information to an affinity score, with different use
+of sequence, MSA, pocket, and three-dimensional coordinates. The second is
+\textbf{protein-binder design}: RFdiffusion proposes a binder backbone around
+a target protein and ProteinMPNN assigns amino-acid sequences compatible with
+that backbone \citep{watson2023rfdiffusion,dauparas2022proteinmpnn}.
+
+RFdiffusion and ProteinMPNN are included because they expose a useful location
+for adding physical information during design. They are not affinity models,
+and their native scores are not binding free energies or probabilities of
+experimental success. I will keep their analysis separate from the
+small-molecule affinity benchmark and use the audited insulin-receptor example
+as a concrete worked case.
+
+\section{Questions for the week}
+
+\begin{enumerate}
+  \item What tensors and geometric representations connect the input of each
+  affinity model to its affinity head?
+  \item What exactly do RFdiffusion and ProteinMPNN receive and return?
+  \item How do hotspot conditioning and stochastic sampling alter the proposed
+  binder backbone?
+  \item Where could a physics-aware interface score enter the binder-design
+  workflow without being confused with ProteinMPNN likelihood?
+\end{enumerate}
+
+\clearpage
+\section{Two different prediction problems}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabular}{L{0.19\textwidth}L{0.23\textwidth}L{0.24\textwidth}L{0.21\textwidth}}
+\toprule
+Task & Representative input & Native output & Appropriate evaluation \\
+\midrule
+Small-molecule affinity prediction & Protein sequence or structure and ligand chemistry/pose & Affinity score, and for Boltz-2 a cofolded complex & Within-target affinity correlation; protein and ligand structure recovery when references exist \\
+RFdiffusion binder generation & Target coordinates, contig, optional hotspot residues, checkpoint, and random seed & Target plus a generated binder backbone and reverse-diffusion trajectories & Backbone geometry, target-relative pose, contacts, clashes, diversity, and downstream validation \\
+ProteinMPNN sequence design & Fixed target/binder backbone, design mask, checkpoint, temperature, and seed & Amino-acid sequences, per-residue probabilities, and sequence-model scores & Sequence diversity, structural compatibility, independent complex prediction, physical interface checks, and experiment \\
+\bottomrule
+\end{tabular}
+\caption{The native outputs answer different questions. In particular,
+ProteinMPNN likelihood is not an affinity, and RFdiffusion confidence is not a
+binding measurement.}
+\end{table}
+
+\section{RFdiffusion: target-conditioned backbone generation}
+
+\subsection{Input and output}
+
+In the binder-design setting, RFdiffusion receives a three-dimensional target
+structure and a contig specification that identifies fixed target residues and
+the length or length range of the new chain. Optional hotspot residues nominate
+the target region where an interface should be formed. The checkpoint and
+random seed are also scientifically important inputs because different
+checkpoints encode different training tasks and different seeds generate
+different samples.
+
+Only the binder is diffused in the target-conditioned protocol. The target
+coordinates remain fixed and provide conditioning throughout reverse
+diffusion. A simplified input--output statement is
+\[
+  (\text{target coordinates},\ \text{contig},\ \text{hotspots},\ \text{seed})
+  \longrightarrow
+  (\text{target} + \text{binder backbone},\ \text{trajectory}).
+\]
+The generated chain is initially represented as a backbone proposal; it is not
+a chemically complete protein and it has no designed amino-acid sequence.
+
+\subsection{Why equivariance matters}
+
+RFdiffusion represents protein geometry using residue-level positions and
+orientations. If every input coordinate is transformed by the same rigid
+motion,
+\[
+  \mathbf{x}_i' = Q\mathbf{x}_i + \mathbf{a},
+\]
+the denoised output should transform by the same $Q$ and $\mathbf{a}$. This
+SE(3)-equivariance prevents the model from attaching meaning to the arbitrary
+orientation of a protein in a coordinate file. It also explains why geometric
+guidance should depend on invariant distances, angles, contacts, or energies,
+rather than laboratory-frame Cartesian coordinates.
+
+\subsection{What hotspot conditioning establishes}
+
+Hotspots are conditioning information, not residues that RFdiffusion discovers
+as experimental binding sites. In the existing matched insulin-receptor
+ablation, both arms used the same complex checkpoint, target, contig, ten
+seeds, and sampling settings; only the hotspot tensor was removed. The guided
+backbone had a smaller minimum C$\alpha$ distance to A59, A83, or A91 in 9 of
+10 matched seeds. The median minimum distance was 6.38~\AA{} with hotspots and
+9.72~\AA{} without them.
+
+This demonstrates that hotspot information steers backbone placement. It does
+not demonstrate affinity, folding, specificity, or validated pocket discovery.
+The ten guided seeds also produced diverse backbones: pairwise intrinsic trace
+RMSD had a median of 13.36~\AA, and target-aligned binder-pose Chamfer distance
+had a median of 5.08~\AA. One RFdiffusion output is therefore one stochastic
+proposal, not a unique solution.
+
+\section{ProteinMPNN: sequence design on a fixed backbone}
+
+ProteinMPNN addresses the next question: given fixed backbone coordinates,
+which amino-acid identities are geometrically compatible with them
+\citep{dauparas2022proteinmpnn}? It constructs a residue graph from backbone
+geometry, passes messages using invariant geometric features, and samples a
+sequence autoregressively. Schematically,
+\[
+  p(\mathbf{s}\mid X)
+  = \prod_{k=1}^{L} p\!\left(s_{\pi_k}\mid
+  s_{\pi_1},\ldots,s_{\pi_{k-1}},X\right),
+\]
+where $X$ is the fixed backbone, $\mathbf{s}$ is the sequence, and $\pi$ is a
+decoding order. Target residues can be fixed while only the generated binder
+chain is designed.
+
+The model returns amino-acid probabilities and a sequence-model score. A low
+negative log-probability means that ProteinMPNN considers the sequence
+compatible with the supplied backbone under its learned distribution. It does
+not mean low binding free energy, high affinity, or high experimental success.
+
+For the fixed 90-residue RFdiffusion seed-42 backbone, the audited run generated
+100 unique ProteinMPNN sequences at temperature 0.1. Median pairwise identity
+was 66.7\%, median position entropy was 0.648 nats, and 17 of 90 positions were
+invariant in this finite sample. These data provide a useful sequence ensemble
+for studying which backbone positions are tightly constrained, but they do not
+yet rank binding.
+
+\section{Where a physics-aware score could enter}
+
+The cleanest initial use of a new interface score is beside ProteinMPNN, after
+RFdiffusion has fixed the backbone:
+\[
+\begin{aligned}
+  \text{RFdiffusion backbones}
+  &\longrightarrow \text{ProteinMPNN sequence ensemble} \\
+  &\longrightarrow \text{all-atom reconstruction and interface scoring} \\
+  &\longrightarrow \text{diverse shortlist}.
+\end{aligned}
+\]
+This preserves the interpretation of each score. ProteinMPNN likelihood asks
+whether a sequence is compatible with a backbone; the physical score asks
+whether the resulting interface has favorable chemistry and geometry. An
+initial score could include clash penalties, buried nonpolar surface,
+unsatisfied polar groups, hydrogen-bond geometry, electrostatic complementarity,
+and penalties for exposed hydrophobes.
+
+Three levels of integration should be distinguished:
+\begin{enumerate}
+  \item \textbf{Reranking:} generate sequences normally, reconstruct side
+  chains, and rank with the physical score. This is simplest and most auditable.
+  \item \textbf{Biased sampling:} combine ProteinMPNN log probability with a
+  differentiable or locally updated interface score during sequence sampling.
+  This can improve efficiency but requires calibration of two unlike scores.
+  \item \textbf{Joint retraining:} train or fine-tune a sequence model with the
+  physical objective. This is the most ambitious option and needs reliable
+  labels, negative examples, and controls against score exploitation.
+\end{enumerate}
+
+For a starter study, reranking is preferable because it lets us test whether
+the physical score adds information beyond ProteinMPNN likelihood without
+changing either pretrained model.
+
+\section{Planned Week 35 deliverables}
+
+\begin{enumerate}
+  \item Trace one TYK2--4GIH forward pass through the released Boltz-2,
+  Nesso-1, and FlashBind implementations and identify the exact information
+  consumed by each affinity head.
+  \item Add one architecture-matched perturbation for each affinity model, as
+  defined in the Week 34 report.
+  \item Present the RFdiffusion target, contig, hotspot tensor, noisy binder
+  frames, and final backbone as an explicit input--output diagram.
+  \item Present the ProteinMPNN residue graph, design mask, logits, sampled
+  sequences, and position-wise entropy for the fixed insulin-receptor binder
+  backbone.
+  \item Define a small, prespecified physics-aware reranking score and test
+  whether it selects information different from ProteinMPNN likelihood. No
+  claim of affinity improvement will be made without an independent structural
+  or experimental test.
+\end{enumerate}
+
+\section{Evidence boundary}
+
+The insulin-receptor calculations currently establish execution,
+conditioning behavior, stochastic structural diversity, and sequence diversity.
+They do not establish that any generated sequence folds, binds the receptor,
+modulates signaling, or has measurable affinity. The first useful scientific
+advance is therefore not simply generating more candidates; it is defining an
+independent and falsifiable selection procedure.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+\end{document}
