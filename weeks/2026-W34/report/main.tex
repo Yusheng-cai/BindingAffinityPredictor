@@ -41,12 +41,13 @@ Boltz-2, Nesso-1, FlashBind, and an FEP+ four-kinase reproduction}
 
 This report compares three released protein--ligand affinity workflows.
 Boltz-2 cofolds an atom-resolved complex and predicts affinity; Nesso-1
-predicts affinity without coordinate diffusion or an MSA; and FlashBind scores
-a FABind+-docked ligand in a three-dimensional receptor
+predicts affinity without coordinate diffusion or an MSA; and, in this
+benchmark, FlashBind scores a FABind+-predicted ligand pose in an experimental
+PDB protein structure
 \citep{passaro2025boltz2,shenoy2026nesso1,jiang2026flashbind}.
 
 I ran all three models on the public 87-compound, four-kinase benchmark and
-compared predicted scores with experimental potency within each target. The
+compared predicted scores with experimental potency within each kinase. The
 weighted Pearson correlations below closely reproduce the paper values. I
 also evaluated Boltz-2 and the released FABind+ poses against 16 cocrystals;
 those structure-recovery results are reported separately from affinity ranking.
@@ -68,16 +69,18 @@ FlashBind, released poses & \textbf{0.533} & 0.382--0.669 & 0.53 \\
 \bottomrule
 \end{tabular}\\[0.65em]
 \textbf{Structure recovery: median RMSD over 16 cocrystals (\AA)}\\[0.25em]
-\begin{tabular}{@{}lcc@{}}
+{\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.35in}>{\centering\arraybackslash}p{1.55in}>{\centering\arraybackslash}p{1.95in}@{}}
 \toprule
- & \textbf{Boltz-2} & \textbf{FlashBind/FABind+} \\
+ & \shortstack{\textbf{Boltz-2}\\predicted protein\\+ ligand}
+ & \shortstack{\textbf{FlashBind}\\experimental PDB protein\\+ FABind+-predicted\\ligand position} \\
 \midrule
-Global protein C$\alpha$, fitted & 1.231 & 0.272$^{*}$ \\
-Pocket protein C$\alpha$, fitted & 0.400 & 0.208$^{*}$ \\
+Global protein C$\alpha$, fitted & 1.231 & 0.272 \\
+Pocket protein C$\alpha$, fitted & 0.400 & 0.208 \\
 Ligand heavy atoms after pocket fit & \textbf{0.898} & \textbf{0.634} \\
 \bottomrule
-\end{tabular}\\[0.3em]
-\footnotesize $^{*}$Supplied receptor coordinates, not a FlashBind protein prediction.
+\end{tabular}
+}
 }}
 \end{center}
 
@@ -107,49 +110,18 @@ JNK1 (c-Jun N-terminal kinase 1) & 21 & JNK1, 370 aa; JIP1 peptide, 11 aa & IC50
 p38$\alpha$ (MAPK14) & 34 & p38 kinase, 372 aa & IC50 & 3FLY \\
 \bottomrule
 \end{tabular}
-\caption{Frozen benchmark composition. One model example is one target
-construct paired with one ligand, so $N$ is the number of independently
-scored ligands in that target's series.}
+\caption{Frozen benchmark composition.}
 \end{table}
 
-The columns have the following precise meanings:
-
-\begin{description}
-  \item[Target protein / assay series.] The common protein construct against
-  which a chemically related set of ligands was experimentally tested. I
-  calculated each target's correlation separately rather than mixing
-  compounds from different targets.
-
-  \item[Ligands ($N$).] The number of distinct protein--ligand examples in that
-  series. For example, CDK2 has 16 ligands. Nesso therefore received 16 CDK2
-  inputs: each contained the same CDK2--cyclin A2 sequences but a different
-  ligand SMILES. The four values sum to $16+16+21+34=87$ model examples.
-
-  \item[Protein construct.] The exact amino-acid sequence or sequences given
-  to the model. ``303 aa; 258 aa'' means two chains, not one 561-residue
-  protein: a 303-residue CDK2 chain and its 258-residue cyclin A2 partner.
-  Similarly, the JNK1 input includes the 11-residue JIP1 peptide found in the
-  curated reference complex.
-
-  \item[Experimental endpoint.] The laboratory measurement used as the
-  benchmark's ground-truth label. IC50 is the concentration that produces
-  50\% inhibition under a particular assay protocol. Ki is an inhibition
-  constant inferred through an enzyme-kinetic model. Smaller IC50 or Ki means
-  stronger apparent inhibition. These endpoints are related but not
-  interchangeable, and neither should automatically be called a binding free
-  energy. Source values in nM or $\mu$M were converted to $\mu$M and then to
-  $\log_{10}(\mathrm{value}/\mu\mathrm{M})$ before comparison. CDK2, JNK1, and
-  p38 use IC50 labels; TYK2 uses Ki labels.
-
-  \item[Reference PDB.] The Protein Data Bank accession for the experimentally
-  solved complex used by the curated benchmark to identify the target and its
-  exact construct. For example, \texttt{1H1Q} identifies the reference
-  CDK2--cyclin A2 complex. In this calculation, the PDB coordinates and bound
-  ligand pose were \emph{not} given to Nesso or Boltz; only the deposited
-  protein sequence and the benchmark provenance were taken from this record.
-  FlashBind is different: its released-pose calculation uses the corresponding
-  fixed protein coordinates, but not the crystallographic ligand pose.
-\end{description}
+\textbf{Experimental endpoint.} This is the laboratory measurement used as
+the benchmark's ground-truth label. IC50 is the concentration that produces
+50\% inhibition under a particular assay protocol. Ki is an inhibition
+constant inferred through an enzyme-kinetic model. Smaller IC50 or Ki means
+stronger apparent inhibition. These endpoints are related but not
+interchangeable, and neither should automatically be called a binding free
+energy. Source values in nM or $\mu$M were converted to $\mu$M and then to
+$\log_{10}(\mathrm{value}/\mu\mathrm{M})$ before comparison. CDK2, JNK1, and
+p38 use IC50 labels; TYK2 uses Ki labels.
 
 %Thus, for the CDK2 row, the calculation asks a concrete ranking question:
 %given the same CDK2--cyclin A2 protein construct and 16 different ligands, does
@@ -172,7 +144,7 @@ The columns have the following precise meanings:
 \subsection{Boltz-2: cofold and score}
 
 At the highest level, Boltz-2 is a biomolecular cofolding model with an
-additional affinity-prediction pathway. One example can contain protein
+additional affinity-prediction pathway. An example input can contain protein
 sequence(s), ligand chemistry, an MSA, and optional templates or constraints.
 Its structure trunk integrates these inputs, and a stochastic diffusion
 decoder generates three-dimensional coordinates for the modeled heavy atoms.
@@ -204,27 +176,16 @@ At the user-facing level, FlashBind can begin with a protein sequence and a
 ligand SMILES. Internally, however, the sequence must first be resolved to a
 three-dimensional receptor. The released preprocessing searches for an
 experimental or predicted structure and can fall back to a structure
-predictor when one is unavailable. FlashBind then applies the following
-procedure \citep{jiang2026flashbind}:
+predictor when one is unavailable. FABind+ then identifies a candidate pocket
+and places the ligand in that region \citep{jiang2026flashbind}.
 
-\begin{enumerate}
-  \item \textbf{Resolve the receptor.} Use a PDB structure, a predicted
-  structure such as an AlphaFold model, or another generated receptor model.
-  A crystal structure is useful but not mandatory.
-  \item \textbf{Predict the pocket and pose.} FABind+ rapidly identifies a
-  candidate binding region and places the ligand in that region.
-  \item \textbf{Construct the local complex.} The pipeline crops the receptor
-  around the proposed ligand pose and represents the local protein--ligand
-  environment as a geometric graph.
-  \item \textbf{Score the geometry.} An E(3)-equivariant graph neural network
-  processes the local complex. Equivariance ensures that rotating or
-  translating the coordinates does not arbitrarily change the binding
-  prediction.
-  \item \textbf{Read out the prediction.} Separate heads can return a binary
-  activity probability or a continuous assay-derived affinity score. The
-  continuous score is not a thermodynamic calculation of
-  $\Delta G_{\mathrm{bind}}$.
-\end{enumerate}
+Around this proposed pose, FlashBind constructs a local protein--ligand graph
+and processes it with an E(3)-equivariant graph neural network. Consequently,
+rotating or translating the complete coordinate system does not arbitrarily
+change the prediction. Separate output heads can return a binary activity
+probability or a continuous assay-derived affinity score. As with the other
+models, this continuous score is not a thermodynamic calculation of
+$\Delta G_{\mathrm{bind}}$.
 
 This modularity separates pose generation from affinity scoring, which makes
 large-library screening more practical but also creates a sequential error
@@ -250,82 +211,48 @@ $\rightarrow$ atom-resolved complex + affinity\\[0.5em]
 \textbf{Nesso-1:} sequence + ligand
 $\rightarrow$ ESM-2 + pair trunk + predicted pocket
 $\rightarrow$ affinity, without a final Cartesian complex\\[0.5em]
-\textbf{FlashBind:} 3D receptor + ligand
+\textbf{FlashBind:} 3D protein structure + ligand
 $\rightarrow$ FABind+ pocket and pose
 $\rightarrow$ local EGNN score}}
 \end{center}
 
-\section{Reproducing the benchmark}
+\section{Benchmark calculation overview}
+
+I evaluated the released versions of all three models on the same frozen set
+of 87 protein--ligand pairs. For each model, I preserved its native affinity
+output and matched it to the experimental measurement only during the
+subsequent analysis. The workflows differed mainly in how much structural
+information they received and whether they generated a new complex.
 
 \subsection{Nesso-1}
 
-I ran Nesso using the official source at Git revision
-\texttt{f0156e9}, released checkpoint tag \texttt{v1.0.0} (resolved Hugging
-Face revision \texttt{1896c84}), and ESM-2
-\texttt{facebook/esm2\_t33\_650M\_UR50D} at revision
-\texttt{08e4846}. I used seed 42, five recycling steps, bfloat16 mixed
-precision, the default two-stage 22 \AA{} protein-pocket crop with a
-256-token budget, and disabled optional CUDA kernels. I generated each
-unique protein-chain embedding once per target and reused it across the
-target's ligands. I retained the raw continuous affinity values, the two
-component estimates, binder probabilities, and entropy diagnostics before
-analysis.
+I supplied Nesso-1 with the protein sequence and ligand chemistry for each
+pair. It inferred an interaction region and returned continuous affinity
+scores without generating a final three-dimensional complex. All 87 pairs
+completed successfully \citep{shenoy2026nesso1}.
 
-Nesso does not generate an all-atom protein--ligand complex. It combines
-sequence-derived protein features and ligand atom/bond features in a geometric
-trunk, predicts an interaction region, and reads out affinity. This is
-why it can screen faster than a full coordinate-diffusion model
-\citep{shenoy2026nesso1}.
+\subsection{Boltz-2}
 
-\subsection{Boltz-2 inference protocol}
+I supplied Boltz-2 with the same protein sequences and ligand chemistry, plus
+a sequence MSA generated once for each unique protein chain. Boltz-2 produced
+a sampled atom-resolved complex together with affinity outputs. Because the
+complete MSAs exceeded the memory of the local 10~GiB GPU, I used the model's
+documented 1,024-row MSA subsampling option for every pair. All 87 structure
+and affinity calculations completed \citep{passaro2025boltz2}.
 
-I used Boltz 2.2.1 source revision \texttt{b1ebfc4}, the released structure
-and affinity checkpoints, seed 42, three structure recycles, one 200-step
-structure sample, and five 200-step affinity samples. I generated one
-ColabFold/MMseqs2 MSA per unique protein chain and reused it across every
-ligand for that target. I capped each MSA at the frozen maximum of 8,192
-parsed rows. I did not use templates, experimental coordinates, or the
-optional molecular-weight correction.
+\subsection{FlashBind}
 
-Normally, all retained MSA rows---up to that 8,192-row cap---can enter the
-model trunk. That full-depth calculation exceeded the memory of the local
-10~GiB GPU, so I enabled Boltz's documented \texttt{--subsample\_msa} option
-and used 1,024 randomly selected MSA rows in the trunk \citep{passaro2025boltz2}.
-This reduces memory use while preserving the larger parsed MSA as the sampling
-pool.
+For FlashBind, I used the authors' released benchmark inputs: an experimental
+PDB protein structure and a FABind+-predicted ligand pose for each pair,
+together with their precomputed molecular representations. I reran the two
+released affinity scorers and averaged their continuous outputs. I did not
+rerun the upstream FABind+ pose generation, so this calculation evaluates the
+released scoring stage rather than the complete docking-to-scoring pipeline.
+All 87 pairs completed \citep{jiang2026flashbind}.
 
-I kept every other setting unchanged and applied this MSA-1024 protocol to all
-four targets. I obtained 87/87 structures and affinity predictions. This is a
-released-checkpoint reproduction with reconstructed preprocessing and a
-documented MSA-depth choice, not the authors' exact evaluation pipeline.
-
-\subsection{FlashBind released-pose scoring run}
-
-I used FlashBind source revision \texttt{f161268}, the two released value
-checkpoints at Hugging Face revision \texttt{fa6362c}, and the released FEP+4
-archive at revision \texttt{50b1511}. The archive contains exactly 87 IDs,
-four fixed receptor PDBs, one FABind+-predicted ligand pose per pair, ESM3
-protein representations, and TorchDrug ligand representations. I matched all
-87 molecules to my canonical manifest by target and InChIKey. Every
-experimental label matched to floating-point precision, and the four receptor
-PDB files were byte-identical to my local benchmark copies.
-
-To remain compatible with the local NVIDIA driver, I used an isolated
-PyTorch~2.5.1/CUDA~12.1 scoring environment rather than the upstream
-PyTorch~2.7.1/CUDA~12.6 specification. I retained the authors' inference code,
-checkpoint weights, input features, and numerical settings, but this dependency
-change means the calculation is not a bitwise environment reproduction.
-
-I first ran one CDK2 ligand through both checkpoints and required finite
-\texttt{pred\_value}, \texttt{pred\_value\_raw}, and molecular weight fields.
-After that check passed, I ran all 87 records on one GPU with the authors'
-20~\AA{} local distance threshold and averaged the two checkpoint outputs. I
-used the calibrated \texttt{pred\_value}, documented as
-$\log_{10}(\mathrm{IC50}/\mathrm{Ki}/\mathrm{Kd}\;\mathrm{in}\;\mu M)$, for
-the primary analysis while retaining the uncalibrated values. This experiment
-uses released FABind+ poses rather than rerunning FABind+; it therefore tests
-the released scorer and supplied preprocessing, not independent end-to-end
-docking reproducibility.
+Exact model revisions, checkpoints, inference settings, commands, hardware
+records, and output definitions are given in the separate technical methods
+report.
 
 \section{Metric policy: affinity and structure}
 
@@ -352,15 +279,14 @@ I estimated uncertainty with 2,000 bootstrap replicates (seed 20260817). In
 each replicate, I resampled compounds with replacement separately inside each
 target and recomputed the compound-weighted statistic.
 
-\subsection{Structure-recovery metrics on 16 complexes}
+\subsection{Comparison with experimental structures}
 
 I identified 16 exact
 FEP+4 ligand--target identities with deposited crystal structures and used
 the same reference and metric for FlashBind/FABind+ and Boltz-2.
 
-For each pair, I matched the kinase chains by sequence and defined the
-experimental pocket as residues having any heavy atom within 5~\AA{} of the
-crystal ligand. I then fitted predicted to experimental pocket using only
+For each pair, I defined the
+experimental protein binding pocket as residues having any heavy atom within 5~\AA{} of the ligand. I then fitted the predicted structure to experimental pocket using only
 matched protein C$\alpha$ atoms. I held that transform fixed while applying it
 to the predicted ligand and calculated
 \[
@@ -372,9 +298,7 @@ to the predicted ligand and calculated
 where $R$ and $\mathbf{t}$ come only from the protein fit and
 $\mathcal{M}$ contains complete bond-order- and chirality-compatible atom
 mappings. The minimum over $\mathcal{M}$ corrects for chemically equivalent
-atom permutations. I never fitted the predicted ligand directly to the
-crystal ligand. I use RMSD $<2$~\AA{} only as a conventional descriptive pose
-threshold, not as a hypothesis-test boundary.
+atom permutations.
 
 \section{Results}
 
@@ -629,7 +553,9 @@ failure without separately examining the archived poses.
 \footnotesize
 \begin{tabular}{lrrrr}
 \toprule
-RMSD component (\AA) & \multicolumn{2}{c}{Boltz-2} & \multicolumn{2}{c}{FlashBind/FABind+} \\
+RMSD component (\AA)
+& \multicolumn{2}{c}{\shortstack{Boltz-2\\predicted protein + ligand}}
+& \multicolumn{2}{c}{\shortstack{FlashBind\\experimental PDB protein +\\FABind+-predicted ligand position}} \\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
 & Median & Mean & Median & Mean \\
 \midrule
@@ -642,15 +568,16 @@ Ligand heavy atoms after pocket fit & 0.898 & 0.977 & 0.634 & 0.651 \\
 \end{tabular}
 \caption{Separate protein and ligand errors across the same 16 cocrystal
 references. No joint protein--ligand RMSD is used. The global and pocket
-protein rows are residual C$\alpha$ RMSDs after fitting the indicated protein
+protein rows are residual C$_\alpha$ RMSDs after fitting the indicated protein
 atoms. The ligand row is symmetry-corrected heavy-atom RMSD after applying the
 fixed pocket-protein transform; the ligand is not independently fitted.}
 \end{table}
 
-For Boltz-2, the protein rows evaluate a generated receptor structure. For
-FlashBind, they instead measure the difference between the supplied fixed
-experimental receptor and each ligand-specific cocrystal receptor; they are
-therefore not a prediction-accuracy result for FlashBind. The separate rows
+For Boltz-2, the protein rows evaluate its predicted protein structure. For
+FlashBind, the protein coordinates come from an experimental PDB, while the
+ligand position and orientation are predicted by FABind+. Its protein rows therefore measure
+differences among experimental protein structures, not FlashBind protein
+prediction accuracy. The separate rows
 avoid allowing the much larger protein atom set to dominate a combined RMSD
 and avoid using the experimental ligand coordinates to improve the fit.
 
@@ -701,9 +628,9 @@ C$\alpha$ RMSD was 0.400~\AA. The pocket result was strongly target-dependent:
 the Boltz medians were 0.348~\AA{} for CDK2, 0.243~\AA{} for TYK2,
 0.460~\AA{} for JNK1, and 2.305~\AA{} for p38. Thus the p38 ligand-pose result
 coincides with a substantial local pocket-structure error and should not be
-interpreted as ligand placement alone. In contrast, the FlashBind receptor
-pocket median was 0.208~\AA{} overall because its starting receptors were
-experimental structures.
+interpreted as ligand placement alone. In contrast, the FlashBind protein
+pocket median was 0.208~\AA{} overall because it started from experimental PDB
+protein structures.
 
 I also audited the coordinate identities before scoring. Every released SDF
 matched its reference ligand in heavy-atom count and admitted a complete
@@ -715,79 +642,62 @@ poses, but it does not contain the original docking commands, seeds, or
 per-pose logs. Thus I have evaluated the supplied poses, not independently
 reproduced their generation.
 
-\section{Interpretation and next-week plan}
+\section{Conclusion}
 
-Using independently reconstructed inputs, I reproduced the Nesso-1 and Boltz-2
-paper headlines to within 0.007 and 0.033 Pearson units, respectively. Using
-the authors' released pose archive, I reproduced FlashBind to within 0.003
-Pearson units. I view these as useful but differently strong reproducibility
-results: FlashBind's input preprocessing is less independent. My paired
-comparison also supports
-higher average within-series ranking correlations for Nesso on these exact 87
-examples, but it does not establish universal superiority or show that the
-model learned transferable physics. The benchmark is small, public, and
-congeneric; paper-level train/test chemical overlap may matter, and the Boltz
-run uses a documented 1,024-row trunk-MSA subsample.
+The three models address protein--ligand affinity in distinct ways. Boltz-2
+uses protein sequence, ligand chemistry, and an MSA to generate an
+atom-resolved complex and predict affinity. Nesso-1 predicts affinity from
+protein sequence and ligand chemistry without generating a final Cartesian
+complex. FlashBind instead scores a proposed three-dimensional complex; in
+this benchmark, that complex consisted of an experimental PDB protein
+structure and a FABind+-predicted ligand pose.
 
-The 16-pair structure analysis adds a complementary result: both methods often
-recover the known pose on this selected public subset, and the released
-FlashBind/FABind+ archive has the lower aggregate RMSD. However, FlashBind was
-given fixed experimental receptor structures while Boltz-2 had to generate
-the receptor--ligand complex. I therefore interpret the pose result as a
-successful archive and metric validation, not a fair end-to-end ranking of
-the two architectures.
+I reproduced the headline affinity-ranking result reported for each model on
+the same 87-compound benchmark. The compound-weighted Pearson correlations
+were 0.807 for Nesso-1, 0.627 for Boltz-2, and 0.533 for FlashBind, compared
+with paper values of 0.80, 0.66, and 0.53, respectively. The absolute
+differences were therefore 0.007, 0.033, and 0.003. This close agreement shows
+that the released models and the analysis used here reproduce the central
+within-target ranking results from the three papers.
 
-Next week, I will move from benchmark reproduction to a source-code-level
-examination of how Boltz-2, Nesso-1, and FlashBind represent protein--ligand
-interactions. I will use the TYK2--4GIH complex as a common worked example and
-trace one forward pass through each released model, recording the residue,
-atom, and pair representations that connect the inputs to the affinity
-output.
+This agreement is a reproducibility result rather than an independent test of
+generalization: all calculations use the same public benchmark, and the three
+workflows do not receive equivalent structural information. It nevertheless
+provides a validated starting point for studying how their architectures and
+inputs produce affinity predictions.
 
-I will then perform one small probe matched to each architecture:
-\begin{itemize}
-  \item for Boltz-2, compare fixed-seed predictions as MSA information is
-  removed or subsampled;
-  \item for Nesso-1, compare the response to sequence changes near its
-  predicted pocket with changes far from that pocket; and
-  \item for FlashBind, compare experimental, released FABind+, displaced, and
-  clashing ligand poses while also checking whole-complex rigid-body
-  invariance.
-\end{itemize}
-The purpose is not to establish another performance ranking. It is to
-determine what information each affinity head actually receives and whether
-its behavior is consistent with the invariances, locality, and geometric
-sensitivity expected for protein--ligand binding. End-to-end FABind+ docking,
-additional stochastic replicates, and the p38 target-level discrepancy remain
-useful later experiments once this architecture audit is in place.
+\section{Next week's agenda}
 
-\section*{Reproducibility record}
+Next week, I will move from reproducing benchmark results to understanding how
+the three models produce those results. I will organize the architectures in
+a common sequence---input representation, interaction module, structural or
+pocket information, and affinity readout---so that their design choices can be
+compared directly.
 
-The tracked manifest SHA-256 is
-\par\smallskip\small
-\texttt{5f0fb23bb97ea84f3da153e050d5913b97da9bba091fb84cd556b9894fdac1e1}.
-\normalsize\par
-The Nesso checkpoint SHA-256 is
-\par\smallskip\small
-\texttt{9928a8a824d147d665e76656804af1cd91c86731516d0b561f9fd1c91ee45622}.
-\normalsize\par
-The Boltz structure and affinity checkpoint SHA-256 values are
-\begin{quote}\scriptsize
-Structure:
-\texttt{090e82ac8c92f5e943fa1b39e7410a44027bea7243c0bbb3caa67a77fc1428e1}\\
-Affinity:
-\texttt{dcc5cd3722b1c9eaa34267e4ae32f55cbbf1963f4c19319381ccfa30fdd2ca9e}.
-\end{quote}
-The two FlashBind value-checkpoint SHA-256 values are
-\begin{quote}\scriptsize
-Value 1:
-\texttt{ca87f84dedd4642da693a508b1119c802caa370e356dad31c47b8a708821e553}\\
-Value 2:
-\texttt{59fa2686b0859a632862aec21ea69f2bebb1ab104e48606fe739c929368d488d}.
-\end{quote}
-All commands, environments, timestamps, hardware samples, return codes, raw
-outputs, and parsing status are stored beneath the ignored experiment run
-tree. Compact metrics and this report are tracked in Git.
+Using one protein--ligand pair as a worked example, I will trace the
+information passed through each released implementation and address three
+questions:
+\begin{enumerate}
+  \item How are the protein, ligand, MSA, and three-dimensional coordinates
+  represented?
+  \item How does each model combine protein and ligand information before the
+  affinity head?
+  \item Which controlled input changes can reveal what the prediction depends
+  on, such as MSA depth for Boltz-2, protein-sequence changes for Nesso-1, and
+  ligand-pose perturbations for FlashBind?
+\end{enumerate}
+
+The intended outputs are a common architecture diagram and a small notebook
+that follows one example through the major stages of each model.
+
+\section*{Technical methods}
+
+Exact source revisions, checkpoint checksums, resolved inference settings,
+commands, hardware records, output fields, and validation procedures are
+documented separately in the
+\href{https://github.com/Yusheng-cai/BindingAffinityPredictor/blob/main/weeks/2026-W34/technical-report/report.pdf}{Week 34 technical methods report}.
+This presentation report retains only the procedural detail needed to
+interpret the scientific comparisons.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}

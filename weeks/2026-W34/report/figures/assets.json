@@ -34,7 +34,7 @@
     },
     {
       "path": "literature/references.bib",
-      "sha256": "d0704e364c0eca48139c67ac86404b25a37f082ea6e0c10714545b3bae566d74"
+      "sha256": "f2f1b9a2aebc5263f73ad5b46bbf4ff8cb04092e691e01f21ab84fdf04f96bff"
     }
   ],
   "outputs": [
@@ -120,7 +120,7 @@
     },
     {
       "path": "weeks/2026-W34/report/references.bib",
-      "sha256": "d0704e364c0eca48139c67ac86404b25a37f082ea6e0c10714545b3bae566d74"
+      "sha256": "f2f1b9a2aebc5263f73ad5b46bbf4ff8cb04092e691e01f21ab84fdf04f96bff"
     }
   ]
 }

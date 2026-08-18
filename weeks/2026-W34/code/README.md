@@ -63,6 +63,9 @@ bash weeks/2026-W34/code/07_analyze_poses.sh \
 # Regenerate compact figures and compile the weekly PDF.
 bash weeks/2026-W34/code/08_build_report.sh
 
+# Compile the separate technical methods report.
+bash weeks/2026-W34/code/build_technical_report.sh
+
 # Validate or launch the interactive saved-output walkthrough.
 bash weeks/2026-W34/code/09_launch_notebook.sh --check
 bash weeks/2026-W34/code/09_launch_notebook.sh --execute

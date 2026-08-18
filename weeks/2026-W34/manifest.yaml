@@ -1,9 +1,9 @@
 week: 2026-W34
 date_range: 2026-08-17_to_2026-08-23
 title: Boltz-2, Nesso-1, FlashBind, and an FEP+ four-kinase reproduction
-status: complete_github_and_overleaf_synced
+status: overleaf_synced_github_pr_pending
 
-project_git_revision: 6afc7f1fda28e516d3f6df4b587f908dd6939198
+project_git_revision: 2c54c019dd23693e86f3f1201efd642d37cace64
 working_tree_dirty_at_build: true
 
 github:
@@ -11,7 +11,7 @@ github:
   branch: main
   visibility: public
   published: true
-  publication_commit: 14b811a9005f285dff044e8c84c8c769d74bd875
+  publication_commit: 2c54c019dd23693e86f3f1201efd642d37cace64
 
 overleaf:
   configured: true
@@ -21,7 +21,7 @@ overleaf:
   source_of_truth: overleaf
   local_clone: /home/yusheng/source/binding-affinity-overleaf-w34
   pushed: true
-  remote_commit: 4605ac8ae8a66973b3f933f0255ff16ef6a51758
+  remote_commit: 4645e248945fe3e20ccc71a4b17b787aefa4296d
 
 experiments:
   - experiments/exp007_fepplus4_boltz2_nesso1/experiment.yaml
@@ -110,6 +110,7 @@ commands:
   - bash weeks/2026-W34/code/07_analyze_poses.sh --check
   - bash weeks/2026-W34/code/08_build_report.sh
   - bash weeks/2026-W34/code/09_launch_notebook.sh --check
+  - bash weeks/2026-W34/code/build_technical_report.sh
 
 workflow_code:
   path: weeks/2026-W34/code
@@ -128,9 +129,15 @@ compact_results:
 
 pdf:
   path: weeks/2026-W34/report/report.pdf
-  pages: 12
+  pages: 11
   latex_engine: pdflatex
-  sha256: 87cb2c6252e26e2d1fe694ce05f5c074b58053bff352274cf5acc78b41f9dae5
+  sha256: 80cdc1c2f94366c79b8d319488ba119d9ceb01f7b7713132131b7bba549974a5
+
+technical_pdf:
+  path: weeks/2026-W34/technical-report/report.pdf
+  pages: 8
+  latex_engine: pdflatex
+  sha256: 3370dbf9fbe7519b322e4457d919a5e4b59dc14d5714d8369d8d0f54dc8b0f0b
 
 citations:
   - jiang2026flashbind
