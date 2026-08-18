@@ -3,7 +3,7 @@ date_range: 2026-08-24_to_2026-08-30
 title: Affinity-model architecture and the RFdiffusion--ProteinMPNN binder-design workflow
 status: draft_local_compiled
 
-project_git_revision: 36f70c9da1701990ac90ffdc809b7f29e135fd35
+project_git_revision: da18be7af2a2c9912510b08f0dae498b19a96f9f
 working_tree_dirty_at_build: true
 
 overleaf:
@@ -39,7 +39,7 @@ pdf:
   path: weeks/2026-W35/report/report.pdf
   pages: 4
   latex_engine: pdflatex
-  sha256: d358a7727928c4d45818b43b0c092e03cf00f8cee88efd0b0b505fa44575cefa
+  sha256: 275b2ea94f418af0b7f0c52c4c3395033cc8bca3c62207ee0adeed4ace31d4d2
 
 bibliography_snapshot:
   path: weeks/2026-W35/report/references.bib
