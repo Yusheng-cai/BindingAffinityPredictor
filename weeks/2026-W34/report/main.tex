@@ -141,13 +141,11 @@ p38 use IC50 labels; TYK2 uses Ki labels.
 Boltz-2 performs two related tasks: it predicts how biomolecules fit together
 in three dimensions, and it estimates binding affinity. For a protein--ligand
 calculation, we provide the protein sequence, the ligand chemistry, and an MSA.
-The MSA is a collection of related protein sequences that gives the model
-information about evolutionary variation in the protein.
+
 
 Boltz-2 considers the protein and ligand together. It begins with a noisy
 arrangement of their atoms and repeatedly adjusts the coordinates until it
-produces a plausible three-dimensional protein--ligand complex. This is the
-diffusion part of the model. Because this procedure involves random sampling,
+produces a plausible three-dimensional protein--ligand complex. Because this procedure involves random sampling,
 the model can generate more than one candidate structure.
 
 The public Boltz-2 software returns the predicted atomic coordinates and
@@ -191,16 +189,13 @@ models, this continuous score is not a thermodynamic calculation of
 $\Delta G_{\mathrm{bind}}$.
 
 This modularity separates pose generation from affinity scoring, which makes
-large-library screening more practical but also creates a sequential error
-path:
+large-library screening more practical:
 \[
  \text{receptor conformation}
  \longrightarrow \text{pocket selection}
  \longrightarrow \text{docked pose}
  \longrightarrow \text{binding score}.
 \]
-An incorrect receptor or docked pose can therefore limit the scorer even if
-the final neural network is otherwise well calibrated.
 
 
 \begin{center}
@@ -221,11 +216,8 @@ $\rightarrow$ local EGNN score}}
 
 \section{Benchmark calculation overview}
 
-I evaluated the released versions of all three models on the same frozen set
-of 87 protein--ligand pairs. For each model, I preserved its native affinity
-output and matched it to the experimental measurement only during the
-subsequent analysis. The workflows differed mainly in how much structural
-information they received and whether they generated a new complex.
+I evaluated the released versions of all three models on the same set
+of 87 protein--ligand pairs.
 
 \subsection{Nesso-1}
 
@@ -253,17 +245,13 @@ rerun the upstream FABind+ pose generation, so this calculation evaluates the
 released scoring stage rather than the complete docking-to-scoring pipeline.
 All 87 pairs completed \citep{jiang2026flashbind}.
 
-Exact model revisions, checkpoints, inference settings, commands, hardware
-records, and output definitions are given in the separate technical methods
-report.
+\section{Metric: affinity and structure}
 
-\section{Metric policy: affinity and structure}
 
-I use two distinct metric families that answer different questions. The
-\textbf{affinity metrics} use all 87 compounds and test agreement between model
+\textbf{Affinity metrics} use all 87 compounds and test agreement between model
 scores and experimental potency labels. The \textbf{structure metrics} use
-only the 16 pairs with deposited crystal structures and compare Boltz-2 with
-the released FlashBind/FABind+ poses.
+only the 16 pairs which have experimentally available crystal structures and compare Boltz-2 with
+the FlashBind/FABind+ poses.
 
 \subsection{Affinity-ranking metrics on 87 compounds}
 
@@ -278,15 +266,10 @@ Thus, the comparison asks whether each model ranks compounds correctly
 using the compound counts. Spearman $\rho$ and Kendall $\tau$ provide
 complementary rank-based comparisons.
 
-I estimated uncertainty with 2,000 bootstrap replicates (seed 20260817). In
-each replicate, I resampled compounds with replacement separately inside each
-target and recomputed the compound-weighted statistic.
-
 \subsection{Comparison with experimental structures}
 
 I identified 16 exact
-FEP+4 ligand--target identities with deposited crystal structures and used
-the same reference and metric for FlashBind/FABind+ and Boltz-2.
+FEP+4 ligand--target identities with available experimental crystal structures and compare FlashBind/FABind+ with Boltz-2.
 
 For each pair, I defined the
 experimental protein binding pocket as residues having any heavy atom within 5~\AA{} of the ligand. I then fitted the predicted structure to experimental pocket using only
@@ -470,18 +453,17 @@ within-target ranking relationships.}
 \end{figure}
 
 I obtained an aggregate Pearson result of $0.807$ for Nesso (95\% interval
-$0.731$--$0.873$), which agrees closely with the reported $0.80$. For Boltz,
+$0.731$--$0.873$), which agrees closely with the reported $0.80$. 
+
+For Boltz,
 I obtained $0.627$ (interval $0.484$--$0.744$), which is 0.033 below the
 paper reference of $0.66$; its Kendall result of 0.497 is 0.017 above the
-paper reference of 0.48. Given reconstructed preprocessing, one random seed,
-and an explicit MSA-depth change, I regard this as a close released-model
-reproduction rather than numerical identity.
+paper reference of 0.48.
 
 For FlashBind I obtained weighted Pearson $r=0.533$ (95\% interval
 $0.382$--$0.669$), essentially identical to the reported $0.53$. The weighted
-Kendall value was $0.359$, 0.021 below the reported $0.38$. The close Pearson
-match is reassuring for software reproduction, but it is not independent
-validation: the authors supplied the FABind+ poses and representations used by
+Kendall value was $0.359$, 0.021 below the reported $0.38$. Unfortunately, this is not independent
+validation as the authors supplied the FABind+ poses and representations used by
 their own scoring benchmark.
 
 \begin{table}[H]
@@ -536,18 +518,12 @@ $+0.003$ for FlashBind. Bars show point estimates; the bootstrap intervals
 are reported in the text and executive-summary table.}
 \end{figure}
 
-I found that the paired interval excludes zero for all three correlation
-statistics, supporting a difference in within-target ranking performance.
-Target-level heterogeneity is scientifically important: Boltz is better on
+There is, however, a large difference within the targets: Boltz is better on
 CDK2 and JNK1,
 Nesso is better on TYK2, and p38 supplies the largest Nesso advantage
-($r=0.869$ versus $0.364$). My experiment does not determine whether
-that p38 difference arises from model architecture, MSA subsampling,
-checkpoint stochasticity, or reconstructed input/preprocessing details.
+($r=0.869$ versus $0.364$).
 FlashBind shows a different pattern: p38 is its strongest target
-($r=0.677$), while TYK2 is much weaker ($r=0.134$). Because this run uses
-released docked poses, that TYK2 result cannot be diagnosed as a fresh docking
-failure without separately examining the archived poses.
+($r=0.677$), while TYK2 is very weak ($r=0.134$). 
 
 \subsection{Protein and ligand RMSD on the 16 structure-matched pairs}
 
@@ -570,7 +546,7 @@ Ligand heavy atoms after pocket fit & 0.898 & 0.977 & 0.634 & 0.651 \\
 \bottomrule
 \end{tabular}
 \caption{Separate protein and ligand errors across the same 16 cocrystal
-references. No joint protein--ligand RMSD is used. The global and pocket
+references. The global and pocket
 protein rows are residual C$_\alpha$ RMSDs after fitting the indicated protein
 atoms. The ligand row is symmetry-corrected heavy-atom RMSD after applying the
 fixed pocket-protein transform; the ligand is not independently fitted.}
@@ -655,11 +631,10 @@ complex. FlashBind instead scores a proposed three-dimensional complex; in
 this benchmark, that complex consisted of an experimental PDB protein
 structure and a FABind+-predicted ligand pose.
 
-I reproduced the headline affinity-ranking result reported for each model on
+I reproduced the affinity-ranking result reported for each model on
 the same 87-compound benchmark. The compound-weighted Pearson correlations
 were 0.807 for Nesso-1, 0.627 for Boltz-2, and 0.533 for FlashBind, compared
-with paper values of 0.80, 0.66, and 0.53, respectively. The absolute
-differences were therefore 0.007, 0.033, and 0.003. This close agreement shows
+with paper values of 0.80, 0.66, and 0.53, respectively. This close agreement shows
 that the released models and the analysis used here reproduce the central
 within-target ranking results from the three papers.
 
