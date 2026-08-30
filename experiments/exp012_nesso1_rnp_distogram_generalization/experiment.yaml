@@ -1,0 +1,94 @@
+id: exp012_nesso1_rnp_distogram_generalization
+title: Nesso-1 coordinate-free structural generalization on a diverse Runs N' Poses pilot
+status: complete
+question: Does the structural information encoded by Nesso-1 degrade as test complexes become less similar to pre-September-2021 PDB complexes, and does Nesso's entropy detect that degradation?
+
+manifest: data/manifests/rnp_nesso1_pilot100.json
+benchmark_config: configs/benchmarks/rnp_nesso1_pilot100.yaml
+model_config: configs/models/nesso1.yaml
+
+selection:
+  completed_on: 2026-08-20
+  selected_before_inference: true
+  eligible_candidates: 650
+  selected_systems: 100
+  selection_seed: 20260820
+  manifest_sha256: 76bf3e71266636d9b956de2ce6f09609b17b84cd369c0ec05c5ca68b610817c9
+
+approved_download_scope:
+  annotations_and_input_metadata: complete
+  ground_truth_coordinates: downloaded_and_selectively_extracted_for_frozen_100
+  ground_truth_archive_bytes: 413734790
+  ground_truth_archive_md5: 73fa5378ed7a8e6b94f3b0d6eba8c70e
+  ground_truth_archive_sha256: 1b9f778bc3150f246c0f37b48215588c48369e39e6603c2b15975f0ec1b18d51
+  prediction_archives: not_downloaded
+  msa_archive: not_downloaded
+  all_similarity_scores_archive: not_downloaded
+
+gate:
+  sample_id: 7ftm__1__1.A__1.C__1.C
+  familiarity_score_0_to_100: 0.0
+  inference_status: complete
+  scoring_status: complete
+  model_failures: 0
+  scoring_failures: 0
+  exact_ligand_symmetry_mappings: 2
+  reference_pocket_residues_6a_any_heavy_atom: 13
+  annotated_pocket_residues: 13
+  token_contact_auroc_at_6a: 0.4514141943884333
+  physical_pocket_f1_at_6a: 0.0
+  interpretation: pipeline_gate_passed_candidate_model_failure
+
+full_run:
+  status: complete
+  systems_requested: 100
+  inference_successes: 100
+  scoring_successes: 100
+  failures: 0
+  seed: 42
+  nesso_version_and_model_revision: v1.0.0
+  inference_progress_time_seconds: 662
+  warm_cache_end_to_end_wall_time_seconds: 808.612002570997
+  peak_total_gpu_memory_mib: 9603
+  peak_gpu_memory_above_baseline_mib: 8018
+  compact_summary: reports/exp012_nesso1_rnp_distogram_generalization/results/summary.json
+  compact_per_system_table: reports/exp012_nesso1_rnp_distogram_generalization/results/per_system_metrics.csv
+
+primary_findings:
+  familiarity_vs_interface_distogram_nll_spearman_rho: -0.7039
+  familiarity_vs_physical_pocket_f1_spearman_rho: 0.6466
+  entropy_vs_interface_distance_mae_spearman_rho: 0.8241
+  exploratory_entropy_vs_mae_partial_rho_controlling_familiarity: 0.6710
+  exploratory_entropy_vs_mae_partial_rho_controlling_familiarity_and_sizes: 0.6455
+
+analysis_command: >-
+  PYTHONPATH=src /home/yusheng/programs/nesso-1.0.0/bin/python
+  scripts/analyze_nesso_rnp_distograms.py
+  --manifest data/manifests/rnp_nesso1_pilot100.json
+  --ground-truth-root data/raw/runs_n_poses_ground_truth_selected/ground_truth
+  --predictions-root
+  runs/exp012_nesso1_rnp_distogram_generalization/nesso1/seed42/full100/raw/predictions
+  --output-dir
+  runs/exp012_nesso1_rnp_distogram_generalization/nesso1/seed42/full100/analysis
+
+planned_stages:
+  - prepare_nesso_yaml_from_frozen_manifest
+  - run_one_system_with_save_metadata
+  - validate_token_and_ligand_atom_mapping
+  - score_distograms_contacts_and_pockets_on_the_one_system_gate
+  - run_and_score_the_frozen_100_system_pilot
+  - analyze_performance_and_entropy_by_familiarity
+
+completed_stages:
+  - prepare_nesso_yaml_from_frozen_manifest
+  - run_one_system_with_save_metadata
+  - validate_token_and_ligand_atom_mapping
+  - score_distograms_contacts_and_pockets_on_the_one_system_gate
+  - run_and_score_the_frozen_100_system_pilot
+  - analyze_performance_and_entropy_by_familiarity
+
+stopping_rules:
+  - Do not modify the selected systems after inspecting Nesso predictions.
+  - Do not use experimental coordinates, pockets, or poses during inference.
+  - Stop before the full run if ligand atom mapping or distance-bin scoring fails the one-system gate.
+  - Preserve raw affinity outputs but do not report affinity accuracy without experimental affinity labels.

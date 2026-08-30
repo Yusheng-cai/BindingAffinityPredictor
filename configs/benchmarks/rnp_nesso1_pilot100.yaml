@@ -1,0 +1,85 @@
+id: rnp_nesso1_pilot100_sep2021
+status: complete
+manifest: data/manifests/rnp_nesso1_pilot100.json
+
+question: Do Nesso-1's predicted protein-ligand distance distributions, pocket assignments, and uncertainty remain accurate as Runs N' Poses structural familiarity decreases?
+
+source:
+  name: Runs N' Poses
+  doi: 10.5281/zenodo.14794785
+  resolved_zenodo_record_id: 18366081
+  structural_training_cutoff: 2021-09-30
+  familiarity_metric: sucos_shape_pocket_qcov
+
+selection:
+  total_systems: 100
+  status: frozen_before_model_inference
+  bins_and_counts:
+    0-20: 13
+    20-30: 13
+    30-40: 13
+    40-50: 13
+    50-60: 12
+    60-70: 12
+    70-80: 12
+    80-100: 12
+  hard_diversity_constraints:
+    - unique_runs_n_poses_cluster
+    - unique_pdb_entry
+    - unique_canonical_ligand_smiles
+  seed: 20260820
+
+model_input:
+  include:
+    - exact_deposited_protein_sequence
+    - ligand_smiles
+  exclude:
+    - experimental_coordinates
+    - experimental_binding_pocket
+    - structural_template
+    - msa
+
+native_nesso_outputs:
+  - pdistogram
+  - pocket_mask
+  - entropy_crop_pl
+  - raw_affinity_fields_retained_but_not_accuracy_scored
+
+primary_metric:
+  name: protein_ligand_distogram_negative_log_likelihood
+  scope: reference_protein_ligand_pairs_within_15_angstrom
+  direction: lower_is_better
+
+secondary_metrics:
+  - protein_ligand_contact_average_precision_at_6_angstrom
+  - protein_ligand_contact_auroc_at_6_angstrom
+  - pocket_residue_precision_recall_f1_at_6_angstrom
+  - expected_interface_distance_mae_angstrom
+  - entropy_crop_pl_vs_structural_error
+  - wall_time_and_peak_gpu_memory
+
+analysis:
+  familiarity_unit: group_key
+  uncertainty_resampling_unit: runs_n_poses_cluster
+  bootstrap_iterations: 2000
+  bootstrap_seed: 20260820
+  bootstrap_interval: percentile_95
+  report:
+    - per_bin_metric_distributions_with_cluster_bootstrap_intervals
+    - continuous_spearman_trend_with_familiarity
+    - structural_error_vs_nesso_entropy_calibration
+    - exploratory_partial_entropy_error_correlation_controlling_familiarity_and_size
+
+interpretation:
+  affinity_accuracy_evaluable: false
+  reason: Runs N' Poses does not provide a systematic experimental affinity endpoint.
+  coordinate_generation_required: false
+  claim_scope: coordinate_free_structural_representation_and_pocket_generalization
+
+metric_details:
+  distogram_protein_atom: C_beta_except_C_alpha_for_glycine
+  distogram_ligand_atom: each_ligand_heavy_atom
+  reference_physical_pocket: any_resolved_protein_heavy_atom_within_6_angstrom_of_ligand
+  predicted_6a_pocket: minimum_expected_nesso_token_distance_within_6_angstrom
+  native_nesso_affinity_pocket_mask_cutoff_angstrom: 15
+  ligand_symmetry_handling: minimum_interface_nll_over_exact_graph_isomorphisms

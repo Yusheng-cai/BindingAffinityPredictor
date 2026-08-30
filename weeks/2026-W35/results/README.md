@@ -1,6 +1,11 @@
-# Planned compact results
+# Week 35 compact results
 
-This directory will contain only reviewed Week 35 tables derived from the
-tracked summaries for experiments `exp003`--`exp006` and any newly frozen
-architecture probes. Raw model outputs remain under `runs/` and are not
-committed.
+The reviewed compact calculation outputs are kept in the canonical experiment
+report rather than duplicated here:
+
+- `reports/exp015_boltz2_nesso1_rnp_postcutoff50/results/summary.json`;
+- `reports/exp015_boltz2_nesso1_rnp_postcutoff50/results/paired_metrics.csv`;
+- `reports/exp015_boltz2_nesso1_rnp_postcutoff50/results/familiarity_binned_metrics.csv`.
+
+The weekly notebooks and figures read those tracked files. Raw predictions and
+timing records remain beneath the ignored `runs/exp015_.../` directory.

@@ -1,10 +1,10 @@
-# Figure plan
+# Week 35 report figures
 
-Planned compact figures for the reviewed Week 35 report:
+This folder contains only the two figure families used by the Week 35 report:
 
-1. RFdiffusion target/hotspot → binder-backbone → ProteinMPNN sequence flow.
-2. Guided versus unguided minimum-hotspot-distance summary from `exp005`.
-3. ProteinMPNN per-position sequence entropy from `exp006`.
+1. `nesso_boltz_familiarity.pdf`, copied from the reviewed paired `exp015`
+   result; and
+2. `nesso_boltz_runtime.pdf` plus its compact CSV, generated from the two full
+   `run.json` timing records summarized in `exp015/results/summary.json`.
 
-Figures will be generated from tracked compact results, not copied from raw
-prediction directories.
+Run `bash weeks/2026-W35/code/05_build_report.sh` to regenerate them.

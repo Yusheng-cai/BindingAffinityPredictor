@@ -49,6 +49,12 @@ results, and weekly report.
 For a presentation-first view, start at
 [`weeks/2026-W34/README.md`](weeks/2026-W34/README.md).
 
+The latest structural benchmark, `exp015`, compares Nesso-1 and Boltz-2 on a
+frozen set of 50 diverse Runs N' Poses complexes released after June 2023.
+Nesso-1 completed 50/50 systems and Boltz-2 completed 49/50 on the local 10 GiB
+GPU. See the [paired result](reports/exp015_boltz2_nesso1_rnp_postcutoff50/README.md)
+and its [executed notebook](weeks/2026-W35/notebooks/boltz2_nesso1_rnp_postcutoff50.ipynb).
+
 ## Local checks (no downloads)
 
 ```bash

@@ -1,0 +1,41 @@
+id: rnp_nesso1_combined150_sep2021
+status: complete
+manifest: data/manifests/rnp_nesso1_combined150.json
+
+question: Across 150 Runs N' Poses systems, how strongly does Nesso-1 structural accuracy depend on similarity to pre-September-2021 protein-pocket and ligand-pose examples?
+
+source:
+  name: Runs N' Poses
+  parent_collection_systems: 2600
+  structural_training_cutoff: 2021-09-30
+  familiarity_metric: sucos_shape_pocket_qcov
+
+analysis_set:
+  systems: 150
+  scored_systems: 150
+  failures: 0
+  bin_counts:
+    0-20: 19
+    20-30: 19
+    30-40: 19
+    40-50: 20
+    50-60: 19
+    60-70: 18
+    70-80: 18
+    80-100: 18
+  unique_pdb_entries: 150
+  unique_runs_n_poses_clusters: 136
+  unique_canonical_ligand_smiles: 148
+
+model:
+  config: configs/models/nesso1.yaml
+  input: protein_sequence_and_ligand_smiles_only
+  model_revision: v1.0.0
+  seed: 42
+  recycling_steps: 5
+
+statistics:
+  continuous_trend: spearman_rank_correlation
+  uncertainty: 2000_iteration_percentile_bootstrap
+  bootstrap_unit: runs_n_poses_cluster
+  bootstrap_seed: 2026082051

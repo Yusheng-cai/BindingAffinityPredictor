@@ -1,47 +1,106 @@
 week: 2026-W35
 date_range: 2026-08-24_to_2026-08-30
-title: Affinity-model architecture and the RFdiffusion--ProteinMPNN binder-design workflow
-status: draft_local_compiled
+title: Paired Nesso-1 and Boltz-2 structural familiarity on Runs N' Poses
+status: overleaf_synced_github_pending
 
-project_git_revision: da18be7af2a2c9912510b08f0dae498b19a96f9f
+project_git_revision: 4d9893075398c0f2431dc5f1d273572590e8c6f5
 working_tree_dirty_at_build: true
 
 overleaf:
-  configured: false
-  project: null
-  revision: null
+  configured: true
+  project: https://www.overleaf.com/project/6a91a69067f6673e16230ad7
+  git_remote: https://git.overleaf.com/6a91a69067f6673e16230ad7
+  revision: ff83ff7d91769b4f190cd626115e93eb15d8137d
+  source_of_truth: overleaf
+  local_clone: /home/yusheng/source/binding-affinity-overleaf-w35
 
 experiments:
-  - experiments/exp003_rfdiffusion_insr_binder_smoke/experiment.yaml
-  - experiments/exp004_rfdiffusion_insr_structural_diversity/experiment.yaml
-  - experiments/exp005_rfdiffusion_insr_hotspot_ablation/experiment.yaml
-  - experiments/exp006_proteinmpnn_fixed_backbone_ensemble/experiment.yaml
+  - experiments/exp015_boltz2_nesso1_rnp_postcutoff50/experiment.yaml
 
 citations:
-  - watson2023rfdiffusion
-  - dauparas2022proteinmpnn
   - passaro2025boltz2
   - shenoy2026nesso1
-  - jiang2026flashbind
+  - skrinjar2025runsnposes
+  - su2019casf2016
+  - li2026lppdbbind
+  - fu2021tdc
+  - hahn2022bindingbenchmarks
+  - ross2023fepaccuracy
+  - wang2015fepplus
+  - openfe2024industry
+  - gilson2026casp16
+  - gaieb2019d3rgc3
+  - trannguyen2020litpcba
+  - buttenschoen2024posebusters
 
 interactive_notebooks:
-  - notebooks/real_rfdiffusion_proteinmpnn_insr.ipynb
-  - notebooks/mini_rfdiffusion_proteinmpnn.ipynb
+  - weeks/2026-W35/notebooks/boltz2_nesso1_rnp_postcutoff50.ipynb
+  - weeks/2026-W35/notebooks/nesso_architecture_visualized.ipynb
 
 commands:
-  - bash weeks/2026-W35/code/build_report.sh
+  - bash weeks/2026-W35/code/01_prepare_runs_n_poses.sh --check
+  - bash weeks/2026-W35/code/02_run_models_and_time.sh --check
+  - bash weeks/2026-W35/code/03_analyze_runs_n_poses.sh --check
+  - bash weeks/2026-W35/code/04_nesso_notebooks.sh --check
+  - bash weeks/2026-W35/code/05_build_report.sh
+
+architecture_companion:
+  purpose: visualize the Nesso-1 token, pair, distogram, crop, and affinity pathways
+  executed: true
+  native_plotly_outputs: 13
+  sha256: 464dd728a53760ea4bf1f30042142b762b350d2082928e6634e7c73a309ee6cc
+  educational_model_is_not_checkpoint_prediction: true
+  real_trace_experiment: exp012_nesso1_rnp_distogram_generalization
+  real_trace_system: 7fd6__1__1.A__1.B__1.B
+  real_trace_model_input: protein_sequence_and_ligand_chemistry
+  experimental_coordinates_used_as_model_input: false
+  raw_trace_committed: false
 
 workflow_code:
   path: weeks/2026-W35/code
   manifest: weeks/2026-W35/code/workflow_manifest.yaml
 
+runs_n_poses_analysis:
+  manifest: data/manifests/rnp_boltz2_nesso1_postcutoff50.json
+  attempted_systems: 50
+  nesso1_completed: 50
+  boltz2_completed: 49
+  paired_systems: 49
+  result: reports/exp015_boltz2_nesso1_rnp_postcutoff50/README.md
+
+runtime_comparison:
+  source_experiment: exp015_boltz2_nesso1_rnp_postcutoff50
+  attempted_systems: 50
+  hardware: NVIDIA_GeForce_RTX_3080_10_GiB
+  timing_unit: batched_wall_seconds_divided_by_attempted_systems
+  nesso1_total_seconds: 326.0678839830216
+  boltz2_msa1024_total_seconds: 1181.7258797059767
+  nesso1_seconds_per_attempted_system: 6.521357679660432
+  boltz2_msa1024_seconds_per_attempted_system: 23.634517594119533
+  observed_boltz2_over_nesso1_ratio: 3.6241713390194215
+  boltz2_msa_generation_included: false
+  checkpoint_downloads_included: false
+  equal_output_scope: false
+  repeated_timing_trials: 1
+
 pdf:
   path: weeks/2026-W35/report/report.pdf
-  pages: 4
+  pages: 13
   latex_engine: pdflatex
-  sha256: 275b2ea94f418af0b7f0c52c4c3395033cc8bca3c62207ee0adeed4ace31d4d2
+  sha256: 2ca833d379e91ef9177e0d505ab17d128b017eb953471937545910d3b2522cde
+
+figures:
+  - path: weeks/2026-W35/report/figures/nesso_boltz_familiarity.pdf
+    source: reports/exp015_boltz2_nesso1_rnp_postcutoff50/results/familiarity_bar_charts.pdf
+    sha256: 7658fa546260d7c24b1d2ce27b48775c7261173ad21bd7c7cb60a26657da5061
+  - path: weeks/2026-W35/report/figures/nesso_boltz_runtime.pdf
+    source: reports/exp015_boltz2_nesso1_rnp_postcutoff50/results/summary.json
+    sha256: 197b54368593b44997d9a90d6e4f36ae7190ddb819c1d64b175638c795e56593
+  - path: weeks/2026-W35/report/figures/nesso_boltz_runtime.csv
+    source: reports/exp015_boltz2_nesso1_rnp_postcutoff50/results/summary.json
+    sha256: 0a853fd9642aa6e5026554203baea2f1663c6caac12cf072d2bc0595d97e8dc7
 
 bibliography_snapshot:
   path: weeks/2026-W35/report/references.bib
   canonical_source: literature/references.bib
-  sha256: f2f1b9a2aebc5263f73ad5b46bbf4ff8cb04092e691e01f21ab84fdf04f96bff
+  sha256: af72de4aa872689359c6e395367b4d25627cf299a27cbfd364b9021d82cc90f9
