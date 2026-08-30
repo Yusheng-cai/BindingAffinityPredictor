@@ -1,0 +1,3 @@
+model,attempted,completed,wall_seconds,seconds_per_attempted_system
+Nesso-1,50,50,326.0678839830216,6.521357679660432
+Boltz-2 MSA-1024,50,49,1181.7258797059767,23.634517594119533

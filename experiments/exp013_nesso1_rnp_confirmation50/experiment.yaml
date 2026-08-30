@@ -1,0 +1,58 @@
+id: exp013_nesso1_rnp_confirmation50
+title: Nesso-1 structural-familiarity confirmation on 50 additional Runs N' Poses systems
+status: complete
+manifest: data/manifests/rnp_nesso1_confirmation50.json
+manifest_sha256: 14b03457edfa2d93e90b24334729ac86d8a01d05e270b6bb7e6280400634bc26
+benchmark_config: configs/benchmarks/rnp_nesso1_confirmation50.yaml
+model_config: configs/models/nesso1.yaml
+
+selection:
+  parent_collection_systems: 2600
+  nesso_compatible_candidates_before_excluding_exp012: 650
+  exact_exp012_sample_ids_excluded: 100
+  eligible_candidates_after_exclusion: 550
+  selected_systems: 50
+  selection_seed: 2026082050
+  selected_before_inference: true
+  overlap_with_exp012:
+    exact_sample_ids: 0
+    pdb_entries: 0
+    runs_n_poses_clusters: 14
+    canonical_ligand_smiles: 2
+
+inference:
+  model_revision: v1.0.0
+  seed: 42
+  recycling_steps: 5
+  precision: bf16-mixed
+  refine_protein_inference: true
+  refine_protein_cutoff_angstrom: 22.0
+  refine_protein_tokens_budget: 256
+  require_affinity: true
+  save_metadata: true
+
+stopping_rules:
+  - Do not replace selected systems after inspecting predictions.
+  - Do not use reference coordinates during Nesso inference.
+  - Record every inference or scoring failure rather than substituting a system.
+  - Keep the new-50 and combined-150 results separate in the report.
+
+run:
+  status: complete
+  inference_successes: 50
+  scoring_successes: 50
+  failures: 0
+  wall_time_seconds: 401.9170449830126
+  peak_total_gpu_memory_mib: 9294
+  peak_gpu_memory_above_baseline_mib: 7486
+  git_revision: 4d9893075398c0f2431dc5f1d273572590e8c6f5
+  working_tree_dirty: true
+
+primary_findings:
+  confirmation_familiarity_vs_distogram_nll_spearman_rho: -0.5127
+  confirmation_familiarity_vs_distance_mae_spearman_rho: -0.6299
+  confirmation_familiarity_vs_contact_ap_spearman_rho: 0.5287
+  confirmation_familiarity_vs_pocket_f1_spearman_rho: 0.6250
+  confirmation_entropy_vs_distance_mae_spearman_rho: 0.7014
+  combined_familiarity_vs_distance_mae_spearman_rho: -0.6858
+  boundary_interpretation: continuous familiarity trend replicated; a universal discontinuity at score 50 did not

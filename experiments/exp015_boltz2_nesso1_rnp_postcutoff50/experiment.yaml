@@ -1,0 +1,64 @@
+id: exp015_boltz2_nesso1_rnp_postcutoff50
+title: Paired Boltz-2 and Nesso-1 structural benchmark on 50 post-cutoff Runs N' Poses systems
+status: complete_with_one_boltz2_hardware_failure
+manifest: data/manifests/rnp_boltz2_nesso1_postcutoff50.json
+manifest_sha256: ac98b0d4a0a632d4643beb8d999de59b2c8561c31538ab6565e95b145312e5ed
+benchmark_config: configs/benchmarks/rnp_boltz2_nesso1_postcutoff50.yaml
+model_configs:
+  - configs/models/nesso1.yaml
+  - configs/models/boltz2.yaml
+
+hypothesis: Structural recovery will improve with training-set familiarity, but the magnitude and failure modes will differ between a direct distogram predictor (Nesso-1) and a coordinate-generating cofolding model (Boltz-2).
+
+inference:
+  shared_input: exact_protein_construct_sequence_and_stereochemical_ligand_smiles
+  reference_coordinates_visible_to_models: false
+  seed: 42
+  nesso1:
+    version: 1.0.0
+    recycling_steps: 5
+    precision: bf16-mixed
+    refine_protein_inference: true
+    refine_protein_cutoff_angstrom: 22
+    refine_protein_tokens_budget: 256
+    no_kernels: true
+    save_metadata: true
+  boltz2:
+    version: 2.2.1
+    model: boltz2
+    recycling_steps: 3
+    sampling_steps: 200
+    diffusion_samples: 1
+    max_parallel_samples: 1
+    step_scale: 1.5
+    output_format: mmcif
+    parsed_msa_max_sequences: 8192
+    stochastic_msa_subsample: 1024
+    no_kernels: true
+    affinity_property: false
+
+scoring:
+  ligand_symmetry_policy: metric_specific_exact_graph_isomorphisms
+  interface_distance_mae: minimum_over_symmetry_mappings
+  token_contact_f1: maximum_over_symmetry_mappings
+  tie_breaking: lexicographic_atom_mapping
+
+execution:
+  stages:
+    - five_system_msa_and_inference_gate
+    - full_fifty_system_msa_generation
+    - full_paired_inference
+    - blinded_output_validation
+    - reference_scoring_and_familiarity_analysis
+  hardware: NVIDIA GeForce RTX 3080 10 GiB
+  raw_run_root: runs/exp015_boltz2_nesso1_rnp_postcutoff50
+
+outcome:
+  nesso1_completed: 50
+  boltz2_completed: 49
+  boltz2_failed:
+    - sample_id: 8uk6__1__1.A__1.C__1.C
+      reason: out_of_memory_on_10_gib_gpu
+      protein_length_residues: 818
+  paired_systems: 49
+  reviewed_results: reports/exp015_boltz2_nesso1_rnp_postcutoff50/

@@ -3,7 +3,9 @@
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{float}
+\usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage[hidelinks]{hyperref}
 \usepackage[numbers,sort&compress]{natbib}
@@ -12,8 +14,8 @@
 \definecolor{light}{HTML}{EAF3F5}
 \newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 
-\title{Week 35 Draft: Affinity-Model Architecture and\\
-RFdiffusion--ProteinMPNN Binder Design}
+\title{Week of August 24, 2026:\\
+Nesso-1 and Boltz-2 on Runs N' Poses}
 \author{Yusheng Cai}
 \date{August 24--30, 2026}
 
@@ -21,203 +23,684 @@ RFdiffusion--ProteinMPNN Binder Design}
 \maketitle
 \begin{center}
   \small Repository:
-  \href{https://github.com/Yusheng-cai/BindingAffinityPredictor}%
-       {\texttt{github.com/Yusheng-cai/BindingAffinityPredictor}}
+  \href{https://github.com/Yusheng-cai/BindingAffinityPredictor/tree/main/weeks/2026-W35}%
+       {\texttt{BindingAffinityPredictor/weeks/2026-W35}}
 \end{center}
 
 \section*{Executive summary}
 
-This report will address two connected but scientifically distinct workflows.
-The first is \textbf{affinity prediction}: Boltz-2, Nesso-1, and FlashBind map
-protein--small-molecule information to an affinity score, with different use
-of sequence, MSA, pocket, and three-dimensional coordinates. The second is
-\textbf{protein-binder design}: RFdiffusion proposes a binder backbone around
-a target protein and ProteinMPNN assigns amino-acid sequences compatible with
-that backbone \citep{watson2023rfdiffusion,dauparas2022proteinmpnn}.
-
-RFdiffusion and ProteinMPNN are included because they expose a useful location
-for adding physical information during design. They are not affinity models,
-and their native scores are not binding free energies or probabilities of
-experimental success. I will keep their analysis separate from the
-small-molecule affinity benchmark and use the audited insulin-receptor example
-as a concrete worked case.
-
-\section{Questions for the week}
+This week I focused on four questions:
 
 \begin{enumerate}
-  \item What tensors and geometric representations connect the input of each
-  affinity model to its affinity head?
-  \item What exactly do RFdiffusion and ProteinMPNN receive and return?
-  \item How do hotspot conditioning and stochastic sampling alter the proposed
-  binder backbone?
-  \item Where could a physics-aware interface score enter the binder-design
-  workflow without being confused with ProteinMPNN likelihood?
+  \item I measured the speed of Nesso-1 and Boltz-2 on the same local hardware
+  and input cohort.
+  \item I used Runs N' Poses to compare Nesso-1 and Boltz-2 on the same 50
+  protein--ligand systems. I selected the cohort using Boltz-2's June 1, 2023
+  structural-training cutoff.
+  \item I reviewed the principal benchmarks used by the FEP community,
+  including what data they contain, where the measurements came from, and
+  what each benchmark tests.
+  \item I reviewed the Nesso-1 architecture, from protein and ligand
+  representations through pair features, distance prediction, pocket
+  selection, and affinity prediction.
 \end{enumerate}
 
-\clearpage
-\section{Two different prediction problems}
+\section{Measured speed comparison}
+
+I timed both models on the new 50-system cohort using the same 10-GiB NVIDIA
+RTX 3080, warm local checkpoint caches, one worker, and seed 42. Nesso-1 used
+five recycling steps. Boltz-2 used three recycling steps, one 200-step
+diffusion sample, and an MSA subsample of 1,024 sequences.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.72\textwidth]{figures/nesso_boltz_runtime.pdf}
+  \caption{Measured local preprocessing and inference time divided by the 50
+  attempted systems. The external ColabFold MSA search is excluded.}
+  \label{fig:nesso_boltz_runtime}
+\end{figure}
 
 \begin{table}[H]
 \centering
-\footnotesize
-\begin{tabular}{L{0.19\textwidth}L{0.23\textwidth}L{0.24\textwidth}L{0.21\textwidth}}
+\small
+\begin{tabular}{L{0.31\textwidth}rrr}
 \toprule
-Task & Representative input & Native output & Appropriate evaluation \\
+Workflow & Completed & Total wall time & Seconds/attempt \\
 \midrule
-Small-molecule affinity prediction & Protein sequence or structure and ligand chemistry/pose & Affinity score, and for Boltz-2 a cofolded complex & Within-target affinity correlation; protein and ligand structure recovery when references exist \\
-RFdiffusion binder generation & Target coordinates, contig, optional hotspot residues, checkpoint, and random seed & Target plus a generated binder backbone and reverse-diffusion trajectories & Backbone geometry, target-relative pose, contacts, clashes, diversity, and downstream validation \\
-ProteinMPNN sequence design & Fixed target/binder backbone, design mask, checkpoint, temperature, and seed & Amino-acid sequences, per-residue probabilities, and sequence-model scores & Sequence diversity, structural compatibility, independent complex prediction, physical interface checks, and experiment \\
+Nesso-1 & 50/50 & 326.1 s & 6.52 \\
+Boltz-2 MSA-1024 & 49/50 & 1181.7 s & 23.63 \\
 \bottomrule
 \end{tabular}
-\caption{The native outputs answer different questions. In particular,
-ProteinMPNN likelihood is not an affinity, and RFdiffusion confidence is not a
-binding measurement.}
+\caption{Nesso-1 was 3.62 times faster in this specific local workflow.}
 \end{table}
 
-\section{RFdiffusion: target-conditioned backbone generation}
+This is not an equal-output kernel benchmark. Boltz-2 generated full Cartesian
+protein--ligand complexes, whereas Nesso-1 stopped at a residue-center and
+ligand-heavy-atom distance representation. Boltz-2's external MSA search time
+is also absent. One 818-residue Boltz-2 system exceeded the available GPU
+memory; the failure remains in the completion count.
 
-\subsection{Input and output}
+\section{Paired Runs N' Poses experiment and results}
 
-In the binder-design setting, RFdiffusion receives a three-dimensional target
-structure and a contig specification that identifies fixed target residues and
-the length or length range of the new chain. Optional hotspot residues nominate
-the target region where an interface should be formed. The checkpoint and
-random seed are also scientifically important inputs because different
-checkpoints encode different training tasks and different seeds generate
-different samples.
+Runs N' Poses contains 2,600 high-resolution protein--ligand systems released
+after September 30, 2021 \citep{skrinjar2025runsnposes}. It provides the
+experimental complex structures and precomputed similarities to older
+protein--ligand structures. I selected 50 systems released after June 1, 2023,
+with ten systems in each familiarity interval 0--20, 20--40, 40--60,
+60--80, and 80--100.
 
-Only the binder is diffused in the target-conditioned protocol. The target
-coordinates remain fixed and provide conditioning throughout reverse
-diffusion. A simplified input--output statement is
+September 30, 2021 is the beginning of the original \emph{test set}, not the
+beginning of the structure database. Familiarity is evaluated against eligible
+protein--ligand complexes from the historical PDB extending many years before
+2021. For the June 1, 2023 cutoff used to select our cohort, the reference pool
+included complexes released before that date---both pre-2021 structures and
+structures released between October 2021 and May 2023---whereas the 50 test
+systems were released after the cutoff.
+
+\begin{center}
+\fbox{\parbox{0.91\textwidth}{\textbf{One shared test set:} I selected these
+50 complexes once, then attempted every one with both Nesso-1 and Boltz-2.
+They are not two separately sampled model-specific sets.}}
+\end{center}
+
+\subsection{Model inputs}
+
+For every system, both models received
 \[
-  (\text{target coordinates},\ \text{contig},\ \text{hotspots},\ \text{seed})
+  \text{exact deposited protein sequence}+\text{stereochemical ligand SMILES}.
+\]
+Boltz-2 additionally received a ColabFold MSA derived from the protein
+sequence. Neither model received the experimental protein coordinates, ligand
+coordinates, binding-pocket residues, or a template structure. Experimental
+coordinates were introduced only during scoring.
+
+Nesso-1 completed 50/50 systems. Boltz-2 completed 49/50; the 818-residue 8UK6
+system exceeded the 10-GiB GPU limit under the frozen MSA-1024 protocol. Direct
+model-to-model comparisons therefore use the \textbf{same 49 complexes}
+completed by both models. The remaining Nesso-1-only result is retained in its
+completion record but excluded from paired accuracy comparisons.
+
+\subsection{What familiarity means}
+
+For test complex $i$ and cutoff date $c$, familiarity is schematically
+\[
+ F_i(c)=\max_{j:\,\mathrm{date}(j)<c}
+ \operatorname{similarity}(i,j).
+\]
+The published \texttt{sucos\_shape\_pocket\_qcov} score ranges from 0 to 100
+and combines ligand-pose similarity with coverage of the experimental protein
+pocket. A high score means that a closely related pocket--ligand pose existed
+before the cutoff; it is not a model prediction and not an accuracy score.
+
+Here, ``cutoff'' means the \textbf{PDB structural-training cutoff}. Nesso-1's structural trunk used
+experimental PDB structures released before September 30, 2021; Boltz-2 used
+experimental PDB structures released before June 1, 2023
+\citep{shenoy2026nesso1,passaro2025boltz2}. Consequently, the same physical
+complex has two potentially different familiarity scores. \textbf{Only the
+historical PDB lookup changes; the test complex itself does not.} The two model
+columns below are deliberately kept separate; their x-values should not be
+treated as one shared measurement.
+
+\subsection{Shared structural metrics}
+
+The closest common representation is a distance between a protein C$\beta$
+token (C$\alpha$ for glycine) and a ligand heavy atom. Nesso-1 supplies an
+expected distance from its 64-bin distribution; Boltz-2 supplies the distance
+measured in its sampled coordinate model.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{L{0.26\textwidth}L{0.59\textwidth}L{0.08\textwidth}}
+\toprule
+Metric & Plain-language meaning & Better \\
+\midrule
+Interface distance MAE & Mean absolute error for token pairs whose experimental distance is at most 15~\AA{}. & Lower \\
+Token-contact F1 & Recovery of protein-token--ligand-atom contacts within 6~\AA{}, balancing precision and recall. & Higher \\
+Pocket F1 & Recovery of protein residues having any heavy atom within 6~\AA{} of the ligand. & Higher \\
+\bottomrule
+\end{tabular}
+\caption{The three metrics applied to both model outputs. Exact ligand-graph
+symmetries were handled before scoring.}
+\end{table}
+
+Spearman $\rho$ is the correlation between the ranks of familiarity and the
+ranks of an accuracy metric. It measures a monotonic relationship, not a slope.
+For example, $\rho=-0.72$ does not mean that MAE changes by
+$-0.72$~\AA{} per familiarity point. The reported correlations use every
+system's continuous familiarity value. The bars are bin medians shown only as
+a visual summary; their 95\% intervals use 2,000 bootstrap replicates.
+
+\subsection{Accuracy as a function of familiarity}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/nesso_boltz_familiarity.pdf}
+\caption{Structural accuracy versus model-specific familiarity. Each bar is
+the median in a 20-point familiarity interval; error bars are 95\% bootstrap
+intervals, and $n$ is the number of systems in that interval. Nesso-1 uses a
+September-2021 PDB structural-training cutoff and Boltz-2 uses a June-2023 PDB
+structural-training cutoff. These dates do not date every affinity-assay record
+used to train the models. Lower interface MAE and higher F1 are favorable.}
+\label{fig:familiarity_comparison}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{L{0.25\textwidth}L{0.21\textwidth}L{0.21\textwidth}L{0.21\textwidth}}
+\toprule
+Model and PDB structural-training cutoff & Interface MAE $\rho$ & Contact F1 $\rho$ & Pocket F1 $\rho$ \\
+\midrule
+Nesso-1, Sep. 2021 ($n=50$) & $-0.721$ $[-0.876,-0.486]$ & $+0.727$ $[+0.511,+0.876]$ & $+0.677$ $[+0.433,+0.854]$ \\
+Boltz-2, Jun. 2023 ($n=49$) & $-0.690$ $[-0.839,-0.475]$ & $+0.692$ $[+0.485,+0.828]$ & $+0.690$ $[+0.472,+0.831]$ \\
+\bottomrule
+\end{tabular}
+\caption{Spearman correlations with 95\% bootstrap intervals. All six
+intervals exclude zero.}
+\end{table}
+
+Both models show the same high-level behavior: greater pre-cutoff structural
+familiarity is associated with lower interface-distance error and better
+contact and pocket recovery. The result does not support a sharp threshold at
+familiarity 50. The bin medians fluctuate, especially in low-familiarity bins;
+the continuous rank correlations are the primary evidence for a broad trend.
+
+The shapes are not identical. Nesso-1 improves relatively gradually across its
+five bins. Boltz-2's pocket recovery is already high in the 20--40 bin, but its
+lowest-familiarity bin contains a mixture of successes and complete failures,
+giving very wide uncertainty intervals. Its contact F1 and interface MAE also
+fluctuate between the 20--40 and 40--60 bins before improving at higher
+familiarity. These descriptive bin differences should not be interpreted as a
+head-to-head comparison at the same x-value because the two columns use
+different historical cutoffs and the cohort was balanced only by Boltz-2's
+score.
+
+This association does not establish its cause. Familiarity may reflect direct
+training-set resemblance, but protein family, ligand class, experimental
+structure quality, and intrinsic problem difficulty can also vary with the
+score. The result therefore does not by itself prove memorization.
+
+\subsection{Direct comparison on the same systems}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{L{0.31\textwidth}rrr}
+\toprule
+Metric & Nesso-1 median & Boltz-2 median & Boltz/Nesso/ties \\
+\midrule
+Interface distance MAE (\AA) & 1.387 & 0.881 & 22/27/0 \\
+6~\AA{} token-contact F1 & 0.462 & 0.780 & 27/16/6 \\
+6~\AA{} pocket F1 & 0.514 & 0.889 & 44/1/4 \\
+\bottomrule
+\end{tabular}
+\caption{Paired results on the 49 systems completed by both models. The final
+column counts which model was better on each individual system.}
+\end{table}
+
+Boltz-2 had substantially better pocket recovery: its mean paired improvement
+in pocket F1 was $+0.318$ with a 95\% bootstrap interval of
+$[+0.251,+0.388]$. Contact F1 also favored Boltz-2 on average. Interface MAE
+was mixed: Nesso-1 was better on 27 systems, Boltz-2 on 22, and the paired mean
+improvement interval included zero. The lower Boltz-2 cohort median should
+therefore not be read as a consistent system-by-system MAE advantage.
+
+Only Boltz-2 generates explicit coordinates. After global protein C$\alpha$
+alignment, its median protein C$\alpha$ RMSD was 0.894~\AA{} and its median
+symmetry-corrected ligand heavy-atom RMSD was 3.355~\AA{}. Ligand RMSD was below
+2~\AA{} for 22/49 structures and below 5~\AA{} for 30/49. Nesso-1 has no valid
+coordinate RMSD because it does not output a Cartesian complex.
+
+\section{Benchmarks used by the FEP community}
+
+A benchmark is only meaningful after stating the question it asks. Most
+free-energy perturbation (FEP) benchmarks ask the following question: given a prepared
+protein structure, a plausible bound pose, and a series of related ligands, can
+a method recover the experimental \emph{relative} affinity differences within
+that series? This is close to lead optimization in medicinal chemistry,
+but it does not test blind pocket discovery or de novo pose prediction.
+The date of the benchmark paper is not necessarily the age of its data. A
+compound also has no single standard ``date'': it may have been synthesized,
+assayed, patented, and published at different times. In Table~\ref{tab:benchmark_landscape},
+\emph{data vintage} therefore means the newest date that can be audited from
+the public record: the publication year of the affinity measurement where
+available, or the challenge/data-release date for blinded pharmaceutical sets.
+Links in that column point to the
+underlying paper, metadata, or public data release rather than merely to the
+benchmark paper.
+
+\begin{table}[H]
+\centering
+\scriptsize
+\begin{tabular}{L{0.13\textwidth}L{0.21\textwidth}L{0.13\textwidth}L{0.28\textwidth}L{0.15\textwidth}}
+\toprule
+Benchmark & Data vintage and provenance & Approximate scale & Main question & Paper / data \\
+\midrule
+Original FEP+/JACS set & Public assay papers span roughly 2004--2013; the collection was assembled in 2015. & 199 ligands, eight protein systems & Can relative binding free energies rank congeneric ligand series? & \href{https://doi.org/10.1021/ja512751q}{Paper}; \href{https://github.com/schrodinger/public_binding_free_energy_benchmark}{data} \\
+FEP+4 used in Week 34 & Same source pool; the newest clearly linked assay series is TYK2, 2013. & 87 ligands, four kinase series & Can related ligands be ranked within CDK2, JNK1, p38, and TYK2? & \href{https://doi.org/10.1016/j.ejmech.2013.03.070}{TYK2 source}; \href{https://github.com/schrodinger/public_binding_free_energy_benchmark}{data} \\
+D3R Grand Challenges & The latest round, GC4, used blinded Janssen and Novartis data in 2018--2019. & Challenge-dependent, blind test sets & Can methods predict poses, affinity ranks, and in some rounds relative free energies prospectively? & \href{https://doi.org/10.1007/s10822-020-00289-y}{GC4 paper}; \href{https://drugdesigndata.org/about/datasets}{data} \\
+Hahn/OpenFF benchmark & Many source papers; each ligand records a measurement DOI. The latest source year in the released metadata is 2019. & 599 ligands, 22 systems in the published set & Can free-energy methods be compared on open, standardized inputs and measurements? & \href{https://doi.org/10.33011/livecoms.4.1.1497}{Paper}; \href{https://github.com/openforcefield/protein-ligand-benchmark}{repository} \\
+Ross FEP benchmark & Prior source/FEP studies extend through 2022; 93 compounds are from anonymized in-house sets. & 1,237 compounds across many series & How does FEP perform across a broader domain, including charge changes, fragments, macrocycles, scaffold hops, GPCRs, and buried-water changes? & \href{https://doi.org/10.1038/s42004-023-01019-9}{Paper}; \href{https://github.com/schrodinger/public_binding_free_energy_benchmark}{repository} \\
+OpenFE public study & No newer compound set: it explicitly reuses the Ross v2.0 collection. & JACS, fragment, and Merck subsets of the Ross collection & Can an open RBFE workflow reproduce results on shared inputs and protocols? & \href{https://industrybenchmarks2024.readthedocs.io/en/latest/public/overview.html}{Protocol}; \href{https://github.com/OpenFreeEnergy/IndustryBenchmarks2024}{repository} \\
+CASP16 affinity task & Blinded pharmaceutical data in the 2024 challenge; public experimental-data release dated 7 August 2025. & 122 assessed ligand cases across two affinity targets & In a blind challenge, can methods rank affinities before and after experimental poses are released? & \href{https://doi.org/10.1002/prot.70061}{Paper}; \href{https://doi.org/10.5281/zenodo.16762332}{data} \\
+\bottomrule
+\end{tabular}
+\caption{The benchmarks were built for different scientific purposes and
+should not be interpreted as interchangeable leaderboards
+\citep{wang2015fepplus,hahn2022bindingbenchmarks,ross2023fepaccuracy,
+openfe2024industry,gilson2026casp16,gaieb2019d3rgc3}.}
+\label{tab:benchmark_landscape}
+\end{table}
+
+The FEP+4 calculation is therefore best described as four independent
+within-target ranking tests, not 87 independent tests of new proteins. The
+larger FEP collections improve chemical and protein coverage, but they still
+usually begin with at least one experimental complex per ligand series and
+model the remaining ligand poses from that anchor. This is intentional: FEP is
+normally used to compare related compounds after a binding site and plausible
+pose are already known \citep{ross2023fepaccuracy}.
+
+The numerical emphasis also differs. FEP studies normally report errors in
+relative binding free energy, such as pairwise RMSE or mean unsigned error in
+kcal mol$^{-1}$, together with rank measures such as Kendall's $\tau$. For
+learned affinity models, Pearson or Spearman correlation within a ligand series can be useful, but a
+large correlation on a familiar series is not by itself evidence that the
+model generalizes to a new pocket or chemical family.
+
+\section{Nesso-1 architecture, step by step}
+
+The central architectural idea of Nesso-1 is:
+
+\begin{center}
+\colorbox{light}{\parbox{0.88\textwidth}{\centering
+Protein sequence + ligand chemistry
+$\longrightarrow$ token features
+$\longrightarrow$ pair representation $z_{ij}$
+$\longrightarrow$ distance distributions
+$\longrightarrow$ predicted pocket
+$\longrightarrow$ affinity outputs.}}
+\end{center}
+
+Nesso-1 does not first generate a complete atomic protein--ligand complex and
+then score that structure. Instead, it learns a probabilistic map of distances
+between protein-residue centers and ligand heavy atoms, then gives this learned
+geometry to a smaller affinity network \citep{shenoy2026nesso1}.
+
+\subsection{Inputs and tokenization}
+
+For the simplest use case, the input contains a protein amino-acid sequence, a
+ligand SMILES string, and the identity of the ligand to score. Nesso-1 does not
+require an experimental protein structure, an MSA, a user-specified pocket, or
+an initial protein--ligand pose.
+
+Each standard protein residue becomes one token. Its geometric target is the
+C$\beta$ atom, or C$\alpha$ for glycine. Each ligand heavy atom becomes one
+token; ligand hydrogens are omitted. If the protein has $N_P$ residues and the
+ligand has $N_L$ heavy atoms, the model begins with approximately
+\[
+  N=N_P+N_L
+\]
+tokens. For example, a 300-residue protein with a 30-heavy-atom ligand gives
+approximately 330 tokens.
+
+The input-processing code constructs standard reference atoms for each amino
+acid. For a ligand supplied as SMILES, it generates an isolated 3D conformer
+with RDKit ETKDG. This conformer provides the ligand's internal geometry; it
+does \emph{not} specify where the ligand sits relative to the protein. The atom
+encoder uses atom identity, names, charge, chirality, hybridization, bonds, and
+local reference geometry, then pools atom information into token vectors.
+
+\subsection{ESM-2 supplies protein sequence context}
+
+The protein sequence is also processed by the pretrained ESM-2 protein language
+model. For each residue $i$, ESM-2 supplies a contextual vector
+\[
+  \mathbf e_i\in\mathbb R^{1280}.
+\]
+``Contextual'' means that the vector for an amino acid depends on the surrounding
+sequence, not only on its residue identity. Nesso-1 uses ESM-2 in place of the explicit MSA processing used by
+Boltz-2.
+
+After the atom, residue-type, and ESM information is projected, every token has
+a single-token representation $\mathbf s_i$. In the released Nesso-1 checkpoint,
+\[
+  \mathbf s_i\in\mathbb R^{384}.
+\]
+
+The 384-dimensional vector does not replace ESM-2 before ESM is used. Nesso
+first applies a learned projection to each 1280-dimensional ESM vector,
+\[
+  \widetilde{\mathbf e}_i
+  =W_2\,\operatorname{ReLU}\!\left(
+  W_1\,\operatorname{LayerNorm}(\mathbf e_i)
+  \right),
+  \qquad
+  \mathbb R^{1280}\longrightarrow\mathbb R^{384}.
+\]
+It then adds the projected ESM context to Nesso's atom/residue token features,
+\[
+  \mathbf s_i
+  =\mathbf s_i^{\mathrm{atom/residue}}
+  +\widetilde{\mathbf e}_i^{\mathrm{ESM}},
+  \qquad \mathbf s_i\in\mathbb R^{384}.
+\]
+The projection is learned: it selects and transforms the parts of ESM-2 that
+are useful to Nesso rather than selecting the first 384 ESM coordinates.
+
+For a 300-residue protein and a 30-heavy-atom ligand, the shapes can be followed
+as
+\[
+  \underbrace{300\times1280}_{\text{raw protein ESM-2}}
   \longrightarrow
-  (\text{target} + \text{binder backbone},\ \text{trajectory}).
+  \underbrace{300\times384}_{\text{projected protein context}},
 \]
-The generated chain is initially represented as a backbone proposal; it is not
-a chemically complete protein and it has no designed amino-acid sequence.
-
-\subsection{Why equivariance matters}
-
-RFdiffusion represents protein geometry using residue-level positions and
-orientations. If every input coordinate is transformed by the same rigid
-motion,
+followed, after alignment with the ligand tokens, by
 \[
-  \mathbf{x}_i' = Q\mathbf{x}_i + \mathbf{a},
+  \underbrace{330\times384}_{\text{all token features}}
+  \longrightarrow
+  \underbrace{330\times330\times128}_{\text{pair representation }z}.
 \]
-the denoised output should transform by the same $Q$ and $\mathbf{a}$. This
-SE(3)-equivariance prevents the model from attaching meaning to the arbitrary
-orientation of a protein in a coordinate file. It also explains why geometric
-guidance should depend on invariant distances, angles, contacts, or energies,
-rather than laboratory-frame Cartesian coordinates.
+Thus 1280, 384, and 128 describe three different objects: the raw ESM residue
+embedding, Nesso's combined single-token feature, and each entry in the
+token-pair matrix, respectively. The compression is especially important for
+the pair representation because its memory already grows as $N^2$; using width
+1280 instead of 128 there would require approximately ten times the pair-feature
+memory.
 
-\subsection{What hotspot conditioning establishes}
+\subsection{The pair representation \texorpdfstring{$z$}{z}}
 
-Hotspots are conditioning information, not residues that RFdiffusion discovers
-as experimental binding sites. In the existing matched insulin-receptor
-ablation, both arms used the same complex checkpoint, target, contig, ten
-seeds, and sampling settings; only the hotspot tensor was removed. The guided
-backbone had a smaller minimum C$\alpha$ distance to A59, A83, or A91 in 9 of
-10 matched seeds. The median minimum distance was 6.38~\AA{} with hotspots and
-9.72~\AA{} without them.
-
-This demonstrates that hotspot information steers backbone placement. It does
-not demonstrate affinity, folding, specificity, or validated pocket discovery.
-The ten guided seeds also produced diverse backbones: pairwise intrinsic trace
-RMSD had a median of 13.36~\AA, and target-aligned binder-pose Chamfer distance
-had a median of 5.08~\AA. One RFdiffusion output is therefore one stochastic
-proposal, not a unique solution.
-
-\section{ProteinMPNN: sequence design on a fixed backbone}
-
-ProteinMPNN addresses the next question: given fixed backbone coordinates,
-which amino-acid identities are geometrically compatible with them
-\citep{dauparas2022proteinmpnn}? It constructs a residue graph from backbone
-geometry, passes messages using invariant geometric features, and samples a
-sequence autoregressively. Schematically,
+The central object is not a coordinate array but a learned pair tensor
 \[
-  p(\mathbf{s}\mid X)
-  = \prod_{k=1}^{L} p\!\left(s_{\pi_k}\mid
-  s_{\pi_1},\ldots,s_{\pi_{k-1}},X\right),
+  z\in\mathbb R^{N\times N\times128}.
 \]
-where $X$ is the fixed backbone, $\mathbf{s}$ is the sequence, and $\pi$ is a
-decoding order. Target residues can be fixed while only the generated binder
-chain is designed.
+Each element $z_{ij}$ is a 128-dimensional description of the relationship
+between tokens $i$ and $j$. The matrix contains protein--protein,
+protein--ligand, ligand--protein, and ligand--ligand blocks. For example,
+$z_{42,L_5}$ represents what the network currently knows about protein residue
+42 relative to ligand atom 5.
 
-The model returns amino-acid probabilities and a sequence-model score. A low
-negative log-probability means that ProteinMPNN considers the sequence
-compatible with the supplied backbone under its learned distribution. It does
-not mean low binding free energy, high affinity, or high experimental success.
-
-For the fixed 90-residue RFdiffusion seed-42 backbone, the audited run generated
-100 unique ProteinMPNN sequences at temperature 0.1. Median pairwise identity
-was 66.7\%, median position entropy was 0.648 nats, and 17 of 90 positions were
-invariant in this finite sample. These data provide a useful sequence ensemble
-for studying which backbone positions are tightly constrained, but they do not
-yet rank binding.
-
-\section{Where a physics-aware score could enter}
-
-The cleanest initial use of a new interface score is beside ProteinMPNN, after
-RFdiffusion has fixed the backbone:
+The initial pair representation is built approximately as
 \[
-\begin{aligned}
-  \text{RFdiffusion backbones}
-  &\longrightarrow \text{ProteinMPNN sequence ensemble} \\
-  &\longrightarrow \text{all-atom reconstruction and interface scoring} \\
-  &\longrightarrow \text{diverse shortlist}.
-\end{aligned}
+  z_{ij}^{(0)}
+  =W_{\mathrm L}\mathbf s_i
+  +W_{\mathrm R}\mathbf s_j
+  +\mathbf r_{ij}
+  +\mathbf b_{ij}.
 \]
-This preserves the interpretation of each score. ProteinMPNN likelihood asks
-whether a sequence is compatible with a backbone; the physical score asks
-whether the resulting interface has favorable chemistry and geometry. An
-initial score could include clash penalties, buried nonpolar surface,
-unsatisfied polar groups, hydrogen-bond geometry, electrostatic complementarity,
-and penalties for exposed hydrophobes.
+Here $W_{\mathrm L}$ and $W_{\mathrm R}$ are learned projections from 384 to
+128 dimensions, $\mathbf r_{ij}$ describes relationships such as sequence
+separation and chain or entity identity, and $\mathbf b_{ij}$ describes ligand
+bonds and bond types. Projected ESM information supplies an additional
+single-to-pair update. Thus, $z_{ij}^{(0)}$ is an addition of learned token and
+pair features; it is not the scalar dot product
+$\mathbf s_i^{\mathsf T}\mathbf s_j$.
 
-Three levels of integration should be distinguished:
-\begin{enumerate}
-  \item \textbf{Reranking:} generate sequences normally, reconstruct side
-  chains, and rank with the physical score. This is simplest and most auditable.
-  \item \textbf{Biased sampling:} combine ProteinMPNN log probability with a
-  differentiable or locally updated interface score during sequence sampling.
-  This can improve efficiency but requires calibration of two unlike scores.
-  \item \textbf{Joint retraining:} train or fine-tune a sequence model with the
-  physical objective. This is the most ambitious option and needs reliable
-  labels, negative examples, and controls against score exploitation.
-\end{enumerate}
+At initialization, $z_{ij}^{(0)}$ mainly records what kinds of objects $i$ and
+$j$ are and their known sequence or bond relationship. Its useful geometric
+meaning is developed by the Pairformer.
 
-For a starter study, reranking is preferable because it lets us test whether
-the physical score adds information beyond ProteinMPNN likelihood without
-changing either pretrained model.
+\subsection{What the Pairformer does}
 
-\section{Planned Week 35 deliverables}
+The released trunk contains 48 Pairformer blocks. Every block applies, in
+order:
 
 \begin{enumerate}
-  \item Trace one TYK2--4GIH forward pass through the released Boltz-2,
-  Nesso-1, and FlashBind implementations and identify the exact information
-  consumed by each affinity head.
-  \item Add one architecture-matched perturbation for each affinity model, as
-  defined in the Week 34 report.
-  \item Present the RFdiffusion target, contig, hotspot tensor, noisy binder
-  frames, and final backbone as an explicit input--output diagram.
-  \item Present the ProteinMPNN residue graph, design mask, logits, sampled
-  sequences, and position-wise entropy for the fixed insulin-receptor binder
-  backbone.
-  \item Define a small, prespecified physics-aware reranking score and test
-  whether it selects information different from ProteinMPNN likelihood. No
-  claim of affinity improvement will be made without an independent structural
-  or experimental test.
+  \item outgoing triangle multiplication;
+  \item incoming triangle multiplication;
+  \item starting-node triangle attention;
+  \item ending-node triangle attention; and
+  \item a pair-transition multilayer perceptron.
 \end{enumerate}
 
-\section{Evidence boundary}
+Each operation produces a residual update, $z\leftarrow z+\Delta z$, so the
+network progressively refines rather than replaces the pair table.
 
-The insulin-receptor calculations currently establish execution,
-conditioning behavior, stochastic structural diversity, and sequence diversity.
-They do not establish that any generated sequence folds, binds the receptor,
-modulates signaling, or has measurable affinity. The first useful scientific
-advance is therefore not simply generating more candidates; it is defining an
-independent and falsifiable selection procedure.
+\paragraph{Triangle multiplication.}
+To update pair $(i,j)$, triangle multiplication aggregates information through
+every possible third token $k$. Its two directions can be written schematically
+as
+\[
+  \Delta z_{ij}^{\mathrm{out}}
+  \sim\sum_k A(z_{ik})\odot B(z_{jk}),
+  \qquad
+  \Delta z_{ij}^{\mathrm{in}}
+  \sim\sum_k A(z_{ki})\odot B(z_{kj}),
+\]
+where $A$ and $B$ are learned projections and $\odot$ denotes elementwise
+multiplication. These equations show the information flow rather than every
+normalization and gate in the implementation.
+
+For example, let $i$ be protein residue 42, $j$ ligand atom 5, and $k$ ligand
+atom 6. If atoms 5 and 6 are bonded and atom 6 is predicted near residue 42,
+the two other sides of the triangle provide information about the possible
+relationship between residue 42 and atom 5.
+
+\paragraph{Triangle attention.}
+Attention also considers third tokens $k$, but learns which intermediates are
+most relevant. One attention direction is schematically
+\[
+  \alpha_{ijk}
+  =\operatorname{softmax}_k\!\left(
+    \frac{\mathbf q_{ij}^{\mathsf T}\mathbf k_{ik}}{\sqrt d}
+    +\text{pair bias}
+  \right),
+  \qquad
+  \Delta z_{ij}=\sum_k\alpha_{ijk}\mathbf v_{ik}.
+\]
+The released blocks use four attention heads, allowing different heads to
+emphasize different relational patterns. Dot products therefore occur
+\emph{inside} attention when calculating weights, but the complete $z$ tensor
+is not a dot-product similarity matrix.
+
+\paragraph{Pair transition.}
+After communication among pairs, a small MLP transforms the 128 features within
+each pair independently,
+\[
+  z_{ij}\leftarrow z_{ij}+\operatorname{MLP}(z_{ij}).
+\]
+Triangle operations communicate across the pair table; the transition mixes
+features within one table entry.
+
+The Pairformer does not analytically enforce molecular geometry. Instead, the
+distogram training loss propagates through all 48 blocks, rewarding internal
+features that predict experimental distance bins. This supervision is what
+makes the final $z$ geometrically informative. Before the distogram head, the
+released implementation symmetrizes it as
+\[
+  z_{ij}^{\mathrm{sym}}=z_{ij}+z_{ji},
+\]
+consistent with the physical symmetry $d_{ij}=d_{ji}$.
+
+Unlike a full AlphaFold-style trunk, the Nesso-1 trunk updates only $z$. It does
+not maintain a large evolving MSA representation and it does not send $z$ into
+an atomic diffusion decoder.
+
+\subsection{From \texorpdfstring{$z$}{z} to a distogram}
+
+A linear head converts every pair representation into 64 logits. Softmax gives
+a categorical distance distribution,
+\[
+  p_{ij}^{(b)}=P\!\left(d_{ij}\text{ lies in distance bin }b\right).
+\]
+Thus, the model can assign probability to several possible distances instead
+of committing to one coordinate set. Using bin center $c_b$, its expected
+distance is
+\[
+  \bar d_{ij}=\sum_b p_{ij}^{(b)}c_b.
+\]
+The uncertainty of a pair distribution can be summarized by
+\[
+  H_{ij}=-\sum_b p_{ij}^{(b)}\log p_{ij}^{(b)}.
+\]
+Nesso reports averaged protein--protein, protein--ligand, and ligand--ligand
+entropies. A concentrated distance distribution has lower entropy; a diffuse
+one has higher entropy.
+
+This distogram is Nesso-1's native structural output. The paper reconstructs
+approximate residue-center and ligand-heavy-atom poses by optimizing coordinates
+to agree with the expected distances, but the standard released inference path
+does not generate a full atomic protein PDB structure.
+
+\subsection{Automatic pocket selection and recycling}
+
+The model infers the relevant protein region rather than receiving a pocket
+from the user:
+
+\begin{enumerate}
+  \item The first trunk pass processes the complete protein and ligand.
+  \item The distogram head estimates each protein residue's distance to the
+  ligand.
+  \item Protein tokens predicted within 22~\AA{} of the ligand are retained,
+  subject to a default total crop budget of 256 tokens.
+  \item Later recycling passes repeatedly update $z$ using this smaller region.
+\end{enumerate}
+
+Our command used \texttt{recycling\_steps=5}. In the released implementation,
+this means one initial trunk evaluation followed by five recycled evaluations.
+For the affinity calculation, a tighter predicted cutoff of 15~\AA{} selects
+the protein tokens supplied to the affinity modules. These cutoffs define model
+context; they should not be interpreted as exact physical boundaries of the
+binding site.
+
+\subsection{The affinity modules}
+
+The selected interface is passed to a second, smaller Pairformer. It receives:
+
+\begin{itemize}
+  \item token features from the atom and residue encoders;
+  \item the ESM-2 protein embeddings;
+  \item the pretrained pair representation $z$; and
+  \item the predicted distance-bin probabilities.
+\end{itemize}
+
+The released checkpoint contains two independently parameterized affinity
+modules, each with eight Pairformer blocks. Their masks focus computation on
+protein--ligand and ligand--ligand pairs. After these updates, the relevant pair
+features are averaged into one global vector,
+\[
+  \mathbf g=
+  \frac{\sum_{ij}m_{ij}z_{ij}}{\sum_{ij}m_{ij}},
+\]
+and small multilayer perceptrons map $\mathbf g$ to a continuous affinity output
+and a binary binder output.
+
+The two continuous module outputs are
+\begin{center}
+\texttt{affinity\_pred\_value1}\qquad
+\texttt{affinity\_pred\_value2}.
+\end{center}
+The value normally used is their mean,
+\[
+  \texttt{affinity\_pred\_value}
+  =\frac{\texttt{value1}+\texttt{value2}}{2}.
+\]
+The two binder probabilities are likewise averaged. The released documentation
+expresses the continuous value as
+\[
+  \log_{10}\!\left(\frac{\mathrm{IC}_{50}}{\mu\mathrm M}\right),
+\]
+so lower values indicate stronger predicted binding: $-3$, 0, and 2 correspond
+nominally to approximately 1~nM, 1~$\mu$M, and 100~$\mu$M. Because the training
+labels mix several assay endpoints, this output is best treated as an
+assay-trained potency score, not as a rigorous calculated IC$_{50}$ or binding
+free energy.
+
+The binary output is
+\[
+  P(\text{binder}\mid\text{protein, ligand}),
+\]
+which addresses classification rather than continuous potency ranking. The two
+outputs should remain separate in evaluation.
+
+\subsection{Training objectives}
+
+Training is most easily understood in two stages. First, the atom encoder and
+trunk learn geometry by minimizing categorical cross-entropy for experimental
+distance bins. Structural training uses PDB structures released before
+September 30, 2021, AFDB protein distillation data, and distilled
+protein--ligand complexes described in the paper. This teaches $z$ to encode
+pairwise geometry.
+
+Second, the affinity modules learn public assay outcomes. The regression data
+come mainly from BindingDB and ChEMBL, while classification data also include
+PubChem, the CeMM fragment collection, and MIDAS. Classification uses focal
+loss. Regression uses Huber losses for both absolute values and within-assay
+differences. The relative term encourages
+\[
+  \hat y_A-\hat y_B\approx y_A-y_B
+\]
+for compounds measured in the same assay. It is up-weighted because public
+assays can have different systematic offsets, while within-assay ligand
+ordering is often the more reliable medicinal-chemistry signal.
+
+Affinity and potency labels $K_d$, $K_i$, IC$_{50}$, and EC$_{50}$ are treated
+interchangeably during this training. This choice expands the public training
+set but limits the strict physical interpretation of the continuous output.
+
+\subsection{Bridge to Boltz-2}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{L{0.23\textwidth}L{0.34\textwidth}L{0.34\textwidth}}
+\toprule
+Component & Nesso-1 & Boltz-2 \\
+\midrule
+Protein context & ESM-2 sequence embedding; no MSA required & MSA-derived evolutionary information, with optional templates \\
+Central internal object & Token-pair representation and distance distributions & Single and pair representations coupled to full coordinate generation \\
+Protein geometric resolution & One predicted center per residue & Full atomic complex output \\
+Ligand geometric resolution & Heavy-atom tokens & Full atomic complex output \\
+Structure decoder & No atomic diffusion; optional distance-based reconstruction & Diffusion decoder generates explicit coordinates \\
+Pocket handling & Inferred from expected protein--ligand distances & Emerges through complex cofolding \\
+Affinity calculation & Two smaller Pairformer modules operating on the predicted interface & Affinity head operating on Boltz trunk and structural representations \\
+Primary design priority & Fast affinity classification and ranking & Detailed complex structure together with affinity \\
+\bottomrule
+\end{tabular}
+\caption{High-level architectural bridge from Nesso-1 to Boltz-2. A detailed
+Boltz-2 forward pass is the next architecture topic.}
+\end{table}
+
+Nesso-1 therefore saves computation by stopping at a probabilistic
+residue-center/heavy-atom distance map. The tradeoff is that it does not directly
+resolve protein side-chain conformations, precise hydrogen-bond angles, atomic
+steric clashes, explicit waters, or a complete Cartesian complex. Its hypothesis
+is that the learned interface map is nevertheless sufficient for rapid affinity
+ranking.
+
+
+\section{Conclusion and limits}
+
+The paired experiment gives two main results. First, structural familiarity is
+strongly associated with accuracy for both Nesso-1 and Boltz-2, using a
+model-appropriate historical cutoff for each. Second, Boltz-2's explicit
+coordinate generation recovers the experimental pocket more reliably, whereas
+Nesso-1 is faster and remains competitive on the common interface-distance
+error metric.
+
+The cohort was deliberately balanced by Boltz-2's familiarity score and is not
+a random sample of all Runs N' Poses systems. The calculation uses one seed and
+one Boltz-2 diffusion sample per system. MSA-1024 is a local memory-constrained
+protocol, and one long protein failed. Finally, Runs N' Poses does not provide
+a uniform affinity endpoint for these systems, so none of these structural
+results establishes affinity-prediction accuracy.
+
+The benchmark survey also changes how I interpret the Week 34 affinity result.
+The 87 compounds came from only four kinase series, so that calculation is a
+useful released-model reproduction and a test of within-series ranking, but not
+a broad test of target-level generalization. The larger public FEP collections
+provide more diverse follow-up systems, while their prepared structures and
+congeneric series must remain part of the interpretation.
+
+For next week, I will apply the \emph{Runs N' Poses idea} to affinity
+benchmarks rather than treating the FEP benchmark names as sufficient evidence
+of difficulty. Beginning with Nesso-1 and its September 2021 structural cutoff,
+I will determine how similar each FEP test pocket and ligand is to complexes
+available before that cutoff, first for FEP+4 and then for selected open
+Hahn/OpenFF or Ross series. Pocket familiarity, ligand chemical familiarity,
+and affinity-training overlap will be recorded separately. I will then ask
+whether Nesso-1's within-series ranking performance changes with familiarity.
+This is planned work; no such FEP familiarity result is claimed in this report.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}

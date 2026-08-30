@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import platform
@@ -14,6 +15,16 @@ import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+
+
+def file_record(path: Path) -> dict:
+    """Return a stable path/checksum record for a run-defining input file."""
+    resolved = path.resolve()
+    return {
+        "path": str(resolved),
+        "size_bytes": resolved.stat().st_size,
+        "sha256": hashlib.sha256(resolved.read_bytes()).hexdigest(),
+    }
 
 
 def gpu_snapshot() -> dict:
@@ -60,6 +71,10 @@ def main() -> None:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--model", required=True)
     parser.add_argument("--cwd", type=Path, required=True)
+    parser.add_argument("--experiment-config", type=Path)
+    parser.add_argument("--benchmark-config", type=Path)
+    parser.add_argument("--model-config", type=Path)
+    parser.add_argument("--manifest", type=Path)
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     command = args.command[1:] if args.command and args.command[0] == "--" else args.command
@@ -131,6 +146,16 @@ def main() -> None:
         "python": sys.version,
         "platform": platform.platform(),
         "project_git": git_metadata(args.cwd),
+        "run_definitions": {
+            name: file_record(path)
+            for name, path in (
+                ("experiment_config", args.experiment_config),
+                ("benchmark_config", args.benchmark_config),
+                ("model_config", args.model_config),
+                ("manifest", args.manifest),
+            )
+            if path is not None
+        },
         "selected_environment": {
             key: os.environ.get(key)
             for key in (

@@ -1,0 +1,84 @@
+id: rnp_boltz2_nesso1_postcutoff50
+status: complete_with_one_boltz2_hardware_failure
+manifest: data/manifests/rnp_boltz2_nesso1_postcutoff50.json
+
+question: How do Boltz-2 and Nesso-1 recover the structures of the same 50 post-June-2023 protein-ligand complexes, and how does each model's accuracy vary with structural familiarity at its own training cutoff?
+
+source:
+  name: Runs N' Poses
+  doi: 10.5281/zenodo.14794785
+  repository_revision: 197fafc60a5cef3a9e7f8a4b0dac7c965eed3839
+  ground_truth_archive_sha256: 1b9f778bc3150f246c0f37b48215588c48369e39e6603c2b15975f0ec1b18d51
+  similarity_archive_sha256: ce771a2439a91210b7e4ebd09a729fb75d95b6c8265f4f38bae95913f4016804
+
+analysis_set:
+  systems: 50
+  release_date_rule: release_date > 2023-06-01
+  boltz2_familiarity_cutoff: 2023-06-01
+  nesso1_familiarity_cutoff: 2021-09-30
+  familiarity_metric: sucos_shape_pocket_qcov
+  boltz2_bin_counts:
+    0-20: 10
+    20-40: 10
+    40-60: 10
+    60-80: 10
+    80-100: 10
+  diversity_constraints:
+    unique_runs_n_poses_cluster: true
+    unique_pdb_entry: true
+    unique_canonical_ligand_smiles: true
+    unique_protein_sequence: true
+  selection_seed: 2026082801
+
+model_inputs:
+  common:
+    - exact_deposited_protein_construct_sequence
+    - stereochemical_ligand_smiles
+  boltz2_only:
+    - colabfold_msa_generated_from_protein_sequence
+  forbidden:
+    - experimental_coordinates
+    - pocket_residue_labels
+    - reference_ligand_pose
+
+metrics:
+  ligand_symmetry_policy:
+    allowed_mappings: exact_graph_isomorphisms
+    interface_distance_mae: minimum
+    token_contact_f1: maximum
+    tie_breaking: lexicographic
+  paired_primary:
+    - interface_expected_distance_mae_angstrom
+    - token_contact_precision_at_6a
+    - token_contact_recall_at_6a
+    - token_contact_f1_at_6a
+    - physical_pocket_precision_at_6a
+    - physical_pocket_recall_at_6a
+    - physical_pocket_f1_at_6a
+  boltz2_additional:
+    - protein_global_ca_rmsd_angstrom
+    - ligand_heavy_atom_rmsd_after_global_protein_alignment_angstrom
+  familiarity_analysis:
+    correlation: spearman_rank_correlation
+    model_specific_cutoffs: true
+    uncertainty: cluster_bootstrap
+    bootstrap_unit: runs_n_poses_cluster
+    bootstrap_iterations: 2000
+    bootstrap_seed: 2026082802
+
+gate:
+  policy: one_median_length_system_per_boltz2_familiarity_bin
+  systems:
+    - 7ftm__1__1.A__1.C__1.C
+    - 8aqf__1__1.A__1.B__1.B
+    - 8jmp__1__1.A__1.D__1.D
+    - 8haq__1__1.A__1.C__1.C
+    - 8iqt__1__1.A__1.B__1.B
+  stopping_rule: Do not expand to all 50 until both models produce parseable finite outputs on all five systems and coordinate-to-reference mapping passes manual and automated checks.
+
+outcome:
+  nesso1_completed: 50
+  boltz2_completed: 49
+  paired_analysis_systems: 49
+  boltz2_hardware_failure: 8uk6__1__1.A__1.C__1.C
+  results: reports/exp015_boltz2_nesso1_rnp_postcutoff50/results/summary.json

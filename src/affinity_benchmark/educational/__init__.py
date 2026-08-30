@@ -30,3 +30,4 @@ __all__ = [
     "sample_ddim",
     "sample_with_score_guidance",
 ]
+"""Small, inspectable teaching models used by the educational notebooks."""

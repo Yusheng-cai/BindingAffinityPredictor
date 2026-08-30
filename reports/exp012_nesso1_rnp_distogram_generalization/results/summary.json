@@ -1,0 +1,720 @@
+{
+  "schema_version": 1,
+  "experiment_id": "exp012_nesso1_rnp_distogram_generalization",
+  "run": {
+    "status": "complete",
+    "return_code": 0,
+    "command": [
+      "env",
+      "-u",
+      "PYTHONPATH",
+      "NESSO_CACHE=/mnt/hdd2/BindingAffinityPredictor/cache/nesso",
+      "/home/yusheng/programs/nesso-1.0.0/bin/nesso",
+      "predict",
+      "runs/exp012_nesso1_rnp_distogram_generalization/inputs/nesso1_flat",
+      "--out_dir",
+      "runs/exp012_nesso1_rnp_distogram_generalization/nesso1/seed42/full100/raw",
+      "--cache",
+      "/mnt/hdd2/BindingAffinityPredictor/cache/nesso",
+      "--model_revision",
+      "v1.0.0",
+      "--accelerator",
+      "gpu",
+      "--devices",
+      "1",
+      "--precision",
+      "bf16-mixed",
+      "--recycling_steps",
+      "5",
+      "--num_workers",
+      "1",
+      "--require_affinity",
+      "--refine_protein_inference",
+      "--refine_protein_cutoff",
+      "22.0",
+      "--refine_protein_tokens_budget",
+      "256",
+      "--no_kernels",
+      "--seed",
+      "42",
+      "--save_metadata"
+    ],
+    "project_git": {
+      "revision": "4d9893075398c0f2431dc5f1d273572590e8c6f5",
+      "working_tree_dirty": true
+    },
+    "started_utc": "2026-08-20T16:20:20.544057+00:00",
+    "ended_utc": "2026-08-20T16:33:49.117197+00:00",
+    "wall_time_seconds": 808.612002570997,
+    "max_host_rss_kib": 4262756,
+    "peak_total_gpu_memory_mib": 9603,
+    "peak_gpu_memory_above_baseline_mib": 8018,
+    "gpu_before": {
+      "index": 0,
+      "name": "NVIDIA GeForce RTX 3080",
+      "memory_total_mib": 10240,
+      "memory_used_mib": 1585,
+      "utilization_percent": 0,
+      "temperature_c": 41
+    }
+  },
+  "metric_definitions": {
+    "interface_distogram_nll": "mean negative log probability of the observed Nesso distance bin for resolved protein-token/ligand-atom pairs at true distance <=15 A",
+    "token_contacts": "C-beta (C-alpha for glycine) to ligand-heavy-atom distance <=6 A",
+    "physical_pocket": "protein residue with any resolved protein heavy atom <=6 A from ligand",
+    "ligand_symmetry": "minimum NLL over exact graph-isomorphic ligand atom mappings"
+  },
+  "failures": [],
+  "aggregate": {
+    "systems_requested": 100,
+    "systems_scored": 100,
+    "systems_failed": 0,
+    "bootstrap": {
+      "unit": "Runs N' Poses cluster (one selected system per cluster)",
+      "iterations": 2000,
+      "seed": 20260820,
+      "interval": "percentile 95%"
+    },
+    "overall": {
+      "interface_distogram_nll": {
+        "n": 100,
+        "mean": 3.682250714366926,
+        "median": 2.9357180904484252
+      },
+      "interface_expected_distance_mae_angstrom": {
+        "n": 100,
+        "mean": 2.5949968137365027,
+        "median": 1.3112754019589334
+      },
+      "token_contact_average_precision_at_6a": {
+        "n": 100,
+        "mean": 0.5728182998401316,
+        "median": 0.7399853408856532
+      },
+      "token_contact_auroc_at_6a": {
+        "n": 100,
+        "mean": 0.9347664397266322,
+        "median": 0.9955934722171781
+      },
+      "physical_pocket_precision_at_6a": {
+        "n": 100,
+        "mean": 0.7909633422133422,
+        "median": 1.0
+      },
+      "physical_pocket_recall_at_6a": {
+        "n": 100,
+        "mean": 0.3444150408487484,
+        "median": 0.375
+      },
+      "physical_pocket_f1_at_6a": {
+        "n": 100,
+        "mean": 0.4529906238221283,
+        "median": 0.5255754475703325
+      }
+    },
+    "by_familiarity_bin": {
+      "0-20": {
+        "n": 13,
+        "metrics": {
+          "interface_distogram_nll": {
+            "n": 13,
+            "median": 6.008784499336522,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 4.184642096024556,
+            "upper_95": 7.489286347539296
+          },
+          "interface_expected_distance_mae_angstrom": {
+            "n": 13,
+            "median": 6.963289123578844,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 4.90795518425515,
+            "upper_95": 8.645447732033762
+          },
+          "token_contact_average_precision_at_6a": {
+            "n": 13,
+            "median": 0.04793798621399881,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.013142408872261084,
+            "upper_95": 0.14820709425840595
+          },
+          "token_contact_auroc_at_6a": {
+            "n": 13,
+            "median": 0.8292521519387192,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.584826946500816,
+            "upper_95": 0.9719093794842806
+          },
+          "physical_pocket_precision_at_6a": {
+            "n": 13,
+            "median": 0.0,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.0,
+            "upper_95": 0.75
+          },
+          "physical_pocket_recall_at_6a": {
+            "n": 13,
+            "median": 0.0,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.0,
+            "upper_95": 0.034482758620689655
+          },
+          "physical_pocket_f1_at_6a": {
+            "n": 13,
+            "median": 0.0,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.0,
+            "upper_95": 0.06666666666666667
+          }
+        }
+      },
+      "20-30": {
+        "n": 13,
+        "metrics": {
+          "interface_distogram_nll": {
+            "n": 13,
+            "median": 4.126483940694789,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 3.422183895228988,
+            "upper_95": 4.903712874299987
+          },
+          "interface_expected_distance_mae_angstrom": {
+            "n": 13,
+            "median": 3.0672982889675127,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 2.027363929038663,
+            "upper_95": 3.841863314944628
+          },
+          "token_contact_average_precision_at_6a": {
+            "n": 13,
+            "median": 0.22901667905936432,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.09160964982508268,
+            "upper_95": 0.42791434886031593
+          },
+          "token_contact_auroc_at_6a": {
+            "n": 13,
+            "median": 0.9731904942078105,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.9619977759512643,
+            "upper_95": 0.9881259344326233
+          },
+          "physical_pocket_precision_at_6a": {
+            "n": 13,
+            "median": 0.8333333333333334,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.6666666666666666,
+            "upper_95": 1.0
+          },
+          "physical_pocket_recall_at_6a": {
+            "n": 13,
+            "median": 0.14285714285714285,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.025,
+            "upper_95": 0.2571428571428571
+          },
+          "physical_pocket_f1_at_6a": {
+            "n": 13,
+            "median": 0.23529411764705882,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.04878048780487806,
+            "upper_95": 0.40909090909090906
+          }
+        }
+      },
+      "30-40": {
+        "n": 13,
+        "metrics": {
+          "interface_distogram_nll": {
+            "n": 13,
+            "median": 4.018532221278355,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 2.9762090003297064,
+            "upper_95": 4.998010983176439
+          },
+          "interface_expected_distance_mae_angstrom": {
+            "n": 13,
+            "median": 2.31641543444765,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 1.5698765711703746,
+            "upper_95": 4.283713266625983
+          },
+          "token_contact_average_precision_at_6a": {
+            "n": 13,
+            "median": 0.22021491384530933,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.08873765069148266,
+            "upper_95": 0.7359264101268007
+          },
+          "token_contact_auroc_at_6a": {
+            "n": 13,
+            "median": 0.972137932458096,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.9551427933958054,
+            "upper_95": 0.996492796013433
+          },
+          "physical_pocket_precision_at_6a": {
+            "n": 13,
+            "median": 0.9166666666666666,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.5333333333333333,
+            "upper_95": 1.0
+          },
+          "physical_pocket_recall_at_6a": {
+            "n": 13,
+            "median": 0.26666666666666666,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.07692307692307693,
+            "upper_95": 0.4090909090909091
+          },
+          "physical_pocket_f1_at_6a": {
+            "n": 13,
+            "median": 0.3555555555555555,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.14285714285714288,
+            "upper_95": 0.5625000000000001
+          }
+        }
+      },
+      "40-50": {
+        "n": 13,
+        "metrics": {
+          "interface_distogram_nll": {
+            "n": 13,
+            "median": 3.6446604958399287,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 2.6534517431353226,
+            "upper_95": 4.864234079859003
+          },
+          "interface_expected_distance_mae_angstrom": {
+            "n": 13,
+            "median": 1.8755710479293035,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.8608145689863913,
+            "upper_95": 3.276741119229926
+          },
+          "token_contact_average_precision_at_6a": {
+            "n": 13,
+            "median": 0.41243312366037815,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.18639183187754477,
+            "upper_95": 0.814864847105946
+          },
+          "token_contact_auroc_at_6a": {
+            "n": 13,
+            "median": 0.9887642644091789,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.9536567704561911,
+            "upper_95": 0.997563013507868
+          },
+          "physical_pocket_precision_at_6a": {
+            "n": 13,
+            "median": 1.0,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.8571428571428571,
+            "upper_95": 1.0
+          },
+          "physical_pocket_recall_at_6a": {
+            "n": 13,
+            "median": 0.26666666666666666,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.1111111111111111,
+            "upper_95": 0.3939393939393939
+          },
+          "physical_pocket_f1_at_6a": {
+            "n": 13,
+            "median": 0.4210526315789474,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.1904761904761905,
+            "upper_95": 0.5652173913043478
+          }
+        }
+      },
+      "50-60": {
+        "n": 12,
+        "metrics": {
+          "interface_distogram_nll": {
+            "n": 12,
+            "median": 2.5139036326885797,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 1.96656531937627,
+            "upper_95": 3.0217626337171266
+          },
+          "interface_expected_distance_mae_angstrom": {
+            "n": 12,
+            "median": 0.6972401271031652,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.45484427448490505,
+            "upper_95": 1.213381765983514
+          },
+          "token_contact_average_precision_at_6a": {
+            "n": 12,
+            "median": 0.9110035655826855,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.7764907359015756,
+            "upper_95": 0.9408093755601444
+          },
+          "token_contact_auroc_at_6a": {
+            "n": 12,
+            "median": 0.9975851556512301,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.9907990271416857,
+            "upper_95": 0.9991442409010998
+          },
+          "physical_pocket_precision_at_6a": {
+            "n": 12,
+            "median": 1.0,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.9142857142857144,
+            "upper_95": 1.0
+          },
+          "physical_pocket_recall_at_6a": {
+            "n": 12,
+            "median": 0.5504807692307692,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.42857142857142855,
+            "upper_95": 0.7095238095238096
+          },
+          "physical_pocket_f1_at_6a": {
+            "n": 12,
+            "median": 0.71,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.5903225806451613,
+            "upper_95": 0.8253968253968255
+          }
+        }
+      },
+      "60-70": {
+        "n": 12,
+        "metrics": {
+          "interface_distogram_nll": {
+            "n": 12,
+            "median": 1.8917078143036665,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 1.6357634612391896,
+            "upper_95": 2.4025405960214252
+          },
+          "interface_expected_distance_mae_angstrom": {
+            "n": 12,
+            "median": 0.49072764385565526,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.35269525476898855,
+            "upper_95": 0.6769906645644844
+          },
+          "token_contact_average_precision_at_6a": {
+            "n": 12,
+            "median": 0.9317247668608978,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.7968324244487557,
+            "upper_95": 0.986082890429433
+          },
+          "token_contact_auroc_at_6a": {
+            "n": 12,
+            "median": 0.9988695341602543,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.9960289851489228,
+            "upper_95": 0.9998159666490675
+          },
+          "physical_pocket_precision_at_6a": {
+            "n": 12,
+            "median": 1.0,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.975,
+            "upper_95": 1.0
+          },
+          "physical_pocket_recall_at_6a": {
+            "n": 12,
+            "median": 0.5388257575757576,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.4502164502164502,
+            "upper_95": 0.6377840909090908
+          },
+          "physical_pocket_f1_at_6a": {
+            "n": 12,
+            "median": 0.7,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.6204529855868222,
+            "upper_95": 0.7774984286612194
+          }
+        }
+      },
+      "70-80": {
+        "n": 12,
+        "metrics": {
+          "interface_distogram_nll": {
+            "n": 12,
+            "median": 1.5457700221745867,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 1.3585326519630887,
+            "upper_95": 2.2230497726851173
+          },
+          "interface_expected_distance_mae_angstrom": {
+            "n": 12,
+            "median": 0.3704559874005083,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.29482737815169296,
+            "upper_95": 0.5588044029777908
+          },
+          "token_contact_average_precision_at_6a": {
+            "n": 12,
+            "median": 0.9680700170163336,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.9084805117697108,
+            "upper_95": 0.9842023036685841
+          },
+          "token_contact_auroc_at_6a": {
+            "n": 12,
+            "median": 0.999503445637529,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.9986691357062103,
+            "upper_95": 0.9997402708211656
+          },
+          "physical_pocket_precision_at_6a": {
+            "n": 12,
+            "median": 1.0,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 1.0,
+            "upper_95": 1.0
+          },
+          "physical_pocket_recall_at_6a": {
+            "n": 12,
+            "median": 0.5584415584415584,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.45079365079365075,
+            "upper_95": 0.5833333333333334
+          },
+          "physical_pocket_f1_at_6a": {
+            "n": 12,
+            "median": 0.7165775401069518,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.6214177978883861,
+            "upper_95": 0.7368421052631579
+          }
+        }
+      },
+      "80-100": {
+        "n": 12,
+        "metrics": {
+          "interface_distogram_nll": {
+            "n": 12,
+            "median": 1.8542671271879398,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 1.224104692352691,
+            "upper_95": 2.433091847194506
+          },
+          "interface_expected_distance_mae_angstrom": {
+            "n": 12,
+            "median": 0.44094245161463447,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.2935533292432738,
+            "upper_95": 1.0448400564087086
+          },
+          "token_contact_average_precision_at_6a": {
+            "n": 12,
+            "median": 0.9517640835891454,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.825273445105198,
+            "upper_95": 0.9721946122838829
+          },
+          "token_contact_auroc_at_6a": {
+            "n": 12,
+            "median": 0.9993327774818369,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.9975473793676486,
+            "upper_95": 0.9997146763739534
+          },
+          "physical_pocket_precision_at_6a": {
+            "n": 12,
+            "median": 1.0,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 1.0,
+            "upper_95": 1.0
+          },
+          "physical_pocket_recall_at_6a": {
+            "n": 12,
+            "median": 0.48,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.3883333333333333,
+            "upper_95": 0.6274509803921569
+          },
+          "physical_pocket_f1_at_6a": {
+            "n": 12,
+            "median": 0.6476608187134503,
+            "iterations_requested": 2000,
+            "iterations_finite": 2000,
+            "lower_95": 0.5588235294117647,
+            "upper_95": 0.7703703703703704
+          }
+        }
+      }
+    },
+    "spearman_vs_familiarity": {
+      "interface_distogram_nll": {
+        "n": 100,
+        "rho": -0.7038905007247424,
+        "iterations_requested": 2000,
+        "iterations_finite": 2000,
+        "lower_95": -0.7963254553697792,
+        "upper_95": -0.5773489652237077
+      },
+      "interface_expected_distance_mae_angstrom": {
+        "n": 100,
+        "rho": -0.7086909951756926,
+        "iterations_requested": 2000,
+        "iterations_finite": 2000,
+        "lower_95": -0.813545711293221,
+        "upper_95": -0.5843487168991951
+      },
+      "token_contact_average_precision_at_6a": {
+        "n": 100,
+        "rho": 0.6817182169794168,
+        "iterations_requested": 2000,
+        "iterations_finite": 2000,
+        "lower_95": 0.5430366518328112,
+        "upper_95": 0.7869449418366008
+      },
+      "token_contact_auroc_at_6a": {
+        "n": 100,
+        "rho": 0.6621682033279227,
+        "iterations_requested": 2000,
+        "iterations_finite": 2000,
+        "lower_95": 0.518754220432669,
+        "upper_95": 0.763519733273917
+      },
+      "physical_pocket_precision_at_6a": {
+        "n": 100,
+        "rho": 0.500468557843667,
+        "iterations_requested": 2000,
+        "iterations_finite": 2000,
+        "lower_95": 0.3189000868611119,
+        "upper_95": 0.648291869858386
+      },
+      "physical_pocket_recall_at_6a": {
+        "n": 100,
+        "rho": 0.6374034368070269,
+        "iterations_requested": 2000,
+        "iterations_finite": 2000,
+        "lower_95": 0.4954897192586524,
+        "upper_95": 0.7491343747605603
+      },
+      "physical_pocket_f1_at_6a": {
+        "n": 100,
+        "rho": 0.6466182613826703,
+        "iterations_requested": 2000,
+        "iterations_finite": 2000,
+        "lower_95": 0.5026455921275301,
+        "upper_95": 0.7601213795888182
+      }
+    },
+    "entropy_error_spearman": {
+      "interface_distogram_nll": {
+        "n": 100,
+        "rho": 0.7473387338733872,
+        "iterations_requested": 2000,
+        "iterations_finite": 2000,
+        "lower_95": 0.5991347532260002,
+        "upper_95": 0.8468386680657212
+      },
+      "interface_expected_distance_mae_angstrom": {
+        "n": 100,
+        "rho": 0.8240504050405039,
+        "iterations_requested": 2000,
+        "iterations_finite": 2000,
+        "lower_95": 0.7095257152581985,
+        "upper_95": 0.9013807410590877
+      }
+    },
+    "exploratory_entropy_error_partial_spearman": {
+      "interface_distogram_nll": {
+        "controlling_familiarity": {
+          "n": 100,
+          "rho": 0.5283379912101357,
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "lower_95": 0.2729355921288242,
+          "upper_95": 0.7270242881632788
+        },
+        "controlling_familiarity_protein_and_ligand_size": {
+          "n": 100,
+          "rho": 0.4929050397204292,
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "lower_95": 0.25214585679492335,
+          "upper_95": 0.7001546467819851
+        }
+      },
+      "interface_expected_distance_mae_angstrom": {
+        "controlling_familiarity": {
+          "n": 100,
+          "rho": 0.6710215450277155,
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "lower_95": 0.4465785511477883,
+          "upper_95": 0.8258281202136815
+        },
+        "controlling_familiarity_protein_and_ligand_size": {
+          "n": 100,
+          "rho": 0.6454890355031366,
+          "iterations_requested": 2000,
+          "iterations_finite": 2000,
+          "lower_95": 0.4118050712326649,
+          "upper_95": 0.8072342336334584
+        }
+      }
+    }
+  }
+}

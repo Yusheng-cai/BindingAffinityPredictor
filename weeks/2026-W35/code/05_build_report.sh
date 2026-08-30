@@ -5,6 +5,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$script_dir/../../.." && pwd)"
 report_dir="$repo_root/weeks/2026-W35/report"
 
+python3 "$script_dir/build_assets.py"
 install -m 0644 "$repo_root/literature/references.bib" "$report_dir/references.bib"
 install -d "$report_dir/build"
 

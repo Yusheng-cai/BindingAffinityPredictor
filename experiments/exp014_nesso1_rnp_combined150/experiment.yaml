@@ -1,0 +1,29 @@
+id: exp014_nesso1_rnp_combined150
+title: Pooled Nesso-1 structural-familiarity analysis on 150 Runs N' Poses systems
+status: complete
+manifest: data/manifests/rnp_nesso1_combined150.json
+benchmark_config: configs/benchmarks/rnp_nesso1_combined150.yaml
+model_config: configs/models/nesso1.yaml
+
+components:
+  - experiment: exp012_nesso1_rnp_distogram_generalization
+    systems: 100
+    failures: 0
+  - experiment: exp013_nesso1_rnp_confirmation50
+    systems: 50
+    failures: 0
+
+analysis:
+  systems: 150
+  failures: 0
+  bootstrap_unit: runs_n_poses_cluster
+  bootstrap_iterations: 2000
+  bootstrap_seed: 2026082051
+  results: reports/exp014_nesso1_rnp_combined150/results/summary.json
+
+primary_findings:
+  familiarity_vs_distogram_nll_spearman_rho: -0.6506
+  familiarity_vs_distance_mae_spearman_rho: -0.6858
+  familiarity_vs_contact_ap_spearman_rho: 0.6490
+  familiarity_vs_pocket_f1_spearman_rho: 0.6379
+  entropy_vs_distance_mae_spearman_rho: 0.7854
