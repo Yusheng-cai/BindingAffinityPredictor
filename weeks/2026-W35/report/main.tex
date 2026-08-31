@@ -106,24 +106,36 @@ completion record but excluded from paired accuracy comparisons.
 
 \subsection{What familiarity means}
 
-For test complex $i$ and cutoff date $c$, familiarity is schematically
+Runs N' Poses released a table of precomputed similarities between each test
+complex and candidate protein--ligand structures from the PDB
+\citep{skrinjar2025runsnposes}. For test complex $i$ and model cutoff date $c$,
+I first exclude every candidate $j$ released on or after the cutoff. Familiarity
+is the highest score among the candidates that remain:
 \[
  F_i(c)=\max_{j:\,\mathrm{date}(j)<c}
- \operatorname{similarity}(i,j).
+ S_{ij}.
 \]
-The published \texttt{sucos\_shape\_pocket\_qcov} score ranges from 0 to 100
-and combines ligand-pose similarity with coverage of the experimental protein
-pocket. A high score means that a closely related pocket--ligand pose existed
-before the cutoff; it is not a model prediction and not an accuracy score.
+This is a nearest-neighbor score, not an average over the historical PDB. The
+released metric is
+\[
+ S_{ij}=\frac{\mathrm{SuCOS\ shape}_{ij}\times
+ \mathrm{pocket\ coverage}_{ij}}{100},
+\]
+on a 0--100 scale. SuCOS compares the two bound ligands' three-dimensional
+shape and chemical features; pocket coverage measures how much of the test
+binding pocket is matched by the candidate structure. A high value therefore
+means that at least one similar pocket--ligand example existed before the
+chosen cutoff. It is not a model prediction or an accuracy score.
 
-Here, ``cutoff'' means the \textbf{PDB structural-training cutoff}. Nesso-1's structural trunk used
-experimental PDB structures released before September 30, 2021; Boltz-2 used
-experimental PDB structures released before June 1, 2023
-\citep{shenoy2026nesso1,passaro2025boltz2}. Consequently, the same physical
-complex has two potentially different familiarity scores. \textbf{Only the
-historical PDB lookup changes; the test complex itself does not.} The two model
-columns below are deliberately kept separate; their x-values should not be
-treated as one shared measurement.
+Here, ``cutoff'' means the reported \textbf{PDB structural-training cutoff}.
+For Nesso-1 I use September 30, 2021; for Boltz-2 I use June 1, 2023
+\citep{shenoy2026nesso1,passaro2025boltz2}. Thus I perform two searches for the
+same unchanged test complex. The Boltz-2 search includes additional PDB
+structures released between the two dates and may therefore find a different,
+more similar historical neighbor. The resulting familiarity values are kept
+separate. They are cutoff-based proxies for what structural examples could
+have been available during training; they do not prove that a particular
+example was present in a model checkpoint.
 
 \subsection{Shared structural metrics}
 
@@ -259,10 +271,6 @@ head-to-head comparison at the same x-value because the two columns use
 different historical cutoffs and the cohort was balanced only by Boltz-2's
 score.
 
-This association does not establish its cause. Familiarity may reflect direct
-training-set resemblance, but protein family, ligand class, experimental
-structure quality, and intrinsic problem difficulty can also vary with the
-score. The result therefore does not by itself prove memorization.
 
 \subsection{Direct comparison on the same systems}
 
@@ -297,17 +305,17 @@ coordinate RMSD because it does not output a Cartesian complex.
 
 \section{Benchmarks used by the FEP community}
 
-Most
-free-energy perturbation (FEP) benchmarks ask the following question: given a prepared
-protein structure, a plausible bound pose, and a series of related ligands, can
-a method recover the experimental \emph{relative} affinity differences within
-that series?  In Table~\ref{tab:benchmark_landscape},
-\emph{data vintage} means the newest date that can be audited from
-the public record: the publication year of the affinity measurement where
-available, or the challenge/data-release date for blinded pharmaceutical sets.
-Links in that column point to the
-underlying paper, metadata, or public data release rather than merely to the
-benchmark paper.
+%Most
+%free-energy perturbation (FEP) benchmarks ask the following question: given a prepared
+%protein structure, a plausible bound pose, and a series of related ligands, can
+%a method recover the experimental \emph{relative} affinity differences within
+%that series?  In Table~\ref{tab:benchmark_landscape},
+%\emph{data vintage} means the newest date that can be audited from
+%the public record: the publication year of the affinity measurement where
+%available, or the challenge/data-release date for blinded pharmaceutical sets.
+%Links in that column point to the
+%underlying paper, metadata, or public data release rather than merely to the
+%benchmark paper.
 
 \begin{table}[H]
 \centering
