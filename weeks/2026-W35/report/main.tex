@@ -339,7 +339,7 @@ openfe2024industry,gilson2026casp16,gaieb2019d3rgc3}.}
 \label{tab:benchmark_landscape}
 \end{table}
 
-\section{Nesso-1 architecture, step by step}
+\section{Nesso-1 structural trunk, step by step}
 
 Consider one concrete input throughout this section: a protein sequence with
 300 residues and \emph{one} ligand containing 30 heavy atoms. The ligand is
@@ -359,13 +359,14 @@ The central computation for this 330-token example is:
 $\longrightarrow 330\times384$ token features
 $\longrightarrow 330\times330\times128$ pair features
 $\longrightarrow$ distance distributions
-$\longrightarrow$ predicted pocket and affinity.}}
+$\longrightarrow$ predicted pocket.}}
 \end{center}
 
 Nesso-1 does not first generate a complete atomic protein--ligand complex and
-then score that structure. Instead, it learns a probabilistic map of distances
-between protein-residue centers and ligand heavy atoms, then gives this learned
-geometry to a smaller affinity network \citep{shenoy2026nesso1}.
+then score that structure. Its structural trunk learns a probabilistic map of
+distances between protein-residue centers and ligand heavy atoms
+\citep{shenoy2026nesso1}. This section follows that structural calculation
+through automatic pocket selection.
 
 \subsection{Running example and program map}
 
@@ -808,95 +809,51 @@ if pass_index == 0 and refine_pocket:
 
 Our command used \texttt{recycling\_steps=5}. In the released implementation,
 this means one initial trunk evaluation followed by five recycled evaluations.
-For the affinity calculation, a tighter predicted cutoff of 15~\AA{} selects
-the protein tokens supplied to the affinity modules. These cutoffs define model
-context; they should not be interpreted as exact physical boundaries of the
-binding site.
+The 22~\AA{} cutoff defines model context; it should not be interpreted as an
+exact physical boundary of the binding site.
 
-\subsection{The affinity modules}
+\subsection{Structural training objective}
 
-The selected interface is passed to a second, smaller Pairformer. It receives:
-
-\begin{itemize}
-  \item token features from the atom and residue encoders;
-  \item the ESM-2 protein embeddings;
-  \item the pretrained pair representation $z$; and
-  \item the predicted distance-bin probabilities.
-\end{itemize}
-
-The released checkpoint contains two independently parameterized affinity
-modules, each with eight Pairformer blocks. Their masks focus computation on
-protein--ligand and ligand--ligand pairs. After these updates, the relevant pair
-features are averaged into one global vector,
+During structural training, reference coordinates define the distance between
+every valid token pair,
 \[
-  \mathbf g=
-  \frac{\sum_{ij}m_{ij}z_{ij}}{\sum_{ij}m_{ij}},
+  d_{ij}^{\mathrm{ref}}
+  =\left\|\mathbf x_i^{\mathrm{ref}}-\mathbf x_j^{\mathrm{ref}}\right\|_2.
 \]
-and small multilayer perceptrons map $\mathbf g$ to a continuous affinity output
-and a binary binder output.
-
-The two continuous module outputs are
-\begin{center}
-\texttt{affinity\_pred\_value1}\qquad
-\texttt{affinity\_pred\_value2}.
-\end{center}
-The value normally used is their mean,
+Each distance is assigned to one of 64 bins spanning the model's approximate
+2--22~\AA{} distogram range,
 \[
-  \texttt{affinity\_pred\_value}
-  =\frac{\texttt{value1}+\texttt{value2}}{2}.
+  y_{ij}=\operatorname{bin}\!\left(d_{ij}^{\mathrm{ref}}\right).
 \]
-\begin{samepage}
-The released model logic can therefore be summarized as:
+If the distogram head predicts logits $\ell_{ij}^{(b)}$, their softmax gives
+\[
+  p_{ij}^{(b)}
+  =\frac{\exp\ell_{ij}^{(b)}}{\sum_{b'=1}^{64}\exp\ell_{ij}^{(b')}}.
+\]
+The atom encoder and structural trunk are trained by categorical
+cross-entropy,
+\[
+  \mathcal L_{\mathrm{dist}}
+  =-\frac{1}{\sum_{ij}m_{ij}}
+  \sum_{ij}m_{ij}\log p_{ij}^{(y_{ij})},
+\]
+where $m_{ij}$ excludes padded or unresolved token pairs. In simplified code:
 \begin{verbatim}
-value1, binder1 = affinity_module1(z, distance_probabilities, inputs)
-value2, binder2 = affinity_module2(z, distance_probabilities, inputs)
+d_ref = pairwise_distance(reference_token_coordinates)
+target_bin = assign_to_64_bins(d_ref, min_dist=2, max_dist=22)
 
-affinity_pred_value = (value1 + value2) / 2
-binder_probability  = (binder1 + binder2) / 2
+distance_logits = distogram_head(z + transpose_token_axes(z))
+loss = cross_entropy(
+    distance_logits[valid_pair_mask],
+    target_bin[valid_pair_mask],
+)
 \end{verbatim}
-\end{samepage}
-The two binder probabilities are likewise averaged. The released documentation
-expresses the continuous value as
-\[
-  \log_{10}\!\left(\frac{\mathrm{IC}_{50}}{\mu\mathrm M}\right),
-\]
-so lower values indicate stronger predicted binding: $-3$, 0, and 2 correspond
-nominally to approximately 1~nM, 1~$\mu$M, and 100~$\mu$M. Because the training
-labels mix several assay endpoints, this output is best treated as an
-assay-trained potency score, not as a rigorous calculated IC$_{50}$ or binding
-free energy.
-
-The binary output is
-\[
-  P(\text{binder}\mid\text{protein, ligand}),
-\]
-which addresses classification rather than continuous potency ranking. The two
-outputs should remain separate in evaluation.
-
-\subsection{Training objectives}
-
-Training is most easily understood in two stages. First, the atom encoder and
-trunk learn geometry by minimizing categorical cross-entropy for experimental
-distance bins. Structural training uses PDB structures released before
-September 30, 2021, AFDB protein distillation data, and distilled
-protein--ligand complexes described in the paper. This teaches $z$ to encode
-pairwise geometry.
-
-Second, the affinity modules learn public assay outcomes. The regression data
-come mainly from BindingDB and ChEMBL, while classification data also include
-PubChem, the CeMM fragment collection, and MIDAS. Classification uses focal
-loss. Regression uses Huber losses for both absolute values and within-assay
-differences. The relative term encourages
-\[
-  \hat y_A-\hat y_B\approx y_A-y_B
-\]
-for compounds measured in the same assay. It is up-weighted because public
-assays can have different systematic offsets, while within-assay ligand
-ordering is often the more reliable medicinal-chemistry signal.
-
-Affinity and potency labels $K_d$, $K_i$, IC$_{50}$, and EC$_{50}$ are treated
-interchangeably during this training. This choice expands the public training
-set but limits the strict physical interpretation of the continuous output.
+This loss propagates through the distogram head, all 48 Pairformer blocks, the
+ESM update, and the atom/residue encoder. It teaches $z_{ij}$ to encode pairwise
+geometry without an RMSD loss or coordinate-diffusion loss. Structural training
+uses PDB structures released before September 30, 2021, AFDB protein
+distillation data, and distilled protein--ligand complexes described in the
+paper.
 
 \subsection{Putting everything together}
 
@@ -919,7 +876,6 @@ Step & Program object & Shape in the running example & Meaning \\
 5 & First Pairformer pass & $330\times330\times128$ & Context-dependent pair relationships after 48 blocks \\
 6 & Predicted pocket crop & $330\rightarrow M$, with $M\leq256$ & Ligand plus protein context predicted within the 22~\AA{} crop rule \\
 7 & Recycled pair table and distogram & $M\times M\times128$ and $M\times M\times64$ & Refined pair features and 64 distance-bin probabilities per pair \\
-8 & Affinity modules & two continuous values and two binder probabilities & Two eight-block affinity networks; each pair of outputs is averaged \\
 \bottomrule
 \end{tabular}
 \caption{Shape ledger for the 300-residue protein and 30-heavy-atom ligand.
@@ -933,6 +889,7 @@ shown in the preceding subsections.
 
 \begin{verbatim}
 def nesso_predict(protein_sequence, ligand_smiles, recycling_steps=5):
+
     # 1. Token and single-token features
     tokens = tokenize(protein_sequence, ligand_smiles)       # 330 tokens
     s_inputs = input_embedder(tokens)                        # [330, 384]
@@ -961,33 +918,21 @@ def nesso_predict(protein_sequence, ligand_smiles, recycling_steps=5):
             z, z_init, s_inputs, esm_full, pair_mask = crop_all(keep)
             s_context = rebuild_context(s_inputs, esm_full)
 
-    # 5. Final structural probabilities and predicted interface
+    # 5. Final structural probabilities
     p_distance = softmax(distogram_head(z + z.transpose(0, 1)))
-    interface = select_affinity_interface(p_distance, cutoff=15)
-
-    # 6. Two affinity estimates and two binder classifications
-    affinity_inputs = crop_affinity_inputs(
-        z, p_distance, s_inputs, esm_full, interface
-    )
-    value1, binder1 = affinity_module1(**affinity_inputs)
-    value2, binder2 = affinity_module2(**affinity_inputs)
 
     return {
         "distance_probabilities": p_distance,
-        "pocket_crop_indices": keep,              # 22-A context crop
-        "affinity_interface": interface,          # tighter 15-A selection
-        "affinity_pred_value": (value1 + value2) / 2,
-        "binder_probability": (binder1 + binder2) / 2,
+        "pocket_crop_indices": keep,
+        "final_pair_representation": z,
     }
 \end{verbatim}
 
-The key scientific interpretation is that Nesso-1 finishes with a probability
-distribution over pairwise distances, a predicted protein--ligand interface,
-an assay-trained continuous potency score, and a binder probability. The
-$N\times N$ or $M\times M$ tables are learned relationships, not Cartesian
+The structural trunk finishes with a probability distribution over pairwise
+distances, a predicted pocket crop, and the refined pair representation $z$.
+The $N\times N$ or $M\times M$ tables are learned relationships, not Cartesian
 coordinates. Unless a separate distance-based reconstruction procedure is run,
-this calculation does not produce a complete all-atom bound PDB structure, and
-the continuous score is not a physics-derived binding free energy.
+this calculation does not produce a complete all-atom bound PDB structure.
 
 
 \section{Conclusion and limits}
