@@ -33,15 +33,15 @@ Nesso-1 completed all 50 systems. Boltz-2 completed 49; the 818-residue 8UK6
 system exceeded the 10 GiB GPU limit. On the 49 systems completed by both
 models:
 
-- Boltz-2 recovered the experimental pocket more reliably: median 6 Å pocket
+- Boltz-2 recovered the experimental pocket more reliably: median 6 Å residue-pocket
   F1 was **0.889**, compared with **0.514** for Nesso-1, and Boltz-2 was better
   on 44/49 systems.
-- Median token-contact F1 was **0.780** for Boltz-2 and **0.462** for Nesso-1.
+- Median 6 Å token-pair contact F1 was **0.780** for Boltz-2 and **0.462** for Nesso-1.
 - Interface-distance MAE was mixed. Although the cohort medians were 0.881 Å
   for Boltz-2 and 1.387 Å for Nesso-1, Nesso-1 was better on 27 systems and
   Boltz-2 on 22, so there was no consistent paired advantage.
 - Greater pre-cutoff structural familiarity was strongly associated with
-  better accuracy for both models. For pocket F1, Spearman rho was **+0.677**
+  better accuracy for both models. For 6 Å residue-pocket F1, Spearman rho was **+0.677**
   for Nesso-1 and **+0.690** for Boltz-2. Each model used its own PDB
   structural-training cutoff: September 2021 for Nesso-1 and June 2023 for
   Boltz-2.

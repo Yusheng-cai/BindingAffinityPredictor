@@ -19,11 +19,11 @@ METRICS = {
         "higher_is_better": False,
     },
     "token_contact_f1_at_6a": {
-        "label": "6 Å token-contact F1",
+        "label": "6 Å token-pair contact F1",
         "higher_is_better": True,
     },
     "physical_pocket_f1_at_6a": {
-        "label": "6 Å pocket F1",
+        "label": "6 Å residue-pocket F1",
         "higher_is_better": True,
     },
 }

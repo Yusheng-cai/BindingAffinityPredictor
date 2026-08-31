@@ -5,9 +5,9 @@
 Both models became markedly more accurate as the test complex became more
 similar to structures available before that model's cutoff. On the 49 systems
 completed by both models, Boltz-2 recovered the correct pocket much more
-reliably: median 6 Å pocket F1 was **0.889** versus **0.514** for Nesso-1, and
+reliably: median 6 Å residue-pocket F1 was **0.889** versus **0.514** for Nesso-1, and
 Boltz-2 was better on 44 systems, Nesso-1 on one, with four ties. Boltz-2 also
-had higher median token-contact F1 (0.780 versus 0.462), although the median
+had higher median token-pair contact F1 (0.780 versus 0.462), although the median
 paired improvement was small because performance was heterogeneous. There was
 no consistent paired advantage in interface-distance MAE. Nesso-1 completed
 50/50 systems and was about 3.6 times faster locally; Boltz-2 completed 49/50,
@@ -42,10 +42,12 @@ ligand heavy atom.
 
 - **Interface distance MAE:** mean absolute error for resolved token pairs whose
   experimental distance is at most 15 Å. Lower is better.
-- **Token-contact F1:** binary recovery of token pairs within 6 Å. Higher is
+- **Token-pair contact F1:** binary recovery of token pairs within 6 Å. Higher is
   better.
-- **Pocket F1:** recovery of protein residues having any heavy atom within 6 Å
-  of the ligand. Higher is better.
+- **Residue-pocket F1:** recovery of protein residues whose experimental
+  structure has any heavy atom within 6 Å of the ligand. Nesso-1 predicts the
+  residue label from its representative-token distogram; Boltz-2 predicts it
+  from its final all-heavy-atom coordinate model. Higher is better.
 
 Nesso-1 predicts a probability distribution over distances; its expected
 distance is used here. Boltz-2 produces one sampled coordinate set, from which
@@ -58,8 +60,8 @@ coordinates, whereas the Nesso pocket call is inferred from token distances.
 | Metric | Nesso-1 median | Boltz-2 median | Boltz-2 / Nesso-1 / ties | Mean paired improvement for Boltz-2 (95% bootstrap interval) |
 | --- | ---: | ---: | ---: | ---: |
 | Interface distance MAE (Å) | 1.387 | 0.881 | 22 / 27 / 0 | −0.371 (−1.314, 0.481) Å |
-| 6 Å token-contact F1 | 0.462 | 0.780 | 27 / 16 / 6 | +0.095 (0.020, 0.172) |
-| 6 Å pocket F1 | 0.514 | 0.889 | 44 / 1 / 4 | +0.318 (0.251, 0.388) |
+| 6 Å token-pair contact F1 | 0.462 | 0.780 | 27 / 16 / 6 | +0.095 (0.020, 0.172) |
+| 6 Å residue-pocket F1 | 0.514 | 0.889 | 44 / 1 / 4 | +0.318 (0.251, 0.388) |
 
 For the error metric, improvement is defined as Nesso-1 minus Boltz-2; for F1,
 it is Boltz-2 minus Nesso-1. Positive therefore always favors Boltz-2. The
@@ -86,7 +88,7 @@ Faint points are individual systems. Connected points are medians in fixed
 bin's sample count is printed along the axis. The cohort was balanced by the
 Boltz-2 score, so Nesso-1's earlier-cutoff bin counts are not exactly equal.
 
-| Model and cutoff | Interface MAE ρ | Contact F1 ρ | Pocket F1 ρ |
+| Model and cutoff | Interface MAE ρ | Token-pair F1 ρ | Residue-pocket F1 ρ |
 | --- | ---: | ---: | ---: |
 | Nesso-1, Sep. 2021 (n=50) | −0.721 | +0.727 | +0.677 |
 | Boltz-2, Jun. 2023 (n=49) | −0.690 | +0.692 | +0.690 |

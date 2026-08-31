@@ -130,9 +130,32 @@ treated as one shared measurement.
 The closest common representation is a distance between a protein C$\beta$
 token (C$\alpha$ for glycine) and a ligand heavy atom. Nesso-1 supplies an
 expected distance from its 64-bin distribution; Boltz-2 supplies the distance
-measured in its sampled coordinate model. The two F1 metrics classify different
-objects: token-contact F1 classifies individual residue-token--ligand-atom
-pairs, whereas pocket F1 classifies whole protein residues.
+measured in its final diffusion-sampled coordinate model. I therefore use the
+more explicit names \textbf{6~\AA{} token-pair contact F1} and
+\textbf{6~\AA{} residue-pocket F1}. ``Average F1'' would be misleading: F1 is
+the harmonic mean of precision and recall, not an average distance or contact
+probability.
+
+Let $t(i)$ be the representative atom of protein residue $i$, let $j$ index a
+ligand heavy atom, and let $c_b$ be the center of distance bin $b$. For
+Nesso-1, distogram logits $\ell^{\mathrm{N}}_{ijb}$ are converted into a
+probability distribution and an expected distance,
+\begin{equation}
+ p^{\mathrm{N}}_{ijb}
+ =\frac{\exp(\ell^{\mathrm{N}}_{ijb})}
+ {\sum_{b'}\exp(\ell^{\mathrm{N}}_{ijb'})},
+ \qquad
+ \widehat d^{\mathrm{N}}_{ij}=\sum_b c_b p^{\mathrm{N}}_{ijb}.
+ \label{eq:nesso_expected_distance}
+\end{equation}
+For Boltz-2, the distance used in this analysis is instead measured from the
+predicted coordinates $\widehat{\mathbf r}^{\mathrm{B}}$,
+\begin{equation}
+ \widehat d^{\mathrm{B}}_{ij}
+ =\left\|\widehat{\mathbf r}^{\mathrm{B}}_{t(i)}
+ -\widehat{\mathbf r}^{\mathrm{B}}_j\right\|_2.
+ \label{eq:boltz_coordinate_distance}
+\end{equation}
 
 \begin{table}[H]
 \centering
@@ -142,29 +165,68 @@ pairs, whereas pocket F1 classifies whole protein residues.
 Metric & Plain-language meaning & Better \\
 \midrule
 Interface distance MAE & Mean absolute error for token pairs whose experimental distance is at most 15~\AA{}. & Lower \\
-Token-contact F1 & Recovery of individual protein-token--ligand-atom contacts within 6~\AA{}, balancing precision and recall. & Higher \\
-Pocket F1 & Recovery of the experimental 6~\AA{} pocket as a set of protein residues. & Higher \\
+Token-pair contact F1 & Recovery of individual protein-token--ligand-atom contacts within 6~\AA{}, balancing precision and recall. & Higher \\
+Residue-pocket F1 & Recovery of the experimental 6~\AA{} pocket as a set of protein residues. & Higher \\
 \bottomrule
 \end{tabular}
 \caption{The three metrics applied to both model outputs. Exact ligand-graph
 symmetries were handled before scoring.}
 \end{table}
 
-For token-contact F1, an experimental positive is a C$\beta$--ligand-heavy-atom
-distance at most 6~\AA{} (C$\alpha$ for glycine). Nesso-1 predicts that pair as
-a contact when the expected distance from its distogram is at most 6~\AA{};
-Boltz-2 is thresholded using the corresponding distance in its sampled
-coordinate model. For pocket F1, the experimental pocket contains a residue
-when \emph{any} of its resolved heavy atoms lies within 6~\AA{} of any ligand
-heavy atom. Boltz-2 can apply the same all-heavy-atom definition to its generated
-coordinates. Nesso-1 has no generated side-chain coordinates, so I call a
-residue a predicted pocket residue when its C$\beta$/C$\alpha$ token has an
-expected distance of at most 6~\AA{} to at least one ligand atom. Nesso-1's
-pocket F1 is therefore a coarse residue-center approximation to an atomic
-pocket, not a coordinate-based pocket measurement. I did not use Nesso-1's
+The reference and predicted token-pair labels are
+\begin{equation}
+ y^{\mathrm{ref}}_{ij}=\mathbb{1}[d^{\mathrm{ref}}_{ij}\leq 6~\text{\AA}],
+ \qquad
+ \widehat y^{m}_{ij}=\mathbb{1}[\widehat d^{m}_{ij}\leq 6~\text{\AA}],
+ \quad m\in\{\mathrm{N},\mathrm{B}\}.
+\end{equation}
+Across all scored pairs, precision, recall, and F1 are
+\begin{equation}
+ P=\frac{TP}{TP+FP},\qquad
+ R=\frac{TP}{TP+FN},\qquad
+ F_1=\frac{2PR}{P+R}.
+ \label{eq:f1}
+\end{equation}
+
+The residue-pocket metric first asks whether each whole residue belongs to the
+experimental pocket. If $H(i)$ is the set of resolved heavy atoms in residue
+$i$ and $L$ is the set of ligand heavy atoms, then
+\begin{align}
+ Y^{\mathrm{ref}}_i
+ &=\mathbb{1}\!\left[
+   \min_{a\in H(i),\,j\in L}
+   \|\mathbf r^{\mathrm{ref}}_a-\mathbf r^{\mathrm{ref}}_j\|_2
+   \leq 6~\text{\AA}\right], \label{eq:reference_pocket} \\
+ \widehat Y^{\mathrm{N}}_i
+ &=\mathbb{1}\!\left[\min_{j\in L}\widehat d^{\mathrm{N}}_{ij}
+   \leq 6~\text{\AA}\right], \label{eq:nesso_pocket} \\
+ \widehat Y^{\mathrm{B}}_i
+ &=\mathbb{1}\!\left[
+   \min_{a\in H(i),\,j\in L}
+   \|\widehat{\mathbf r}^{\mathrm{B}}_a
+     -\widehat{\mathbf r}^{\mathrm{B}}_j\|_2
+   \leq 6~\text{\AA}\right].
+ \label{eq:boltz_pocket}
+\end{align}
+Equations~\ref{eq:reference_pocket}--\ref{eq:boltz_pocket} make an important
+asymmetry explicit. The
+reference pocket is the same for both models, but Nesso-1 predicts it through
+residue-center distogram distances, whereas Boltz-2 predicts it from the final
+all-heavy-atom structure produced by diffusion. Nesso-1's value is therefore a
+residue-center approximation to an atomic pocket. I did not use Nesso-1's
 native pocket mask here: its 15~\AA{} affinity cutoff serves model context and
 is not the benchmark's 6~\AA{} contact definition. Experimental coordinates
 were introduced only during this post-inference scoring.
+
+Boltz-2 also contains an internal 64-bin trunk distogram, but the present
+benchmark did not extract it: it used one final sampled structure. These are
+two different kinds of distributions. The trunk distogram assigns probability
+to distance bins, while repeated diffusion samples would give an empirical
+distribution of possible coordinate models. A future, separately versioned
+analysis could extract Boltz-2's distogram and compare
+$P(d_{ij}\leq6~\text{\AA})$ directly, or generate multiple structures and
+measure how often each contact occurs. Neither distribution should be assumed
+to be calibrated or identical to Nesso-1's without testing.
 
 \subsection{Accuracy as a function of familiarity}
 
@@ -182,7 +244,7 @@ intervals, and $n$ is the number of systems in that interval.  Lower interface M
 \small
 \begin{tabular}{L{0.25\textwidth}L{0.21\textwidth}L{0.21\textwidth}L{0.21\textwidth}}
 \toprule
-Model and PDB structural-training cutoff & Interface MAE $\rho$ & Contact F1 $\rho$ & Pocket F1 $\rho$ \\
+Model and PDB structural-training cutoff & Interface MAE $\rho$ & Token-pair F1 $\rho$ & Residue-pocket F1 $\rho$ \\
 \midrule
 Nesso-1, Sep. 2021 ($n=50$) & $-0.721$ $[-0.876,-0.486]$ & $+0.727$ $[+0.511,+0.876]$ & $+0.677$ $[+0.433,+0.854]$ \\
 Boltz-2, Jun. 2023 ($n=49$) & $-0.690$ $[-0.839,-0.475]$ & $+0.692$ $[+0.485,+0.828]$ & $+0.690$ $[+0.472,+0.831]$ \\
@@ -222,8 +284,8 @@ score. The result therefore does not by itself prove memorization.
 Metric & Nesso-1 median & Boltz-2 median & Boltz/Nesso/ties \\
 \midrule
 Interface distance MAE (\AA) & 1.387 & 0.881 & 22/27/0 \\
-6~\AA{} token-contact F1 & 0.462 & 0.780 & 27/16/6 \\
-6~\AA{} pocket F1 & 0.514 & 0.889 & 44/1/4 \\
+6~\AA{} token-pair contact F1 & 0.462 & 0.780 & 27/16/6 \\
+6~\AA{} residue-pocket F1 & 0.514 & 0.889 & 44/1/4 \\
 \bottomrule
 \end{tabular}
 \caption{Paired results on the 49 systems completed by both models. The final
@@ -231,8 +293,8 @@ column counts which model was better on each individual system.}
 \end{table}
 
 Boltz-2 had substantially better pocket recovery: its mean paired improvement
-in pocket F1 was $+0.318$ with a 95\% bootstrap interval of
-$[+0.251,+0.388]$. Contact F1 also favored Boltz-2 on average. Interface MAE
+in residue-pocket F1 was $+0.318$ with a 95\% bootstrap interval of
+$[+0.251,+0.388]$. Token-pair contact F1 also favored Boltz-2 on average. Interface MAE
 was mixed: Nesso-1 was better on 27 systems, Boltz-2 on 22, and the paired mean
 improvement interval included zero. The lower Boltz-2 cohort median should
 therefore not be read as a consistent system-by-system MAE advantage.

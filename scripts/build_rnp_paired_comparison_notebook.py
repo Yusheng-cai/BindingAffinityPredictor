@@ -81,8 +81,8 @@ therefore uses the 49 systems completed by both models."""
         nbf.v4.new_code_cell(
             """labels = {
     "interface_expected_distance_mae_angstrom": "Interface distance MAE (Å; lower better)",
-    "token_contact_f1_at_6a": "6 Å token-contact F1 (higher better)",
-    "physical_pocket_f1_at_6a": "6 Å pocket F1 (higher better)",
+    "token_contact_f1_at_6a": "6 Å token-pair contact F1 (higher better)",
+    "physical_pocket_f1_at_6a": "6 Å residue-pocket F1 (higher better)",
 }
 rows = []
 for metric, label in labels.items():
@@ -105,7 +105,7 @@ display(pd.DataFrame(rows).set_index("metric").round(3))"""
         ),
         nbf.v4.new_markdown_cell(
             """The clearest separation is pocket recovery: Boltz-2 is better on
-44 of 49 paired systems. Contact F1 also favors Boltz-2 on average. Interface
+44 of 49 paired systems. Token-pair contact F1 also favors Boltz-2 on average. Interface
 distance MAE is more mixed; its paired interval overlaps zero, so the lower
 Boltz cohort median is not evidence of a consistent system-by-system win."""
         ),
