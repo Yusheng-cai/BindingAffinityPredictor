@@ -945,29 +945,41 @@ coordinate generation recovers the experimental pocket more reliably, whereas
 Nesso-1 is faster and remains competitive on the common interface-distance
 error metric.
 
-The cohort was deliberately balanced by Boltz-2's familiarity score and is not
-a random sample of all Runs N' Poses systems. The calculation uses one seed and
-one Boltz-2 diffusion sample per system. MSA-1024 is a local memory-constrained
-protocol, and one long protein failed. Finally, Runs N' Poses does not provide
-a uniform affinity endpoint for these systems, so none of these structural
-results establishes affinity-prediction accuracy.
+\subsection*{Next week's agenda}
 
-The benchmark survey also changes how I interpret the Week 34 affinity result.
-The 87 compounds came from only four kinase series, so that calculation is a
-useful released-model reproduction and a test of within-series ranking, but not
-a broad test of target-level generalization. The larger public FEP collections
-provide more diverse follow-up systems, while their prepared structures and
-congeneric series must remain part of the interpretation.
+I plan four connected tasks:
 
-For next week, I will apply the \emph{Runs N' Poses idea} to affinity
-benchmarks rather than treating the FEP benchmark names as sufficient evidence
-of difficulty. Beginning with Nesso-1 and its September 2021 structural cutoff,
-I will determine how similar each FEP test pocket and ligand is to complexes
-available before that cutoff, first for FEP+4 and then for selected open
-Hahn/OpenFF or Ross series. Pocket familiarity, ligand chemical familiarity,
-and affinity-training overlap will be recorded separately. I will then ask
-whether Nesso-1's within-series ranking performance changes with familiarity.
-This is planned work; no such FEP familiarity result is claimed in this report.
+\begin{enumerate}
+  \item \textbf{Run benchmarks used by the FEP community.} I will begin with
+  FEP+4 and one open collection from Hahn/OpenFF or Ross. For each series I
+  will record the experimental endpoint, source publication, structure
+  provenance, compound dates, and evaluation metric. I will then calculate
+  pocket and ligand familiarity relative to the appropriate model cutoff and
+  test whether within-series affinity ranking changes with familiarity.
+
+  \item \textbf{Trace commonly reused architectural recipes through the
+  literature.} Pairformer, triangle multiplication, triangle attention,
+  distograms, recycling, and protein-language-model conditioning will each be
+  connected to the papers that introduced or popularized them. I will record
+  what information each operation moves, why it is used, and the principal
+  alternatives.
+
+  \item \textbf{Understand the Nesso-1 affinity module.} Using the notation
+  established here, I will map its inputs---token features $s_i$, structural
+  pair features $z_{ij}$, distance probabilities $p_{ij}^{(b)}$, ESM features,
+  and interface masks---through the affinity Pairformer, pooling operation,
+  continuous output, binder output, and training losses.
+
+  \item \textbf{Build the corresponding Boltz-2 walkthrough.} I will follow
+  one input through MSA processing, the Boltz trunk, coordinate diffusion, the
+  structure output, and its affinity head. The goal is to use the same running
+  example and notation as the Nesso-1 analysis, making the similarities,
+  differences, computational costs, and possible locations for physical
+  information explicit.
+\end{enumerate}
+
+These are planned analyses; no FEP-familiarity or new architecture result is
+claimed in this report.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
