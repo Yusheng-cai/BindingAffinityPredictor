@@ -812,49 +812,6 @@ this means one initial trunk evaluation followed by five recycled evaluations.
 The 22~\AA{} cutoff defines model context; it should not be interpreted as an
 exact physical boundary of the binding site.
 
-\subsection{Structural training objective}
-
-During structural training, reference coordinates define the distance between
-every valid token pair,
-\[
-  d_{ij}^{\mathrm{ref}}
-  =\left\|\mathbf x_i^{\mathrm{ref}}-\mathbf x_j^{\mathrm{ref}}\right\|_2.
-\]
-Each distance is assigned to one of 64 bins spanning the model's approximate
-2--22~\AA{} distogram range,
-\[
-  y_{ij}=\operatorname{bin}\!\left(d_{ij}^{\mathrm{ref}}\right).
-\]
-If the distogram head predicts logits $\ell_{ij}^{(b)}$, their softmax gives
-\[
-  p_{ij}^{(b)}
-  =\frac{\exp\ell_{ij}^{(b)}}{\sum_{b'=1}^{64}\exp\ell_{ij}^{(b')}}.
-\]
-The atom encoder and structural trunk are trained by categorical
-cross-entropy,
-\[
-  \mathcal L_{\mathrm{dist}}
-  =-\frac{1}{\sum_{ij}m_{ij}}
-  \sum_{ij}m_{ij}\log p_{ij}^{(y_{ij})},
-\]
-where $m_{ij}$ excludes padded or unresolved token pairs. In simplified code:
-\begin{verbatim}
-d_ref = pairwise_distance(reference_token_coordinates)
-target_bin = assign_to_64_bins(d_ref, min_dist=2, max_dist=22)
-
-distance_logits = distogram_head(z + transpose_token_axes(z))
-loss = cross_entropy(
-    distance_logits[valid_pair_mask],
-    target_bin[valid_pair_mask],
-)
-\end{verbatim}
-This loss propagates through the distogram head, all 48 Pairformer blocks, the
-ESM update, and the atom/residue encoder. It teaches $z_{ij}$ to encode pairwise
-geometry without an RMSD loss or coordinate-diffusion loss. Structural training
-uses PDB structures released before September 30, 2021, AFDB protein
-distillation data, and distilled protein--ligand complexes described in the
-paper.
-
 \subsection{Putting everything together}
 
 Table~\ref{tab:nesso-shape-ledger} returns to the running example and follows
@@ -933,6 +890,50 @@ distances, a predicted pocket crop, and the refined pair representation $z$.
 The $N\times N$ or $M\times M$ tables are learned relationships, not Cartesian
 coordinates. Unless a separate distance-based reconstruction procedure is run,
 this calculation does not produce a complete all-atom bound PDB structure.
+
+\subsection{Distogram training loss}
+
+After defining the complete forward calculation, we can state how the
+structural trunk is trained. Reference coordinates define the distance between
+every valid token pair,
+\[
+  d_{ij}^{\mathrm{ref}}
+  =\left\|\mathbf x_i^{\mathrm{ref}}-\mathbf x_j^{\mathrm{ref}}\right\|_2.
+\]
+Each distance is assigned to one of 64 bins spanning the model's approximate
+2--22~\AA{} distogram range,
+\[
+  y_{ij}=\operatorname{bin}\!\left(d_{ij}^{\mathrm{ref}}\right).
+\]
+If the distogram head predicts logits $\ell_{ij}^{(b)}$, their softmax gives
+\[
+  p_{ij}^{(b)}
+  =\frac{\exp\ell_{ij}^{(b)}}{\sum_{b'=1}^{64}\exp\ell_{ij}^{(b')}}.
+\]
+The atom encoder and structural trunk are trained by categorical
+cross-entropy,
+\[
+  \mathcal L_{\mathrm{dist}}
+  =-\frac{1}{\sum_{ij}m_{ij}}
+  \sum_{ij}m_{ij}\log p_{ij}^{(y_{ij})},
+\]
+where $m_{ij}$ excludes padded or unresolved token pairs. In simplified code:
+\begin{verbatim}
+d_ref = pairwise_distance(reference_token_coordinates)
+target_bin = assign_to_64_bins(d_ref, min_dist=2, max_dist=22)
+
+distance_logits = distogram_head(z + transpose_token_axes(z))
+loss = cross_entropy(
+    distance_logits[valid_pair_mask],
+    target_bin[valid_pair_mask],
+)
+\end{verbatim}
+This loss propagates through the distogram head, all 48 Pairformer blocks, the
+ESM update, and the atom/residue encoder. It teaches $z_{ij}$ to encode pairwise
+geometry without an RMSD loss or coordinate-diffusion loss. Structural training
+uses PDB structures released before September 30, 2021, AFDB protein
+distillation data, and distilled protein--ligand complexes described in the
+paper.
 
 
 \section{Conclusion and limits}
