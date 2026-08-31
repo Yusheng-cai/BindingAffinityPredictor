@@ -564,8 +564,34 @@ order:
   \item a pair-transition multilayer perceptron.
 \end{enumerate}
 
+The following pseudocode closely follows the released
+\texttt{PairformerNoSeqLayer.forward} method:
+\begin{verbatim}
+def pairformer_block(z, pair_mask):               # z: [330, 330, 128]
+    update = triangle_multiply_outgoing(z, pair_mask)
+    z = z + dropout(update)
+
+    update = triangle_multiply_incoming(z, pair_mask)
+    z = z + dropout(update)
+
+    update = triangle_attention_starting(z, pair_mask)
+    z = z + dropout(update)
+
+    update = triangle_attention_ending(z, pair_mask)
+    z = z + columnwise_dropout(update)
+
+    z = z + pair_transition_mlp(z)                # 128 -> 512 -> 128
+    return z                                      # [330, 330, 128]
+
+for block in pairformer_blocks:                  # 48 blocks
+    z = pairformer_block(z, pair_mask)
+\end{verbatim}
+
 Each operation produces a residual update, $z\leftarrow z+\Delta z$, so the
-network progressively refines rather than replaces the pair table.
+network progressively refines rather than replaces the pair table. The
+\texttt{pair\_mask} prevents padded or discarded token pairs from contributing.
+Dropout regularizes training and is disabled during ordinary inference; it is
+not an additional source of randomness in a standard evaluation run.
 
 At the program level, the initialization, ESM update, and Pairformer are
 repeated during recycling:
