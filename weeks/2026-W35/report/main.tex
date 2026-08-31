@@ -89,20 +89,6 @@ protein--ligand structures. I selected 50 systems released after June 1, 2023,
 with ten systems in each familiarity interval 0--20, 20--40, 40--60,
 60--80, and 80--100.
 
-September 30, 2021 is the beginning of the original \emph{test set}, not the
-beginning of the structure database. Familiarity is evaluated against eligible
-protein--ligand complexes from the historical PDB extending many years before
-2021. For the June 1, 2023 cutoff used to select our cohort, the reference pool
-included complexes released before that date---both pre-2021 structures and
-structures released between October 2021 and May 2023---whereas the 50 test
-systems were released after the cutoff.
-
-\begin{center}
-\fbox{\parbox{0.91\textwidth}{\textbf{One shared test set:} I selected these
-50 complexes once, then attempted every one with both Nesso-1 and Boltz-2.
-They are not two separately sampled model-specific sets.}}
-\end{center}
-
 \subsection{Model inputs}
 
 For every system, both models received
@@ -110,9 +96,7 @@ For every system, both models received
   \text{exact deposited protein sequence}+\text{stereochemical ligand SMILES}.
 \]
 Boltz-2 additionally received a ColabFold MSA derived from the protein
-sequence. Neither model received the experimental protein coordinates, ligand
-coordinates, binding-pocket residues, or a template structure. Experimental
-coordinates were introduced only during scoring.
+sequence.
 
 Nesso-1 completed 50/50 systems. Boltz-2 completed 49/50; the 818-residue 8UK6
 system exceeded the 10-GiB GPU limit under the frozen MSA-1024 protocol. Direct
@@ -146,7 +130,9 @@ treated as one shared measurement.
 The closest common representation is a distance between a protein C$\beta$
 token (C$\alpha$ for glycine) and a ligand heavy atom. Nesso-1 supplies an
 expected distance from its 64-bin distribution; Boltz-2 supplies the distance
-measured in its sampled coordinate model.
+measured in its sampled coordinate model. The two F1 metrics classify different
+objects: token-contact F1 classifies individual residue-token--ligand-atom
+pairs, whereas pocket F1 classifies whole protein residues.
 
 \begin{table}[H]
 \centering
@@ -156,20 +142,29 @@ measured in its sampled coordinate model.
 Metric & Plain-language meaning & Better \\
 \midrule
 Interface distance MAE & Mean absolute error for token pairs whose experimental distance is at most 15~\AA{}. & Lower \\
-Token-contact F1 & Recovery of protein-token--ligand-atom contacts within 6~\AA{}, balancing precision and recall. & Higher \\
-Pocket F1 & Recovery of protein residues having any heavy atom within 6~\AA{} of the ligand. & Higher \\
+Token-contact F1 & Recovery of individual protein-token--ligand-atom contacts within 6~\AA{}, balancing precision and recall. & Higher \\
+Pocket F1 & Recovery of the experimental 6~\AA{} pocket as a set of protein residues. & Higher \\
 \bottomrule
 \end{tabular}
 \caption{The three metrics applied to both model outputs. Exact ligand-graph
 symmetries were handled before scoring.}
 \end{table}
 
-Spearman $\rho$ is the correlation between the ranks of familiarity and the
-ranks of an accuracy metric. It measures a monotonic relationship, not a slope.
-For example, $\rho=-0.72$ does not mean that MAE changes by
-$-0.72$~\AA{} per familiarity point. The reported correlations use every
-system's continuous familiarity value. The bars are bin medians shown only as
-a visual summary; their 95\% intervals use 2,000 bootstrap replicates.
+For token-contact F1, an experimental positive is a C$\beta$--ligand-heavy-atom
+distance at most 6~\AA{} (C$\alpha$ for glycine). Nesso-1 predicts that pair as
+a contact when the expected distance from its distogram is at most 6~\AA{};
+Boltz-2 is thresholded using the corresponding distance in its sampled
+coordinate model. For pocket F1, the experimental pocket contains a residue
+when \emph{any} of its resolved heavy atoms lies within 6~\AA{} of any ligand
+heavy atom. Boltz-2 can apply the same all-heavy-atom definition to its generated
+coordinates. Nesso-1 has no generated side-chain coordinates, so I call a
+residue a predicted pocket residue when its C$\beta$/C$\alpha$ token has an
+expected distance of at most 6~\AA{} to at least one ligand atom. Nesso-1's
+pocket F1 is therefore a coarse residue-center approximation to an atomic
+pocket, not a coordinate-based pocket measurement. I did not use Nesso-1's
+native pocket mask here: its 15~\AA{} affinity cutoff serves model context and
+is not the benchmark's 6~\AA{} contact definition. Experimental coordinates
+were introduced only during this post-inference scoring.
 
 \subsection{Accuracy as a function of familiarity}
 
@@ -178,10 +173,7 @@ a visual summary; their 95\% intervals use 2,000 bootstrap replicates.
 \includegraphics[width=\textwidth]{figures/nesso_boltz_familiarity.pdf}
 \caption{Structural accuracy versus model-specific familiarity. Each bar is
 the median in a 20-point familiarity interval; error bars are 95\% bootstrap
-intervals, and $n$ is the number of systems in that interval. Nesso-1 uses a
-September-2021 PDB structural-training cutoff and Boltz-2 uses a June-2023 PDB
-structural-training cutoff. These dates do not date every affinity-assay record
-used to train the models. Lower interface MAE and higher F1 are favorable.}
+intervals, and $n$ is the number of systems in that interval.  Lower interface MAE and higher F1 are favorable.}
 \label{fig:familiarity_comparison}
 \end{figure}
 
@@ -202,11 +194,10 @@ intervals exclude zero.}
 
 Both models show the same high-level behavior: greater pre-cutoff structural
 familiarity is associated with lower interface-distance error and better
-contact and pocket recovery. The result does not support a sharp threshold at
-familiarity 50. The bin medians fluctuate, especially in low-familiarity bins;
+contact and pocket recovery. The bin medians fluctuate, especially in low-familiarity bins;
 the continuous rank correlations are the primary evidence for a broad trend.
 
-The shapes are not identical. Nesso-1 improves relatively gradually across its
+Nesso-1 improves relatively gradually across its
 five bins. Boltz-2's pocket recovery is already high in the 20--40 bin, but its
 lowest-familiarity bin contains a mixture of successes and complete failures,
 giving very wide uncertainty intervals. Its contact F1 and interface MAE also
@@ -254,15 +245,11 @@ coordinate RMSD because it does not output a Cartesian complex.
 
 \section{Benchmarks used by the FEP community}
 
-A benchmark is only meaningful after stating the question it asks. Most
+Most
 free-energy perturbation (FEP) benchmarks ask the following question: given a prepared
 protein structure, a plausible bound pose, and a series of related ligands, can
 a method recover the experimental \emph{relative} affinity differences within
-that series? This is close to lead optimization in medicinal chemistry,
-but it does not test blind pocket discovery or de novo pose prediction.
-The date of the benchmark paper is not necessarily the age of its data. A
-compound also has no single standard ``date'': it may have been synthesized,
-assayed, patented, and published at different times. In Table~\ref{tab:benchmark_landscape},
+that series?  In Table~\ref{tab:benchmark_landscape},
 \emph{data vintage} therefore means the newest date that can be audited from
 the public record: the publication year of the affinity measurement where
 available, or the challenge/data-release date for blinded pharmaceutical sets.
@@ -292,21 +279,6 @@ should not be interpreted as interchangeable leaderboards
 openfe2024industry,gilson2026casp16,gaieb2019d3rgc3}.}
 \label{tab:benchmark_landscape}
 \end{table}
-
-The FEP+4 calculation is therefore best described as four independent
-within-target ranking tests, not 87 independent tests of new proteins. The
-larger FEP collections improve chemical and protein coverage, but they still
-usually begin with at least one experimental complex per ligand series and
-model the remaining ligand poses from that anchor. This is intentional: FEP is
-normally used to compare related compounds after a binding site and plausible
-pose are already known \citep{ross2023fepaccuracy}.
-
-The numerical emphasis also differs. FEP studies normally report errors in
-relative binding free energy, such as pairwise RMSE or mean unsigned error in
-kcal mol$^{-1}$, together with rank measures such as Kendall's $\tau$. For
-learned affinity models, Pearson or Spearman correlation within a ligand series can be useful, but a
-large correlation on a familiar series is not by itself evidence that the
-model generalizes to a new pocket or chemical family.
 
 \section{Nesso-1 architecture, step by step}
 
