@@ -369,48 +369,6 @@ geometry to a smaller affinity network \citep{shenoy2026nesso1}.
 
 \subsection{Running example and program map}
 
-The following shape-oriented pseudocode follows the order of the released
-\texttt{Nesso1.forward} program. It omits the batch dimension and implementation
-details such as masks, normalization, dropout, and gates.
-
-\begin{verbatim}
-# Input preparation
-tokens = tokenize(protein_sequence, ligand_smiles)
-# 300 residue tokens + 30 ligand-heavy-atom tokens = 330 tokens
-
-esm_protein = ESM2(protein_sequence)       # [300, 1280]
-esm_full = zeros([330, 1280])
-esm_full[protein_rows] = esm_protein       # ligand rows remain zero
-
-# Beginning of Nesso1.forward
-s_inputs = input_embedder(tokens)           # [330, 384]
-
-left  = z_init_left(s_inputs)               # [330, 128]
-right = z_init_right(s_inputs)              # [330, 128]
-z_init = left[:, None, :] + right[None, :, :] # [330, 330, 128]
-z_init += relative_position_features
-z_init += bond_and_bond_type_features
-
-z = zeros_like(z_init)
-for recycle in range(number_of_passes):
-    z = z_init + recycle_projection(normalize(z))
-
-    s_context = project(s_inputs) + esm_mlp(esm_full) # [330, 384]
-    z += esm_left(s_context)[:, None, :]
-    z += esm_right(s_context)[None, :, :]              # [330, 330, 128]
-
-    z = pairformer(z)                                  # 48 blocks
-    if first_pass_and_pocket_refinement:
-        keep predicted pocket tokens and crop arrays
-
-distance_probabilities = distogram_head(z)             # 64 bins/pair
-predicted_pocket = select_nearby_protein_tokens(distance_probabilities)
-affinity = affinity_modules(z, distance_probabilities, s_inputs, esm_full)
-\end{verbatim}
-
-This pseudocode is a roadmap, not a second implementation. The following
-subsections explain what each array means and why the program constructs it.
-
 Each standard protein residue becomes one token. Its geometric target is the
 C$\beta$ atom, or C$\alpha$ for glycine. Each ligand heavy atom becomes one
 token; ligand hydrogens are omitted.
@@ -420,6 +378,16 @@ acid. For a ligand supplied as SMILES, it generates an isolated 3D conformer
 with RDKit ETKDG. The atom
 encoder uses atom identity, names, charge, chirality, hybridization, bonds, and
 local reference geometry, then pools atom information into token vectors.
+
+The corresponding first step is, schematically:
+\begin{verbatim}
+tokens = tokenize(protein_sequence, ligand_smiles)
+# 300 residue tokens + 30 ligand-heavy-atom tokens = 330 tokens
+
+s_inputs = input_embedder(tokens)                 # [330, 384]
+\end{verbatim}
+Here and below, the snippets follow the released program but omit the batch
+dimension, masks, normalization, dropout, and other implementation details.
 
 \subsection{ESM-2 supplies protein sequence context}
 
@@ -484,6 +452,16 @@ form $\mathbf S^{\mathrm{context}}$. The program then uses this context table
 to construct an additive update to the pair representation. It does not
 overwrite the original \texttt{s\_inputs} table.
 
+In simplified code, this stage is:
+\begin{verbatim}
+esm_protein = ESM2(protein_sequence)              # [300, 1280]
+esm_full = zeros([330, 1280])
+esm_full[protein_rows] = esm_protein              # ligand rows stay zero
+
+esm_projected = esm_mlp(esm_full)                 # [330, 384]
+s_context = project(s_inputs) + esm_projected     # [330, 384]
+\end{verbatim}
+
 \subsection{The pair representation \texorpdfstring{$z$}{z}}
 
 The central object is not a coordinate array but a learned pair tensor
@@ -538,6 +516,19 @@ For the illustrative 330-token complex, the explicit shape change is therefore
   \longrightarrow
   330\times330\times128.
 \]
+The corresponding broadcast operation is:
+\begin{verbatim}
+left  = z_init_left(s_inputs)                     # [330, 128]
+right = z_init_right(s_inputs)                    # [330, 128]
+
+z_init = left[:, None, :] + right[None, :, :]    # [330, 330, 128]
+z_init += relative_position_features
+z_init += bond_and_bond_type_features
+
+z = z_init
+z += esm_left(s_context)[:, None, :]
+z += esm_right(s_context)[None, :, :]             # ESM pair update
+\end{verbatim}
 Thus the model creates one 128-dimensional vector for every ordered token pair
 $(i,j)$. Because the left and right projection weights are different,
 $z_{ij}$ need not equal $z_{ji}$.
@@ -575,6 +566,18 @@ order:
 
 Each operation produces a residual update, $z\leftarrow z+\Delta z$, so the
 network progressively refines rather than replaces the pair table.
+
+At the program level, the initialization, ESM update, and Pairformer are
+repeated during recycling:
+\begin{verbatim}
+z = zeros_like(z_init)
+for pass_index in range(recycling_steps + 1):
+    z = z_init + recycle_projection(normalize(z))
+    z = esm_module(z, s_inputs, esm_full, pair_mask)
+    z = pairformer(z, pair_mask)                   # 48 blocks
+\end{verbatim}
+Thus \texttt{recycling\_steps=5} means six trunk evaluations: one initial
+evaluation and five recycled evaluations.
 
 \paragraph{Triangle multiplication.}
 To update pair $(i,j)$, triangle multiplication aggregates information through
@@ -643,6 +646,12 @@ a categorical distance distribution,
 \[
   p_{ij}^{(b)}=P\!\left(d_{ij}\text{ lies in distance bin }b\right).
 \]
+In code, the last axis contains the 64 alternatives for each pair:
+\begin{verbatim}
+z_symmetric = z + transpose_token_axes(z)         # [330, 330, 128]
+distance_logits = distogram_head(z_symmetric)     # [330, 330, 64]
+distance_probabilities = softmax(distance_logits, dim=-1)
+\end{verbatim}
 Thus, the model can assign probability to several possible distances instead
 of committing to one coordinate set. Using bin center $c_b$, its expected
 distance is
@@ -675,6 +684,16 @@ from the user:
   subject to a default total crop budget of 256 tokens.
   \item Later recycling passes repeatedly update $z$ using this smaller region.
 \end{enumerate}
+
+Schematically, the first pass triggers the crop and all related arrays are
+cropped using the same retained token indices:
+\begin{verbatim}
+if pass_index == 0 and refine_pocket:
+    keep_tokens = pocket_crop(z, distance_cutoff=22, token_budget=256)
+    z_init   = z_init[keep_tokens][:, keep_tokens]
+    s_inputs = s_inputs[keep_tokens]
+    esm_full = esm_full[keep_tokens]
+\end{verbatim}
 
 Our command used \texttt{recycling\_steps=5}. In the released implementation,
 this means one initial trunk evaluation followed by five recycled evaluations.
@@ -715,6 +734,16 @@ The value normally used is their mean,
   \texttt{affinity\_pred\_value}
   =\frac{\texttt{value1}+\texttt{value2}}{2}.
 \]
+\begin{samepage}
+The released model logic can therefore be summarized as:
+\begin{verbatim}
+value1, binder1 = affinity_module1(z, distance_probabilities, inputs)
+value2, binder2 = affinity_module2(z, distance_probabilities, inputs)
+
+affinity_pred_value = (value1 + value2) / 2
+binder_probability  = (binder1 + binder2) / 2
+\end{verbatim}
+\end{samepage}
 The two binder probabilities are likewise averaged. The released documentation
 expresses the continuous value as
 \[
