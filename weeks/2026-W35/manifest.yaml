@@ -38,6 +38,7 @@ interactive_notebooks:
   - weeks/2026-W35/notebooks/nesso_architecture_visualized.ipynb
 
 commands:
+  - bash weeks/2026-W35/code/00_setup.sh --check
   - bash weeks/2026-W35/code/01_prepare_runs_n_poses.sh --check
   - bash weeks/2026-W35/code/02_run_models_and_time.sh --check
   - bash weeks/2026-W35/code/03_analyze_runs_n_poses.sh --check
@@ -59,6 +60,9 @@ architecture_companion:
 workflow_code:
   path: weeks/2026-W35/code
   manifest: weeks/2026-W35/code/workflow_manifest.yaml
+  fresh_machine_entry_point: weeks/2026-W35/code/00_setup.sh
+  explicit_download_permission_required: true
+  runs_n_poses_terms_acceptance_required: true
 
 runs_n_poses_analysis:
   manifest: data/manifests/rnp_boltz2_nesso1_postcutoff50.json

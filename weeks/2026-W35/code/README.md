@@ -13,11 +13,39 @@ canonical Python implementations under `scripts/` and
 weekly folder. Raw model outputs, MSAs, reference structures, checkpoints, and
 environments remain in ignored directories and are not committed.
 
-The familiarity-table step uses the existing Anaconda Python because it has a
-Parquet reader (`pyarrow`); the diverse-selection step uses the isolated Nesso
-environment because it has RDKit. `BAP_DATA_PYTHON`, `BAP_PROGRAM_ROOT`, and
-`BAP_CACHE_ROOT` can be overridden for another machine without changing the
-frozen scientific settings.
+Stage 00 creates a small pinned table-processing environment with `pyarrow`;
+the diverse-selection step uses the isolated Nesso environment because it has
+RDKit. `BAP_SOURCE_ROOT`, `BAP_PROGRAM_ROOT`, `BAP_CACHE_ROOT`, and
+`BAP_CONDA_EXE` can be overridden for another Linux machine without changing
+the frozen scientific settings.
+
+## Fresh-machine setup
+
+Prerequisites are Linux x86-64, an NVIDIA GPU/driver compatible with the pinned
+CUDA 12.1 PyTorch build, Git, cURL, and Conda. Stage 00 then installs the pinned
+Nesso-1 and Boltz-2 source/environments, downloads their required model assets,
+and downloads the minimal Runs N' Poses files needed by this week. It does not
+download the much larger precomputed MSA or model-prediction archives.
+
+The Runs N' Poses experimental structures are governed by the AlphaFold 3
+Output Terms included in the official Zenodo record. Read those terms first;
+the setup deliberately requires a separate acceptance flag. All downloaded
+files are checked against frozen SHA-256 hashes before use.
+
+```bash
+# Read-only audit of an already prepared machine.
+bash weeks/2026-W35/code/00_setup.sh --check
+
+# Fresh-machine bootstrap after reviewing the data terms.
+bash weeks/2026-W35/code/00_setup.sh \
+  --execute --allow-downloads --accept-af3-output-terms
+```
+
+Source is placed under `/home/yusheng/source`, environments under
+`/home/yusheng/programs`, and model/data artifacts under the repository's
+ignored `cache/` and `data/raw/` paths. The script refuses to reset an existing
+source checkout if it is at a different revision. Component-specific checks
+are also available, for example `--component runs-n-poses`.
 
 ## Reproduce in order
 
@@ -26,6 +54,9 @@ read-only check. Expensive work is performed only when `--execute` is supplied,
 and completed run directories are preserved rather than overwritten.
 
 ```bash
+# 0. Verify that software, model assets, and benchmark downloads are complete.
+bash weeks/2026-W35/code/00_setup.sh --check
+
 # 1. Check source-data checksums, the frozen cohort, 50 references/MSAs, and inputs.
 bash weeks/2026-W35/code/01_prepare_runs_n_poses.sh --check
 

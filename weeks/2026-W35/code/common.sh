@@ -28,6 +28,40 @@ bap_require_executable() {
   [[ -x "$1" ]] || bap_die "Required executable is missing: $1"
 }
 
+bap_quote_command() {
+  printf '  '
+  printf '%q ' "$@"
+  printf '\n'
+}
+
+bap_run() {
+  bap_quote_command "$@"
+  if ((BAP_EXECUTE)); then
+    "$@"
+  fi
+}
+
+bap_git_revision() {
+  git -C "$1" rev-parse HEAD 2>/dev/null || true
+}
+
+bap_check_git_revision() {
+  local path="$1"
+  local expected="$2"
+  local observed
+  bap_require_dir "$path/.git"
+  observed="$(bap_git_revision "$path")"
+  [[ "$observed" == "$expected" ]] || bap_die \
+    "$path is at $observed; expected pinned revision $expected. The setup script refuses to change an existing checkout automatically."
+}
+
+bap_verify_sha256() {
+  local path="$1"
+  local expected="$2"
+  bap_require_file "$path"
+  printf '%s  %s\n' "$expected" "$path" | sha256sum --check -
+}
+
 bap_complete_run() {
   local run_record="$1/run.json"
   [[ -f "$run_record" ]] && grep -q '"status": "complete"' "$run_record"

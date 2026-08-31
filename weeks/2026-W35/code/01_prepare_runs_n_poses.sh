@@ -7,6 +7,9 @@ usage() {
   cat <<'EOF'
 Usage: 01_prepare_runs_n_poses.sh [--check|--execute] [--allow-msa-server]
 
+Run 00_setup.sh first. Stage 00 installs the pinned software and downloads the
+minimal checksum-verified Runs N' Poses record needed by this stage.
+
 --check             Validate the frozen manifest, selected references, MSAs,
                     and 50 full/5 gate model inputs without changing them.
 --execute           Reproduce the familiarity table and 50-system selection,

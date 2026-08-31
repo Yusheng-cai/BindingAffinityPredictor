@@ -2,12 +2,32 @@ workflow_id: 2026-W35_nesso1_boltz2_runs_n_poses
 status: complete_report_from_reviewed_outputs
 
 entry_points:
+  - 00_setup.sh
   - 01_prepare_runs_n_poses.sh
   - 02_run_models_and_time.sh
   - 03_analyze_runs_n_poses.sh
   - 04_nesso_notebooks.sh
   - 05_build_report.sh
   - build_assets.py
+
+fresh_machine_bootstrap:
+  entry_point: 00_setup.sh
+  default_mode: check
+  write_mode_requires: [--execute, --allow-downloads]
+  runs_n_poses_terms_flag: --accept-af3-output-terms
+  source_root: /home/yusheng/source
+  environment_root: /home/yusheng/programs
+  ignored_cache_root: cache
+  ignored_data_root: data/raw/runs_n_poses_metadata
+  runs_n_poses_zenodo_record: 18366081
+  runs_n_poses_doi: 10.5281/zenodo.18366081
+  downloads_minimal_week35_subset_only: true
+  does_not_download_bulk_msa_or_prediction_archives: true
+  pinned_software:
+    nesso1_source_revision: f0156e9a22326448684bae09ee96f73415902dcd
+    boltz2_source_revision: b1ebfc46ecf57f5414e0d1a6f9027bbb122c53bc
+    nesso1_hub_revision: 1896c84c7186c506c7efd79051480809d51098bf
+    esm2_hub_revision: 08e4846e537177426273712802403f7ba8261b6c
 
 reproduction_scope:
   included:

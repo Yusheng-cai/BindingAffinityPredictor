@@ -1,0 +1,8 @@
+# Pinned table-processing stack used to reproduce the Week 35 cohort manifest.
+numpy==1.26.4
+pandas==2.3.3
+pyarrow==19.0.0
+python-dateutil==2.9.0.post0
+pytz==2026.3.post1
+six==1.17.0
+tzdata==2026.3

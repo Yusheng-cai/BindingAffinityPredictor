@@ -113,8 +113,10 @@ calculation with a real saved Nesso-1 checkpoint trace.
 - [`report/figures/nesso_boltz_runtime.pdf`](report/figures/nesso_boltz_runtime.pdf): observed Nesso-1 versus Boltz-2 MSA-1024 seconds per attempted system on the same RTX 3080
 - [`report/figures/nesso_boltz_runtime.csv`](report/figures/nesso_boltz_runtime.csv): compact timing values from the paired `exp015` run
 - [`code/README.md`](code/README.md): complete check/reproduction workflow for
-  the paired Runs N' Poses calculation, its recorded timing, and the two Nesso
-  notebooks
+  fresh-machine setup, the paired Runs N' Poses calculation, its recorded
+  timing, and the two Nesso notebooks
+- [`code/00_setup.sh`](code/00_setup.sh): pinned, checksum-verified acquisition
+  of the software, model assets, and minimal Runs N' Poses data required here
 - [`manifest.yaml`](manifest.yaml): draft scope and provenance
 - [`../../data/manifests/rnp_boltz2_nesso1_postcutoff50.json`](../../data/manifests/rnp_boltz2_nesso1_postcutoff50.json): frozen paired analysis set
 - [`notebooks/nesso_architecture_visualized.ipynb`](notebooks/nesso_architecture_visualized.ipynb): executed, interactive companion that follows token features through the pair tensor, Pairformer-style updates, distograms, cropping, and affinity outputs, ending with a real saved Nesso-1 tensor trace

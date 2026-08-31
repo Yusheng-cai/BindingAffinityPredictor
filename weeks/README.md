@@ -50,12 +50,16 @@ and record their local run provenance.
 For each new week:
 
 1. copy `weeks/template/` to the new ISO-week directory;
-2. define the week's questions and link its experiment configurations;
-3. add or update safe numbered workflow entry points;
-4. run focused tests and the report build;
-5. record the project Git revision, run records, PDF hash, and external source
+2. make `code/00_setup.sh` the first entry point: it must check prerequisites,
+   pin source/data/model revisions, download missing external artifacts only
+   after explicit permission, verify checksums, and document any governing data
+   terms;
+3. define the week's questions and link its experiment configurations;
+4. add or update safe numbered workflow entry points;
+5. run focused tests and the report build;
+6. record the project Git revision, run records, PDF hash, and external source
    revisions in `manifest.yaml` and `code/workflow_manifest.yaml`;
-6. commit the reviewed weekly snapshot before starting the next week's work.
+7. commit the reviewed weekly snapshot before starting the next week's work.
 
 ## Overleaf policy
 

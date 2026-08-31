@@ -1,0 +1,6 @@
+# Direct Nesso dependencies added to the cloned CUDA-12.1 Boltz environment.
+numpy==2.1.3
+lightning==2.6.5
+transformers==5.15.0
+safetensors==0.8.0
+huggingface_hub==1.27.0

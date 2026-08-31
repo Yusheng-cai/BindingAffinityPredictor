@@ -9,10 +9,13 @@ overleaf:
 experiments: []
 citations: []
 figure_sources: []
-commands: []
+commands:
+  - bash weeks/YYYY-Www/code/00_setup.sh --check
 workflow_code:
   path: code
   manifest: code/workflow_manifest.yaml
+  fresh_machine_entry_point: code/00_setup.sh
+  explicit_download_permission_required: true
   scientific_commands_reconstructed_from_run_records: false
 pdf:
   path: report/report.pdf

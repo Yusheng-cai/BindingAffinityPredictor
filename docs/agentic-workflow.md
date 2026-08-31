@@ -25,6 +25,21 @@ The repository separates scientific intent from execution artifacts so that a hu
    - Promote only compact, reviewed results to `reports/<experiment-id>/`.
    - Record deviations from the frozen protocol and any durable decision.
 
+## Fresh-machine bootstrap
+
+Every weekly computational workflow starts with `code/00_setup.sh`. Its
+read-only mode verifies prerequisites, exact source revisions, external model
+assets, and benchmark-file checksums. Its write mode must require explicit
+permission before network downloads or installation and must require a
+separate explicit acknowledgement when a dataset has governing terms. Source
+trees belong under `/home/yusheng/source`, installed environments under
+`/home/yusheng/programs`, and large data/model artifacts in Git-ignored paths.
+
+The bootstrap downloads only the minimal external subset needed for that
+week. Later workflow stages may assume Stage 00 has passed, but may not quietly
+download their own datasets or checkpoints. Remote sequence submission, such
+as ColabFold MSA generation, remains a distinct explicitly authorized stage.
+
 ## Canonical run layout
 
 ```text
@@ -45,4 +60,3 @@ The complete `runs/` tree is local and ignored by Git.
 - Do not reinterpret a failed run as a negative scientific result.
 - Never change labels, filters, metrics, or sampling settings after viewing results without documenting a new experiment revision.
 - Prefer small verified steps: one input, then a tiny panel, then the full defined experiment.
-
