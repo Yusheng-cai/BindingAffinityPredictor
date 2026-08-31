@@ -474,17 +474,61 @@ The initial pair representation is built approximately as
   +\mathbf r_{ij}
   +\mathbf b_{ij}.
 \]
-Here $W_{\mathrm L}$ and $W_{\mathrm R}$ are learned projections from 384 to
-128 dimensions, $\mathbf r_{ij}$ describes relationships such as sequence
-separation and chain or entity identity, and $\mathbf b_{ij}$ describes ligand
-bonds and bond types. Projected ESM information supplies an additional
-single-to-pair update. Thus, $z_{ij}^{(0)}$ is an addition of learned token and
-pair features; it is not the scalar dot product
-$\mathbf s_i^{\mathsf T}\mathbf s_j$.
+The conversion from $N\times384$ single-token features to an
+$N\times N\times128$ pair tensor does not use one large MLP that directly
+predicts all $N^2$ pairs. Instead, Nesso applies two separate learned linear
+projections to every token,
+\[
+  \mathbf l_i=W_{\mathrm L}\mathbf s_i,
+  \qquad
+  \mathbf q_i=W_{\mathrm R}\mathbf s_i,
+  \qquad
+  W_{\mathrm L},W_{\mathrm R}:\mathbb R^{384}\rightarrow\mathbb R^{128}.
+\]
+This first produces two tables, each with shape $N\times128$. Nesso then
+broadcasts the left table along the second token axis and the right table along
+the first token axis:
+\[
+  \underbrace{\mathbf L[:,\,\mathrm{None},\,:]}_{N\times1\times128}
+  +
+  \underbrace{\mathbf Q[\mathrm{None},\,:,:]}_{1\times N\times128}
+  \longrightarrow
+  \underbrace{\mathbf Z^{\mathrm{single}}}_{N\times N\times128},
+  \qquad
+  \mathbf Z^{\mathrm{single}}_{ij}=\mathbf l_i+\mathbf q_j.
+\]
+For the illustrative 330-token complex, the explicit shape change is therefore
+\[
+  330\times384
+  \longrightarrow
+  \begin{cases}
+    330\times128 & \text{left projection},\\
+    330\times128 & \text{right projection}
+  \end{cases}
+  \longrightarrow
+  330\times330\times128.
+\]
+Thus the model creates one 128-dimensional vector for every ordered token pair
+$(i,j)$. Because the left and right projection weights are different,
+$z_{ij}$ need not equal $z_{ji}$.
+
+Nesso next adds genuinely pair-specific information. The term
+$\mathbf r_{ij}$ encodes relationships such as sequence separation and chain
+or entity identity, while $\mathbf b_{ij}$ encodes ligand bonds and bond types.
+The ESM module also forms a second single-to-pair update: it combines the
+projected ESM vector with the token features, applies another left and right
+linear projection, broadcasts them in the same manner, and adds the result to
+$z_{ij}$. Therefore the initial pair tensor is an addition of learned token and
+known pair features; it is neither the scalar dot product
+$\mathbf s_i^{\mathsf T}\mathbf s_j$ nor a direct prediction of a distance.
 
 At initialization, $z_{ij}^{(0)}$ mainly records what kinds of objects $i$ and
 $j$ are and their known sequence or bond relationship. Its useful geometric
-meaning is developed by the Pairformer.
+meaning is developed by the Pairformer. In particular, the broadcasted sum
+$\mathbf l_i+\mathbf q_j$ is initially a separable description of the two
+tokens. The following Pairformer blocks allow pair $(i,j)$ to interact with
+other pairs through intermediate tokens $k$, producing the more complex
+context-dependent relationships needed to infer contacts and distances.
 
 \subsection{What the Pairformer does}
 
