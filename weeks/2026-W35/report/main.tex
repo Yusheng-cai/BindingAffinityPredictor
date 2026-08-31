@@ -869,36 +869,6 @@ Affinity and potency labels $K_d$, $K_i$, IC$_{50}$, and EC$_{50}$ are treated
 interchangeably during this training. This choice expands the public training
 set but limits the strict physical interpretation of the continuous output.
 
-\subsection{Bridge to Boltz-2}
-
-\begin{table}[H]
-\centering
-\small
-\begin{tabular}{L{0.23\textwidth}L{0.34\textwidth}L{0.34\textwidth}}
-\toprule
-Component & Nesso-1 & Boltz-2 \\
-\midrule
-Protein context & ESM-2 sequence embedding; no MSA required & MSA-derived evolutionary information, with optional templates \\
-Central internal object & Token-pair representation and distance distributions & Single and pair representations coupled to full coordinate generation \\
-Protein geometric resolution & One predicted center per residue & Full atomic complex output \\
-Ligand geometric resolution & Heavy-atom tokens & Full atomic complex output \\
-Structure decoder & No atomic diffusion; optional distance-based reconstruction & Diffusion decoder generates explicit coordinates \\
-Pocket handling & Inferred from expected protein--ligand distances & Emerges through complex cofolding \\
-Affinity calculation & Two smaller Pairformer modules operating on the predicted interface & Affinity head operating on Boltz trunk and structural representations \\
-Primary design priority & Fast affinity classification and ranking & Detailed complex structure together with affinity \\
-\bottomrule
-\end{tabular}
-\caption{High-level architectural bridge from Nesso-1 to Boltz-2. A detailed
-Boltz-2 forward pass is the next architecture topic.}
-\end{table}
-
-Nesso-1 therefore saves computation by stopping at a probabilistic
-residue-center/heavy-atom distance map. The tradeoff is that it does not directly
-resolve protein side-chain conformations, precise hydrogen-bond angles, atomic
-steric clashes, explicit waters, or a complete Cartesian complex. Its hypothesis
-is that the learned interface map is nevertheless sufficient for rapid affinity
-ranking.
-
 \subsection{Putting everything together}
 
 Table~\ref{tab:nesso-shape-ledger} returns to the running example and follows
