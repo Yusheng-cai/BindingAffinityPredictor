@@ -341,16 +341,25 @@ openfe2024industry,gilson2026casp16,gaieb2019d3rgc3}.}
 
 \section{Nesso-1 architecture, step by step}
 
-The central architectural idea of Nesso-1 is:
+Consider one concrete input throughout this section: a protein sequence with
+300 residues and \emph{one} ligand containing 30 heavy atoms. The ligand is
+supplied as a SMILES string. One protein residue becomes one token and one
+ligand heavy atom becomes one token, so this example contains
+\[
+  N=300+30=330\text{ tokens}.
+\]
+The model input does not include a protein PDB structure, an MSA, a
+user-specified pocket, or an initial bound pose.
+
+The central computation for this 330-token example is:
 
 \begin{center}
 \colorbox{light}{\parbox{0.88\textwidth}{\centering
-Protein sequence + ligand chemistry
-$\longrightarrow$ token features
-$\longrightarrow$ pair representation $z_{ij}$
+300-residue sequence + 30-heavy-atom ligand
+$\longrightarrow 330\times384$ token features
+$\longrightarrow 330\times330\times128$ pair features
 $\longrightarrow$ distance distributions
-$\longrightarrow$ predicted pocket
-$\longrightarrow$ affinity outputs.}}
+$\longrightarrow$ predicted pocket and affinity.}}
 \end{center}
 
 Nesso-1 does not first generate a complete atomic protein--ligand complex and
@@ -358,22 +367,53 @@ then score that structure. Instead, it learns a probabilistic map of distances
 between protein-residue centers and ligand heavy atoms, then gives this learned
 geometry to a smaller affinity network \citep{shenoy2026nesso1}.
 
-\subsection{Inputs and tokenization}
+\subsection{Running example and program map}
 
-For the simplest use case, the input contains a protein amino-acid sequence, a
-ligand SMILES string, and the identity of the ligand to score. Nesso-1 does not
-require an experimental protein structure, an MSA, a user-specified pocket, or
-an initial protein--ligand pose.
+The following shape-oriented pseudocode follows the order of the released
+\texttt{Nesso1.forward} program. It omits the batch dimension and implementation
+details such as masks, normalization, dropout, and gates.
+
+\begin{verbatim}
+# Input preparation
+tokens = tokenize(protein_sequence, ligand_smiles)
+# 300 residue tokens + 30 ligand-heavy-atom tokens = 330 tokens
+
+esm_protein = ESM2(protein_sequence)       # [300, 1280]
+esm_full = zeros([330, 1280])
+esm_full[protein_rows] = esm_protein       # ligand rows remain zero
+
+# Beginning of Nesso1.forward
+s_inputs = input_embedder(tokens)           # [330, 384]
+
+left  = z_init_left(s_inputs)               # [330, 128]
+right = z_init_right(s_inputs)              # [330, 128]
+z_init = left[:, None, :] + right[None, :, :] # [330, 330, 128]
+z_init += relative_position_features
+z_init += bond_and_bond_type_features
+
+z = zeros_like(z_init)
+for recycle in range(number_of_passes):
+    z = z_init + recycle_projection(normalize(z))
+
+    s_context = project(s_inputs) + esm_mlp(esm_full) # [330, 384]
+    z += esm_left(s_context)[:, None, :]
+    z += esm_right(s_context)[None, :, :]              # [330, 330, 128]
+
+    z = pairformer(z)                                  # 48 blocks
+    if first_pass_and_pocket_refinement:
+        keep predicted pocket tokens and crop arrays
+
+distance_probabilities = distogram_head(z)             # 64 bins/pair
+predicted_pocket = select_nearby_protein_tokens(distance_probabilities)
+affinity = affinity_modules(z, distance_probabilities, s_inputs, esm_full)
+\end{verbatim}
+
+This pseudocode is a roadmap, not a second implementation. The following
+subsections explain what each array means and why the program constructs it.
 
 Each standard protein residue becomes one token. Its geometric target is the
 C$\beta$ atom, or C$\alpha$ for glycine. Each ligand heavy atom becomes one
-token; ligand hydrogens are omitted. If the protein has $N_P$ residues and the
-ligand has $N_L$ heavy atoms, the model begins with approximately
-\[
-  N=N_P+N_L
-\]
-tokens. For example, a 300-residue protein with a 30-heavy-atom ligand gives
-approximately 330 tokens.
+token; ligand hydrogens are omitted.
 
 The input-processing code constructs standard reference atoms for each amino
 acid. For a ligand supplied as SMILES, it generates an isolated 3D conformer
@@ -392,14 +432,9 @@ model. For each residue $i$, ESM-2 supplies a contextual vector
 sequence, not only on its residue identity. Nesso-1 uses ESM-2 in place of the explicit MSA processing used by
 Boltz-2.
 
-After the atom, residue-type, and ESM information is projected, every token has
-a single-token representation $\mathbf s_i$. In the released Nesso-1 checkpoint,
-\[
-  \mathbf s_i\in\mathbb R^{384}.
-\]
-
-The 384-dimensional vector does not replace ESM-2 before ESM is used. Nesso
-first applies a learned projection to each 1280-dimensional ESM vector,
+Separately, the atom/residue input embedder has already produced
+$\mathbf s_i^{\mathrm{input}}\in\mathbb R^{384}$ for all 330 tokens. The ESM
+module applies a learned projection to each 1280-dimensional ESM row,
 \[
   \widetilde{\mathbf e}_i
   =W_2\,\operatorname{ReLU}\!\left(
@@ -421,13 +456,13 @@ to that protein token and leaves every ligand-token row equal to zero,
   \end{cases}
 \]
 This is an alignment of \emph{array indices}, not a geometric alignment of the
-ligand with the protein. Nesso projects this full array and adds it to the
-atom/residue token features,
+ligand with the protein. Inside the ESM module, Nesso combines the projected
+ESM information with a learned projection of the atom/residue token features,
 \[
-  \mathbf s_i
-  =\mathbf s_i^{\mathrm{atom/residue}}
+  \mathbf s_i^{\mathrm{context}}
+  =W_{\mathrm{input}}\mathbf s_i^{\mathrm{input}}
   +\widetilde{\mathbf e}_i^{\mathrm{ESM}},
-  \qquad \mathbf s_i\in\mathbb R^{384}.
+  \qquad \mathbf s_i^{\mathrm{context}}\in\mathbb R^{384}.
 \]
 The projection is learned: it selects and transforms the parts of ESM-2 that
 are useful to Nesso rather than selecting the first 384 ESM coordinates. Since
@@ -435,20 +470,19 @@ the projection contains learned biases, a zero ligand row can become a shared
 baseline vector after projection. It still contains no ligand-specific ESM
 information; ligand identity and chemistry enter through the atom encoder.
 
-For a 300-residue protein and a 30-heavy-atom ligand, the shapes can be followed
-as
+For the running example, this part of the program is
 \[
   \underbrace{300\times1280}_{\text{raw protein ESM-2}}
   \longrightarrow
   \underbrace{330\times1280}_{\substack{\text{full token-indexed ESM array}\\
   \text{30 zero ligand rows}}}
   \longrightarrow
-  \underbrace{330\times384}_{\text{all token features}}.
+  \underbrace{330\times384}_{\text{projected ESM features}},
 \]
-Thus 1280 is the width of the raw ESM residue embedding, whereas 384 is the
-width of Nesso's combined single-token feature. The separate conversion from
-these token features to the pair representation is described in the next
-subsection.
+which is added to a separately projected $330\times384$ atom/residue table to
+form $\mathbf S^{\mathrm{context}}$. The program then uses this context table
+to construct an additive update to the pair representation. It does not
+overwrite the original \texttt{s\_inputs} table.
 
 \subsection{The pair representation \texorpdfstring{$z$}{z}}
 
@@ -465,8 +499,8 @@ $z_{42,L_5}$ represents what the network currently knows about protein residue
 The initial pair representation is built approximately as
 \[
   z_{ij}^{(0)}
-  =W_{\mathrm L}\mathbf s_i
-  +W_{\mathrm R}\mathbf s_j
+  =W_{\mathrm L}\mathbf s_i^{\mathrm{input}}
+  +W_{\mathrm R}\mathbf s_j^{\mathrm{input}}
   +\mathbf r_{ij}
   +\mathbf b_{ij}.
 \]
@@ -475,9 +509,9 @@ $N\times N\times128$ pair tensor does not use one large MLP that directly
 predicts all $N^2$ pairs. Instead, Nesso applies two separate learned linear
 projections to every token,
 \[
-  \mathbf l_i=W_{\mathrm L}\mathbf s_i,
+  \mathbf l_i=W_{\mathrm L}\mathbf s_i^{\mathrm{input}},
   \qquad
-  \mathbf q_i=W_{\mathrm R}\mathbf s_i,
+  \mathbf q_i=W_{\mathrm R}\mathbf s_i^{\mathrm{input}},
   \qquad
   W_{\mathrm L},W_{\mathrm R}:\mathbb R^{384}\rightarrow\mathbb R^{128}.
 \]
