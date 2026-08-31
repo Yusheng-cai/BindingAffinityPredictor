@@ -620,6 +620,30 @@ where $A$ and $B$ are learned projections and $\odot$ denotes elementwise
 multiplication. These equations show the information flow rather than every
 normalization and gate in the implementation.
 
+The released multiplication layers can be reduced to the following
+pseudocode. The only difference between the two directions is which two sides
+of the triangle are contracted over $k$:
+\begin{verbatim}
+def prepare_triangle_inputs(z, pair_mask):
+    x = layer_norm(z)                              # [N, N, 128]
+    x_gated = linear_256(x) * sigmoid(gate_256(x))
+    x_gated *= pair_mask[..., None]
+    a, b = split_in_half(x_gated)                 # each [N, N, 128]
+    return x, a, b
+
+def triangle_multiply_outgoing(z, pair_mask):
+    x, a, b = prepare_triangle_inputs(z, pair_mask)
+    triangle = einsum("ikd,jkd->ijd", a, b)       # sum over k
+    update = output_linear(layer_norm(triangle))
+    return update * sigmoid(output_gate(x))
+
+def triangle_multiply_incoming(z, pair_mask):
+    x, a, b = prepare_triangle_inputs(z, pair_mask)
+    triangle = einsum("kid,kjd->ijd", a, b)       # sum over k
+    update = output_linear(layer_norm(triangle))
+    return update * sigmoid(output_gate(x))
+\end{verbatim}
+
 For example, let $i$ be protein residue 42, $j$ ligand atom 5, and $k$ ligand
 atom 6. If atoms 5 and 6 are bonded and atom 6 is predicted near residue 42,
 the two other sides of the triangle provide information about the possible
@@ -642,6 +666,28 @@ emphasize different relational patterns. Dot products therefore occur
 \emph{inside} attention when calculating weights, but the complete $z$ tensor
 is not a dot-product similarity matrix.
 
+The corresponding attention logic is:
+\begin{verbatim}
+def triangle_attention_starting(z, pair_mask):
+    x = layer_norm(z)
+    Q, K, V = project_to_four_attention_heads(x)  # head width = 32
+    pair_bias = project_pair_bias(x)
+
+    logits = dot(Q[i, j], K[i, k]) / sqrt(32)
+    logits += pair_bias[i, j, k]
+    logits += mask_bias(pair_mask[i, k])
+
+    weights = softmax(logits, over="k")
+    update[i, j] = sum_k(weights[i, j, k] * V[i, k])
+    return combine_attention_heads(update)
+
+def triangle_attention_ending(z, pair_mask):
+    z_T = transpose_token_axes(z)
+    mask_T = transpose_token_axes(pair_mask)
+    update_T = triangle_attention_starting(z_T, mask_T)
+    return transpose_token_axes(update_T)
+\end{verbatim}
+
 \paragraph{Pair transition.}
 After communication among pairs, a small MLP transforms the 128 features within
 each pair independently,
@@ -650,6 +696,16 @@ each pair independently,
 \]
 Triangle operations communicate across the pair table; the transition mixes
 features within one table entry.
+
+In the released transition, two separate 512-dimensional projections are
+multiplied to gate the hidden representation:
+\begin{verbatim}
+def pair_transition_mlp(z):                        # [N, N, 128]
+    x = layer_norm(z)
+    hidden = silu(linear1_512(x)) * linear2_512(x)
+    update = linear3_128(hidden)
+    return update                                  # [N, N, 128]
+\end{verbatim}
 
 The Pairformer does not analytically enforce molecular geometry. Instead, the
 distogram training loss propagates through all 48 blocks, rewarding internal
