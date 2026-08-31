@@ -3,14 +3,14 @@ date_range: 2026-08-24_to_2026-08-30
 title: Paired Nesso-1 and Boltz-2 structural familiarity on Runs N' Poses
 status: overleaf_synced_github_branch
 
-project_git_revision: 9d96ea7855f61e73d6f410f0d3029f5ee4c7f021
+project_git_revision: dd7ec9c369c16e8795c06981fc5d8761cbdeea81
 working_tree_dirty_at_build: true
 
 overleaf:
   configured: true
   project: https://www.overleaf.com/project/6a91a69067f6673e16230ad7
   git_remote: https://git.overleaf.com/6a91a69067f6673e16230ad7
-  revision: 5e65436dcbb6a307745f55bbe1cfe4eebfeb18b8
+  revision: 6f616808c97806ee96b5478b4601241199a4e6f5
   source_of_truth: overleaf
   local_clone: /home/yusheng/source/binding-affinity-overleaf-w35
 
@@ -89,9 +89,9 @@ runtime_comparison:
 
 pdf:
   path: weeks/2026-W35/report/report.pdf
-  pages: 17
+  pages: 19
   latex_engine: pdflatex
-  sha256: c250be3bc19e453f4ac9639c4d0126c48f4fe556fc62e34912fa34ab42fa881e
+  sha256: 73598839cd0bb9daf837451ffaa1f0b4aacde5f19f20d3595a8b9b7a831268df
 
 figures:
   - path: weeks/2026-W35/report/figures/nesso_boltz_familiarity.pdf
