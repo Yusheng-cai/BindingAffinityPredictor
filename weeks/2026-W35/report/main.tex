@@ -294,8 +294,7 @@ Boltz-2 had substantially better pocket recovery: its mean paired improvement
 in residue-pocket F1 was $+0.318$ with a 95\% bootstrap interval of
 $[+0.251,+0.388]$. Token-pair contact F1 also favored Boltz-2 on average. Interface MAE
 was mixed: Nesso-1 was better on 27 systems, Boltz-2 on 22, and the paired mean
-improvement interval included zero. The lower Boltz-2 cohort median should
-therefore not be read as a consistent system-by-system MAE advantage.
+improvement interval included zero.
 
 Only Boltz-2 generates explicit coordinates. After global protein C$\alpha$
 alignment, its median protein C$\alpha$ RMSD was 0.894~\AA{} and its median
@@ -378,8 +377,7 @@ approximately 330 tokens.
 
 The input-processing code constructs standard reference atoms for each amino
 acid. For a ligand supplied as SMILES, it generates an isolated 3D conformer
-with RDKit ETKDG. This conformer provides the ligand's internal geometry; it
-does \emph{not} specify where the ligand sits relative to the protein. The atom
+with RDKit ETKDG. The atom
 encoder uses atom identity, names, charge, chirality, hybridization, bonds, and
 local reference geometry, then pools atom information into token vectors.
 
@@ -410,7 +408,21 @@ first applies a learned projection to each 1280-dimensional ESM vector,
   \qquad
   \mathbb R^{1280}\longrightarrow\mathbb R^{384}.
 \]
-It then adds the projected ESM context to Nesso's atom/residue token features,
+ESM-2 produces vectors only for protein residues, whereas Nesso's token list
+also contains ligand heavy atoms. The featurizer therefore creates a full
+token-indexed ESM array: it places each protein ESM vector in the row belonging
+to that protein token and leaves every ligand-token row equal to zero,
+\[
+  \mathbf E_{\mathrm{full}}[i]=
+  \begin{cases}
+    \mathbf e_r^{\mathrm{ESM}}, &
+      i\text{ is the protein token for residue }r,\\
+    \mathbf 0, & i\text{ is a ligand token}.
+  \end{cases}
+\]
+This is an alignment of \emph{array indices}, not a geometric alignment of the
+ligand with the protein. Nesso projects this full array and adds it to the
+atom/residue token features,
 \[
   \mathbf s_i
   =\mathbf s_i^{\mathrm{atom/residue}}
@@ -418,17 +430,19 @@ It then adds the projected ESM context to Nesso's atom/residue token features,
   \qquad \mathbf s_i\in\mathbb R^{384}.
 \]
 The projection is learned: it selects and transforms the parts of ESM-2 that
-are useful to Nesso rather than selecting the first 384 ESM coordinates.
+are useful to Nesso rather than selecting the first 384 ESM coordinates. Since
+the projection contains learned biases, a zero ligand row can become a shared
+baseline vector after projection. It still contains no ligand-specific ESM
+information; ligand identity and chemistry enter through the atom encoder.
 
 For a 300-residue protein and a 30-heavy-atom ligand, the shapes can be followed
 as
 \[
   \underbrace{300\times1280}_{\text{raw protein ESM-2}}
   \longrightarrow
-  \underbrace{300\times384}_{\text{projected protein context}},
-\]
-followed, after alignment with the ligand tokens, by
-\[
+  \underbrace{330\times1280}_{\substack{\text{full token-indexed ESM array}\\
+  \text{30 zero ligand rows}}}
+  \longrightarrow
   \underbrace{330\times384}_{\text{all token features}}
   \longrightarrow
   \underbrace{330\times330\times128}_{\text{pair representation }z}.
