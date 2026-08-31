@@ -651,18 +651,45 @@ relationship between residue 42 and atom 5.
 
 \paragraph{Triangle attention.}
 Attention also considers third tokens $k$, but learns which intermediates are
-most relevant. One attention direction is schematically
+most relevant. For starting-node attention, the pair being updated supplies the
+query, while every candidate pair sharing token $i$ supplies a key and a value.
+For attention head $h$,
 \[
-  \alpha_{ijk}
+  \mathbf q_{ij}^{(h)}
+  =W_Q^{(h)}\operatorname{LN}(z_{ij}),
+  \qquad
+  \mathbf k_{ik}^{(h)}
+  =W_K^{(h)}\operatorname{LN}(z_{ik}),
+  \qquad
+  \mathbf v_{ik}^{(h)}
+  =W_V^{(h)}\operatorname{LN}(z_{ik}).
+\]
+Thus $\mathbf k_{ik}$ and $\mathbf v_{ik}$ are two different learned
+transformations of the same existing pair representation $z_{ik}$. The key is
+used to decide how relevant pair $(i,k)$ is; the value contains the information
+that pair $(i,k)$ will contribute. The value vector is a learned latent feature,
+not a velocity or a directly interpretable physical observable.
+
+One attention direction is then schematically
+\[
+  \alpha_{ijk}^{(h)}
   =\operatorname{softmax}_k\!\left(
-    \frac{\mathbf q_{ij}^{\mathsf T}\mathbf k_{ik}}{\sqrt d}
+    \frac{(\mathbf q_{ij}^{(h)})^{\mathsf T}\mathbf k_{ik}^{(h)}}{\sqrt d}
     +\text{pair bias}
   \right),
   \qquad
-  \Delta z_{ij}=\sum_k\alpha_{ijk}\mathbf v_{ik}.
+  \mathbf u_{ij}^{(h)}
+  =\sum_k\alpha_{ijk}^{(h)}\mathbf v_{ik}^{(h)}.
 \]
-The released blocks use four attention heads, allowing different heads to
-emphasize different relational patterns. Dot products therefore occur
+The released blocks use four heads with $d=32$. Their four outputs are
+concatenated and projected back to a 128-dimensional update,
+\[
+  \Delta z_{ij}
+  =W_O\operatorname{Concat}\!\left(
+    \mathbf u_{ij}^{(1)},\ldots,\mathbf u_{ij}^{(4)}
+  \right).
+\]
+Different heads can emphasize different relational patterns. Dot products occur
 \emph{inside} attention when calculating weights, but the complete $z$ tensor
 is not a dot-product similarity matrix.
 
@@ -670,16 +697,18 @@ The corresponding attention logic is:
 \begin{verbatim}
 def triangle_attention_starting(z, pair_mask):
     x = layer_norm(z)
-    Q, K, V = project_to_four_attention_heads(x)  # head width = 32
+    Q = W_Q(x).reshape(N, N, 4, 32)
+    K = W_K(x).reshape(N, N, 4, 32)
+    V = W_V(x).reshape(N, N, 4, 32)
     pair_bias = project_pair_bias(x)
 
-    logits = dot(Q[i, j], K[i, k]) / sqrt(32)
-    logits += pair_bias[i, j, k]
+    logits[h, i, j, k] = dot(Q[i, j, h], K[i, k, h]) / sqrt(32)
+    logits[h, i, j, k] += pair_bias[h, i, j, k]
     logits += mask_bias(pair_mask[i, k])
 
     weights = softmax(logits, over="k")
-    update[i, j] = sum_k(weights[i, j, k] * V[i, k])
-    return combine_attention_heads(update)
+    head_output[i, j, h] = sum_k(weights[h, i, j, k] * V[i, k, h])
+    return W_O(concatenate_four_heads(head_output))
 
 def triangle_attention_ending(z, pair_mask):
     z_T = transpose_token_axes(z)
