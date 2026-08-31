@@ -130,11 +130,7 @@ treated as one shared measurement.
 The closest common representation is a distance between a protein C$\beta$
 token (C$\alpha$ for glycine) and a ligand heavy atom. Nesso-1 supplies an
 expected distance from its 64-bin distribution; Boltz-2 supplies the distance
-measured in its final diffusion-sampled coordinate model. I therefore use the
-more explicit names \textbf{6~\AA{} token-pair contact F1} and
-\textbf{6~\AA{} residue-pocket F1}. ``Average F1'' would be misleading: F1 is
-the harmonic mean of precision and recall, not an average distance or contact
-probability.
+measured in its final diffusion-sampled coordinate model.
 
 Let $t(i)$ be the representative atom of protein residue $i$, let $j$ index a
 ligand heavy atom, and let $c_b$ be the center of distance bin $b$. For
@@ -165,8 +161,8 @@ predicted coordinates $\widehat{\mathbf r}^{\mathrm{B}}$,
 Metric & Plain-language meaning & Better \\
 \midrule
 Interface distance MAE & Mean absolute error for token pairs whose experimental distance is at most 15~\AA{}. & Lower \\
-Token-pair contact F1 & Recovery of individual protein-token--ligand-atom contacts within 6~\AA{}, balancing precision and recall. & Higher \\
-Residue-pocket F1 & Recovery of the experimental 6~\AA{} pocket as a set of protein residues. & Higher \\
+Token-pair contact F1 & Did the model reconstruct the detailed interface? Measures whether the correct protein token contacts the correct ligand heavy atom within 6~\AA{}. & Higher \\
+Residue-pocket F1 & Did the model locate the correct binding region? Measures whether the correct protein residues belong to the experimental 6~\AA{} pocket, without requiring the correct ligand-atom contact pattern. & Higher \\
 \bottomrule
 \end{tabular}
 \caption{The three metrics applied to both model outputs. Exact ligand-graph
@@ -208,25 +204,19 @@ $i$ and $L$ is the set of ligand heavy atoms, then
    \leq 6~\text{\AA}\right].
  \label{eq:boltz_pocket}
 \end{align}
-Equations~\ref{eq:reference_pocket}--\ref{eq:boltz_pocket} make an important
-asymmetry explicit. The
-reference pocket is the same for both models, but Nesso-1 predicts it through
+Nesso-1 predicts reference pocket through
 residue-center distogram distances, whereas Boltz-2 predicts it from the final
-all-heavy-atom structure produced by diffusion. Nesso-1's value is therefore a
-residue-center approximation to an atomic pocket. I did not use Nesso-1's
-native pocket mask here: its 15~\AA{} affinity cutoff serves model context and
-is not the benchmark's 6~\AA{} contact definition. Experimental coordinates
-were introduced only during this post-inference scoring.
+all-heavy-atom structure produced by diffusion.
 
-Boltz-2 also contains an internal 64-bin trunk distogram, but the present
-benchmark did not extract it: it used one final sampled structure. These are
-two different kinds of distributions. The trunk distogram assigns probability
-to distance bins, while repeated diffusion samples would give an empirical
-distribution of possible coordinate models. A future, separately versioned
-analysis could extract Boltz-2's distogram and compare
-$P(d_{ij}\leq6~\text{\AA})$ directly, or generate multiple structures and
-measure how often each contact occurs. Neither distribution should be assumed
-to be calibrated or identical to Nesso-1's without testing.
+%Boltz-2 also contains an internal 64-bin trunk distogram, but the present
+%benchmark did not extract it: it used one final sampled structure. These are
+%two different kinds of distributions. The trunk distogram assigns probability
+%to distance bins, while repeated diffusion samples would give an empirical
+%distribution of possible coordinate models. A future, separately versioned
+%analysis could extract Boltz-2's distogram and compare
+%$P(d_{ij}\leq6~\text{\AA})$ directly, or generate multiple structures and
+%measure how often each contact occurs. Neither distribution should be assumed
+%to be calibrated or identical to Nesso-1's without testing.
 
 \subsection{Accuracy as a function of familiarity}
 
@@ -312,7 +302,7 @@ free-energy perturbation (FEP) benchmarks ask the following question: given a pr
 protein structure, a plausible bound pose, and a series of related ligands, can
 a method recover the experimental \emph{relative} affinity differences within
 that series?  In Table~\ref{tab:benchmark_landscape},
-\emph{data vintage} therefore means the newest date that can be audited from
+\emph{data vintage} means the newest date that can be audited from
 the public record: the publication year of the affinity measurement where
 available, or the challenge/data-release date for blinded pharmaceutical sets.
 Links in that column point to the
