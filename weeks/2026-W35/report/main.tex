@@ -443,16 +443,12 @@ as
   \underbrace{330\times1280}_{\substack{\text{full token-indexed ESM array}\\
   \text{30 zero ligand rows}}}
   \longrightarrow
-  \underbrace{330\times384}_{\text{all token features}}
-  \longrightarrow
-  \underbrace{330\times330\times128}_{\text{pair representation }z}.
+  \underbrace{330\times384}_{\text{all token features}}.
 \]
-Thus 1280, 384, and 128 describe three different objects: the raw ESM residue
-embedding, Nesso's combined single-token feature, and each entry in the
-token-pair matrix, respectively. The compression is especially important for
-the pair representation because its memory already grows as $N^2$; using width
-1280 instead of 128 there would require approximately ten times the pair-feature
-memory.
+Thus 1280 is the width of the raw ESM residue embedding, whereas 384 is the
+width of Nesso's combined single-token feature. The separate conversion from
+these token features to the pair representation is described in the next
+subsection.
 
 \subsection{The pair representation \texorpdfstring{$z$}{z}}
 
